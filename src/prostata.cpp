@@ -419,7 +419,7 @@ void FhcrcPerson::init() {
       exp(in->parameter["alpha8"] + in->parameter["beta8"] * t0);
     double p6 = 1.0/denom;
     double p7 = exp(in->parameter["alpha7"] + in->parameter["beta7"] * t0) / denom;
-    double p8 = exp(in->parameter["alpha8"] + in->parameter["beta8"] * t0) / denom;
+    // double p8 = exp(in->parameter["alpha8"] + in->parameter["beta8"] * t0) / denom;
     if (u < p6) future_ext_grade = ext::Gleason_le_6;
     else if (u < p6+p7) future_ext_grade = ext::Gleason_7;
     else future_ext_grade = ext::Gleason_ge_8;

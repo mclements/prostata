@@ -1,11 +1,13 @@
 
+DLLPACKAGE <- if(.Platform$OS.type == "unix") "prostata" else "microsimulation"
+
 prostata.init <- function () {
-  .Call("r_create_current_stream",PACKAGE="prostata")
+  .Call("r_create_current_stream",PACKAGE=DLLPACKAGE)
   return(1)
 }
 
 prostata.exit <- function () {
-  .Call("r_remove_current_stream",PACKAGE="prostata")
+  .Call("r_remove_current_stream",PACKAGE=DLLPACKAGE)
   return(1)
 }
 ## http://r.789695.n4.nabble.com/How-to-construct-a-valid-seed-for-l-Ecuyer-s-method-with-given-Random-seed-td4656340.html
@@ -25,19 +27,19 @@ set.user.Random.seed <- function (seed) {
   seed <- as.double(unsigned(seed))
   if (length(seed) == 1) seed <- rep(seed,6)
   if (length(seed) == 7) seed <- seed[-1]
-  .C("r_set_user_random_seed",seed = seed,PACKAGE="prostata")
+  .C("r_set_user_random_seed",seed = seed,PACKAGE=DLLPACKAGE)
   return(invisible(seed))
 }
 
 next.user.Random.substream <- function () {
-  .C("r_next_rng_substream",PACKAGE="prostata")
+  .C("r_next_rng_substream",PACKAGE=DLLPACKAGE)
   return(invisible(TRUE))
 }
 
 user.Random.seed <- function() {
   c(407L,
     as.integer(signed(.C("r_get_user_random_seed", seed=as.double(rep(1,6)),
-                         PACKAGE="prostata")$seed)))
+                         PACKAGE=DLLPACKAGE)$seed)))
 }
 
 enum <- function(obj, labels, start=0) {

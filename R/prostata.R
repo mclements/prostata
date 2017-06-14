@@ -1,74 +1,23 @@
 
-DLLPACKAGE <- if(.Platform$OS.type == "unix") "prostata" else "microsimulation"
-
-prostata.init <- function () {
-  .Call("r_create_current_stream",PACKAGE=DLLPACKAGE)
-  return(1)
+if(.Platform$OS.type == "unix") {
+    STATICPACKAGE <- "prostata"
+    prostata.init <- function () 
+        microsimulation::microsimulation.init(STATICPACKAGE)
+    prostata.exit <- function () 
+        microsimulation::microsimulation.exit(STATICPACKAGE)
+    ## http://r.789695.n4.nabble.com/How-to-construct-a-valid-seed-for-l-Ecuyer-s-method-with-given-Random-seed-td4656340.html
+    set.user.Random.seed <- function (seed) 
+        microsimulation::set.user.Random.seed(seed,STATICPACKAGE)
+    next.user.Random.substream <- function () 
+        microsimulation::next.user.Random.substream(STATICPACKAGE)
+    user.Random.seed <- function() 
+        microsimulation::user.Random.seed(STATICPACKAGE)
+} else {
+    prostata.init <- function () 
+        return(1)
+    prostata.exit <- function () 
+        return(1)
 }
-
-prostata.exit <- function () {
-  .Call("r_remove_current_stream",PACKAGE=DLLPACKAGE)
-  return(1)
-}
-## http://r.789695.n4.nabble.com/How-to-construct-a-valid-seed-for-l-Ecuyer-s-method-with-given-Random-seed-td4656340.html
-unsigned <- function(seed) ifelse(seed < 0, seed + 2^32, seed)
-signed <- function(seed) ifelse(seed>2^31, seed-2^32, seed)
-
-rnormPos <- function(n,mean=0,sd=1,lbound=0) {
-    if (length(mean)<n) mean <- rep(mean,length=n)
-    if (length(sd)<n) sd <- rep(sd,length=n)
-    x <- rnorm(n,mean,sd)
-    while(any(i <- which(x<lbound)))
-        x[i] <- rnorm(length(i),mean[i],sd[i])
-    x
-}
-
-set.user.Random.seed <- function (seed) {
-  seed <- as.double(unsigned(seed))
-  if (length(seed) == 1) seed <- rep(seed,6)
-  if (length(seed) == 7) seed <- seed[-1]
-  .C("r_set_user_random_seed",seed = seed,PACKAGE=DLLPACKAGE)
-  return(invisible(seed))
-}
-
-next.user.Random.substream <- function () {
-  .C("r_next_rng_substream",PACKAGE=DLLPACKAGE)
-  return(invisible(TRUE))
-}
-
-user.Random.seed <- function() {
-  c(407L,
-    as.integer(signed(.C("r_get_user_random_seed", seed=as.double(rep(1,6)),
-                         PACKAGE=DLLPACKAGE)$seed)))
-}
-
-enum <- function(obj, labels, start=0) {
-  if (is.logical(obj)) obj <- obj+0
-  structure(factor(obj, levels=start + (0:(length(labels)-1)), labels=labels),start=start)
-}
-
-"enum<-" <- function(obj, value) {
-  enum(if(is.factor(obj)) unclass(obj)-1+attr(obj,"start") else obj, value)
-}
-
-## find the concave frontier
-frontier<-function(x,y)
-  {
-      ichull <- grDevices::chull(cbind(x,y)) # convex hull
-      if (length(ichull)<2) return(ichull)
-      xi <- x[ichull]
-      yi <- y[ichull]          # subset to convex hull
-      imin <- which(xi==min(xi))
-      include <- sapply(1:length(ichull),
-                        function(i)       # establish the frontier
-                        i==imin || (i>imin && yi[i-1]<yi[i] && xi[i-1]<xi[i]))
-      ichull[include]
-}
-lines.frontier <- function(x,y,pch=19,type="b",...) {
-    index <- frontier(x,y)
-    lines(x[index],y[index],pch=pch,type=type,...)
-}
-
 
 ## initial values for the FHCRC model
 FhcrcParameters <- list(
@@ -534,9 +483,6 @@ obj$discountRate.effectiveness,
 obj$discountRate.costs))
 }
 
-ICER <- function(object1, object2, ...)
-    UseMethod("ICER")
-
 ICER.fhcrc <- function(object1, object2,
                        perspective = c("societal.costs",
                                        "healthsector.costs"), ...) {
@@ -565,16 +511,6 @@ print.fhcrc <- function(x, ...)
     cat(sprintf("FHCRC prostate cancer model with %i individual(s) under scenario '%s'.\n",
                 x$n, x$screen),
         ...)
-
-## fast operations by group using base-R
-## http://stackoverflow.com/questions/3685492/r-speeding-up-group-by-operations
-grp_apply = function(XS, INDEX, FUN, ..., simplify=T) {
-  FUN = match.fun(FUN)
-  if (!is.list(XS))
-    XS = list(XS)
-  as.data.frame(as.table(tapply(1:length(XS[[1L]]), INDEX, function(s, ...)
-    do.call(FUN, c(lapply(XS, `[`, s), list(...))), ..., simplify=simplify)))
-}
 
 ## TODO: include prevalences and relative rate-ratios in switch. Also
 ## allow for ceiling on groups to allow for other than yearly rates
@@ -704,12 +640,6 @@ plot.fhcrc <- function(x, type=c("incidence.rate", "testing.rate",
 lines.fhcrc <- function(x,...) {
     plot(x, ..., add=TRUE)
 }
-
-## utility - not exported
-assignList <- function(lst,...)
-  for(i in 1:length(lst))
-    assign(names(lst)[i], lst[[i]], ...)
-## assignList(formals(callFhcrc),pos=1)
 
 NN.fhcrc <- function(obj, ref.obj, startAge = 50, stopAge = Inf) {
     pNNS <- function(thisScenario) {

@@ -1,10 +1,10 @@
-\name{microsimulation-package}
-\alias{microsimulation-package}
-\alias{microsimulation}
+\name{prostata-package}
+\alias{prostata-package}
+\alias{prostata}
 \docType{package}
 \title{
   
-  Microsimulation using discrete event simulation. 
+  Prostata using discrete event simulation. 
 
  }
  \description{
@@ -15,11 +15,11 @@
 }
 \details{
 \tabular{ll}{
-Package: \tab microsimulation\cr
+Package: \tab prostata\cr
 Type: \tab Package\cr
 Version: \tab 1.0\cr
-Date: \tab 2013-01-26\cr
-License: \tab GPL >= 2.0\cr
+Date: \tab 2017-06-14\cr
+License: \tab GPL >= 3.0\cr
 }
 
 }

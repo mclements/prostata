@@ -1,8 +1,6 @@
-useDynLib(microsimulation)
+useDynLib(prostata)
 exportPattern("^[[:alpha:]]+")
-exportClasses("RNGStream")
-exportClasses("BaseDiscreteEventSimulation")
-import(Rcpp,methods)
+import(Rcpp,methods,microsimulation)
 
 importFrom("graphics", "lines", "plot")
 importFrom("stats", "predict", "rnorm")

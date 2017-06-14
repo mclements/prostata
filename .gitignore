@@ -2,5 +2,3 @@
 *.so
 *.o
 ..Rcheck/*
-autom4te.cache/*
-src/tprocessconf.h

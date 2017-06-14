@@ -1,7 +1,7 @@
-PKG_LIBS = `$(R_HOME)/bin/Rscript -e "Rcpp:::LdFlags()"`
-PKG_CXXFLAGS = -I. -DVERSION=\"1.7.6\"
+PKG_LIBS = `$(R_HOME)/bin/Rscript -e "microsimulation:::LdFlags()"`
+
+PKG_CXXFLAGS = -I. 
 PKG_CFLAGS = -I. 
 
-SOURCES = $(wildcard *.c */*.c */*/*.c)
+OBJECTS = prostata.o
 
-OBJECTS = microsimulation.o person-r.o calibperson-r.o simple-example.o simple-example2.o fhcrc-example.o illness-death.o ssim.o RngStream.o test-nmmin.o cervical.o $(SOURCES:.c=.o)

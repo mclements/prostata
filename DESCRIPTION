@@ -1,14 +1,13 @@
-Package: microsimulation
+Package: prostata
 Type: Package
-Title: Microsimulation in R and C++
+Title: Prostate cancer microsimulation for Sweden
 Version: 1.1
-Date: 2016-06-10
+Date: 2017-06-14
 Author: Mark Clements, Alexandra Jauhiainen, Andreas Karlsson.
 Maintainer: Mark Clements <mark.clements@ki.se>
 Description: Microsimulation using discrete event simulation in R and C++. This includes a full prostate cancer model.
 License: GPL (>= 3)
-Depends: Rcpp (>= 0.10.2), methods
+Depends: Rcpp (>= 0.10.2), methods, microsimulation
 Imports: parallel, grDevices
-Suggests: testthat
-LinkingTo: Rcpp, BH
+LinkingTo: Rcpp, BH, microsimulation
 LazyData: true

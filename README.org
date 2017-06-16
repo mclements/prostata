@@ -5,7 +5,7 @@
 #+OPTIONS: html-postamble:nil
 
 # Babel settings
-#+PROPERTY: session *R-org*
+#+PROPERTY: session *R-prostata-README*
 # +PROPERTY: cache yes
 # +PROPERTY: results output graphics
 # +PROPERTY: exports both
@@ -13,235 +13,223 @@
 # +PROPERTY: exports both
 
 # [[http://www.gnu.org/licenses/gpl-3.0.html][http://img.shields.io/:license-gpl3-blue.svg]]
-# * Background
-# [[https://en.wikipedia.org/wiki/Microsimulation][Microsimulation]] is a form of individual-based stochastic
-# simulation. In continuous time, microsimulation is closely related to
-# [[https://en.wikipedia.org/wiki/Discrete_event_simulation][discrete event simulation]], and in discrete time it is closely related
-# to [[https://en.wikipedia.org/wiki/Agent-based_model][agent-based models]]. In econometrics and health care,
-# microsimulation is often used to model policy changes. Our
-# implementation is in continuous time and uses event-based discrete
-# event simulation for the model specification.
+* Background
 
-# The package provides several approaches for microsimulation and
-# event-based, discrete event simulation. The package includes an R
-# implementation of discrete event simulation, building on several R5
-# classes. This implementation is useful from a pedagogical perspective,
-# but it is slow for larger microsimulations. For speed, we also provide
-# C++ classes for discrete event simulation, building on several well
-# established libraries, including the [[http://www.inf.usi.ch/carzaniga/ssim/index.html][SSIM]] C++ discrete event
-# simulation library, the [[http://www.iro.umontreal.ca/~lecuyer/myftp/streams00/][RngStream]] C library for common random numbers,
-# the [[http://www.boost.org/][Boost]] libraries for making many C++11 tools available to C++98,
-# and [[http://www.rcpp.org/][Rcpp]] for providing glue between R, R's C API and C++.
+Prostata is a natural history model of prostate cancer model which
+extends the model developed by Ruth Etzioni and colleagues at the Fred
+Hutchinson Cancer Research Center[fn:: http://www.fredhutch.org]
+(FHCRC). This is a well validated prostate cancer natural history
+model developed within the Cancer Intervention and Surveillance
+Modeling Network (CISNET)[fn::
+http://cisnet.cancer.gov/prostate/profiles.html]. We here provide our
+extensions of the model with extended states and finer
+calibration. The model is provided as an R package, depending on our
+[[https://github.com/mclements/microsimulation][microsimulation]] frame work.
 
-# We specifically developed this package for modelling the
-# cost-effectiveness of cancer screening, where there are many
-# (e.g. 10^7) individuals who are followed from birth to death. Notably,
-# we provide a complete prostate cancer screening model, including tools
-# for cost-effectiveness analysis.
-# * Installing the microsimulation
-# + 1 Dependencies: ::
-# The microsimulation requires [[http://www.rcpp.org/][Rcpp]] and [[http://www.boost.org/][Boost]]. A convenient, but not
-# required, way of installing github-packages in R is to use
-# [[https://cran.r-project.org/web/packages/devtools/README.html][devtools]]. Since both of the dependencies and [[https://cran.r-project.org/web/packages/devtools/README.html][devtools]] are available on
-# [[https://cran.r-project.org/][CRAN]] just run the following in R.
-# #+BEGIN_SRC R :exports code :eval never
-#   install.packages("BH")
-#   install.packages("Rcpp")
-#   install.packages("devtools")
-# #+END_SRC
+We specifically developed this package for modelling the
+cost-effectiveness of prostate cancer screening, where many
+(e.g. 10^7) men are followed from birth to death.
+* Installing prostata
++ 1 Dependencies: ::
+A convenient, but not required, way of installing github-packages in R
+is to use [[https://cran.r-project.org/web/packages/devtools/README.html][devtools]]. Since [[https://cran.r-project.org/web/packages/devtools/README.html][devtools]] is available on [[https://cran.r-project.org/][CRAN]] just run the
+following in R.
+#+BEGIN_SRC R :exports code :eval never
+  install.packages("devtools")
+#+END_SRC
 
-# + 2a Installation with devtools: ::
-# To install the microsimulation using [[https://cran.r-project.org/web/packages/devtools/README.html][devtools]] just run the following in R:
-# #+BEGIN_SRC R :exports code :eval never
-#   require(devtools)
-#   install_github("mclements/microsimulation")
-# #+END_SRC
-# + 2b Alternative installation from shell: ::
-# # Some thing OS-specific?
-# If you prefer the shell over [[https://cran.r-project.org/web/packages/devtools/README.html][devtools]], just run the following to download the
-# microsimulation R-package:
-# #+BEGIN_SRC shell :exports code :eval never
-#   git clone https://github.com/mclements/microsimulation.git
-# #+END_SRC
++ 2a Installation with devtools: ::
+To install the microsimulation using [[https://cran.r-project.org/web/packages/devtools/README.html][devtools]] just run the following in R:
+#+BEGIN_SRC R :exports code :eval never
+  require(devtools)
+  install_github("mclements/prostata")
+#+END_SRC
++ 2b Alternative installation from shell: ::
+# Some thing OS-specific?
+If you prefer the shell over [[https://cran.r-project.org/web/packages/devtools/README.html][devtools]], just run the following to download the
+microsimulation R-package:
+#+BEGIN_SRC shell :exports code :eval never
+  git clone https://github.com/mclements/prostata.git
+#+END_SRC
 
-# To install the microsimulation R-package run this in your shell:
-# #+BEGIN_SRC shell :exports code :eval never
-#   R CMD INSTALL path_to_microsimulation
-# #+END_SRC
+To install the prostata R-package run this in your shell:
+#+BEGIN_SRC shell :exports code :eval never
+  R CMD INSTALL path_to_prostata
+#+END_SRC
 
-# * Running the simulation
+* Running the simulation
 
-# #+HEADERS: :var reRunSimulation = 0
-# #+BEGIN_SRC R :exports none
-#   require(microsimulation)
-#   myFile <- file.path("~/Dropbox/microsimulation_runs","README_sim.RData")
+#+HEADERS: :var reRunSimulation = 0
+#+BEGIN_SRC R :exports none
+  require(prostata)
+  myFile <- file.path("~/Dropbox/microsimulation_runs","README_sim.RData")
 
-#   if (reRunSimulation || !file.exists(myFile)){
-#       sim1 <- callFhcrc(n=1e6, mc.cores=3, screen="screenUptake")
-#       sim2 <- callFhcrc(n=1e6, mc.cores=3, screen="noScreening")
-#       save(sim1, sim2, file=myFile)
-#   } else {
-#     load(file=myFile)
-#   }
-# #+END_SRC
-# ** Available screening scenarios
-# There are a number of available testing scenarios. They determine
-# testing frequencies and re-testing intervals over calendar period and
-# ages.
-# + =noScreening= - no screening test, only diagnosis from symptoms
-# + =twoYearlyScreen50to70= - two-yearly screening from age 50 to 70
-# + =fourYearlyScreen50to70= - four-yearly screening from age 50 to 70
-# + =screen50= - one screen at age 50
-# + =screen60= - one screen at age 60
-# + =screen70= - one screen at age 70
-# + =screenUptake= - current testing pattern in Sweden
-# + =goteborg= - risk stratified re-screening 2+4 from age 50 to 70
-# + =risk_stratified= - risk stratified re-screening 4+8 from age 50 to 70
-# + =mixed_screening= - risk stratified re-screening 2+4 from age 50 to
-#   70 & opportunistic testing for other ages
-# # + =randomScreen50to70=
-# # + =stockholm3_goteborg=
-# # + =stockholm3_risk_stratified=
-# # + =regular_screen=
-# # + =single_screen=
-
-# #+name: commentify
-# #+begin_src emacs-lisp :var result="" :exports none
-# (concat "#> "(mapconcat 'identity (split-string result "\n") "\n#> "))
-# #+end_src
-
-# #+BEGIN_SRC R :post commentify(*this*) :results output :exports both :eval never-export
-#   require(microsimulation)
-#   sim1 <- callFhcrc(n=1e6, mc.cores=3, screen="screenUptake")
-# #+END_SRC
-
-# #+RESULTS:
-# : #>    user  system elapsed
-# : #> 144.180   0.180  91.173
-
-# * Results
-# ** Type of outcome: prevalence, event rates or rate ratios
-# Some of the more commonly used outcomes are provided through a =plot=
-# and a =predict= function. The available outcomes are:
-# + =prevalence= - proportion of a population in the groups described below
-# + =incidence.rate= - rate of /clinical diagnosis/ & /screen initiated diagnosis/
-# + =testing.rate= - rate of /screening tests/ (e.g. psa tests)
-# + =biopsy.rate= - rate of /clinical diagnostic biopsies/ & /screen initiated biopsies/
-# + =metastasis.rate= - rate of natural history transitions to /metastatic/ cancer
-# + =pc.mortality.rate= - rate of /cancer deaths/
-# + =allcause.mortality.rate= - rate of /cancer deaths/ & /other deaths/
-# + =incidence.rr= - rate ratio of /clinical diagnosis/ & /screen initiated diagnosis/
-# + =testing.rr= - rate ratio of /screening tests/ (e.g. psa tests)
-# + =biopsy.rr= - rate ratio of /clinical diagnostic biopsies/ & /screen initiated biopsies/
-# + =metastasis.rr= - rate ratio of natural history transitions to /metastatic/ cancer
-# + =pc.mortality.rr= - rate ratio of /cancer deaths/
-# + =allcause.mortality.rr= - rate ratio of /cancer deaths/ & /other deaths/
-# To construct an outcome not listed above you can use the objects in
-# ~sim1$summary~ to construct them.
-
-# To simply plot e.g. the /incidence rate/ of the simulated screening
-# scenario the following line can be used:
-# #+BEGIN_SRC R :file inst/inc.png :results output graphics :exports both
-#   plot(sim1, type = "incidence.rate", xlab="Age (years)", xlim=c(40, 90))
-# #+END_SRC
-
-# #+RESULTS:
-# [[file:inst/inc.png]]
-
-# ** Groups in natural and clinical history
-# The =predict= function returns various outcomes (/rate/, /rate ratios/
-# or /prevalence/) as described above. It can also be used to predict
-# outcomes by a number of subgroups. The available subgroups are two
-# time-scales and four natural history categories:
-
-# + =age= - grouping by single /year of age/ this is the default time-scale
-# + =year= - grouping by single /calendar year/ as an alternative time-scale
-# + =state= - grouping by /healthy/, /localised/ & /metastatic/
-# + =grade= - grouping by /gleason grade/ ~<=6~, ~7~ & ~>=8~
-# + =dx= - grouping by /not diagnosed/, /screen diagnosis/ & /clinical diagnosis/
-# + =psa= - grouping by psa ~<3~ & ~>=3~
-
-# Below is the PSA testing rate by calendar period predicted and
-# displayed with =ggplot=.
-# #+BEGIN_SRC R :file inst/psa.png :results output graphics :exports both
-#   require(ggplot2)
-#   ggplot(predict(sim1, group = "year", type="testing.rate"),aes(x=year, y=rate)) +
-#       xlim(1990, 2020) + geom_line() +
-#       ylab("PSA testing rate") + xlab("Calendar period (years)")
-# #+END_SRC
-
-# #+RESULTS:
-# [[file:inst/psa.png]]
+  if (reRunSimulation || !file.exists(myFile)){
+      sim1 <- callFhcrc(n=1e6, mc.cores=3, screen="screenUptake")
+      sim2 <- callFhcrc(n=1e6, mc.cores=3, screen="noScreening")
+      save(sim1, sim2, file=myFile)
+  } else {
+    load(file=myFile)
+  }
+#+END_SRC
 
 
-# The outcomes can also be predicted by several subgroups at once. Plotted
-# below is the prevalence by age, clinical state and diagnoses. Note
-# that since this is a natural history of disease model also the
-# unobserved /not diagnosed/ cancers are predicted.
-# #+BEGIN_SRC R :file inst/prev.png :results output graphics :exports both
-#   ggplot(predict(sim1, type = "prevalence", group=c("age", "state", "dx")),
-#          aes(x=age, y=prevalence*1e5, colour = dx)) + geom_line() +
-#       ylab("Prevalence (cases per 100,000)") +
-#       xlab("Age (years)") + facet_grid(. ~ state)
-# #+END_SRC
+** Available screening scenarios
+There are a number of available testing scenarios. They determine
+testing frequencies and re-testing intervals over calendar period and
+ages.
++ =noScreening= - no screening test, only diagnosis from symptoms
++ =twoYearlyScreen50to70= - two-yearly screening from age 50 to 70
++ =fourYearlyScreen50to70= - four-yearly screening from age 50 to 70
++ =screen50= - one screen at age 50
++ =screen60= - one screen at age 60
++ =screen70= - one screen at age 70
++ =screenUptake= - current testing pattern in Sweden
++ =goteborg= - risk stratified re-screening 2+4 from age 50 to 70
++ =risk_stratified= - risk stratified re-screening 4+8 from age 50 to 70
++ =mixed_screening= - risk stratified re-screening 2+4 from age 50 to
+  70 & opportunistic testing for other ages
+# + =randomScreen50to70=
+# + =stockholm3_goteborg=
+# + =stockholm3_risk_stratified=
+# + =regular_screen=
+# + =single_screen=
 
-# #+RESULTS:
-# [[file:inst/prev.png]]
+#+name: commentify
+#+begin_src emacs-lisp :var result="" :exports none
+(concat "#> "(mapconcat 'identity (split-string result "\n") "\n#> "))
+#+end_src
 
-# ** Comparing multiple scenarios
-# In order to compare multiple screening scenarios the =predict=
-# function has a second argument for simulation objects. It can be used
-# to pass a second simulation objects if you which to compare two
-# screening scenarios or a list of simulation objects for comparing
-# several screening scenarios. The =type= and =group= argument works as
-# described earlier. Below is the incidence rate with the /current
-# uptake/ pattern compared with the hypothetical /no screening/
-# scenario.
+#+BEGIN_SRC R :post commentify(*this*) :results output :exports both :eval never-export
+  require(prostata)
+  sim1 <- callFhcrc(n=1e6, mc.cores=3, screen="screenUptake")
+#+END_SRC
 
-# #+BEGIN_SRC R :post commentify(*this*) :results output :exports both :eval never-export
-#   sim2 <- callFhcrc(n=1e6, mc.cores=3, screen="noScreening")
-# #+END_SRC
+#+RESULTS:
+: #>    user  system elapsed
+: #> 144.180   0.180  91.173
 
-# #+RESULTS:
-# : #>    user  system elapsed
-# : #> 106.032   0.660  54.287
+* Results
+** Type of outcome: prevalence, event rates or rate ratios
+Some of the more commonly used outcomes are provided through a =plot=
+and a =predict= function. The available outcomes are:
++ =prevalence= - proportion of a population in the groups described below
++ =incidence.rate= - rate of /clinical diagnosis/ & /screen initiated diagnosis/
++ =testing.rate= - rate of /screening tests/ (e.g. psa tests)
++ =biopsy.rate= - rate of /clinical diagnostic biopsies/ & /screen initiated biopsies/
++ =metastasis.rate= - rate of natural history transitions to /metastatic/ cancer
++ =pc.mortality.rate= - rate of /cancer deaths/
++ =allcause.mortality.rate= - rate of /cancer deaths/ & /other deaths/
++ =incidence.rr= - rate ratio of /clinical diagnosis/ & /screen initiated diagnosis/
++ =testing.rr= - rate ratio of /screening tests/ (e.g. psa tests)
++ =biopsy.rr= - rate ratio of /clinical diagnostic biopsies/ & /screen initiated biopsies/
++ =metastasis.rr= - rate ratio of natural history transitions to /metastatic/ cancer
++ =pc.mortality.rr= - rate ratio of /cancer deaths/
++ =allcause.mortality.rr= - rate ratio of /cancer deaths/ & /other deaths/
+To construct an outcome not listed above you can use the objects in
+~sim1$summary~ to construct them.
+
+To simply plot e.g. the /incidence rate/ of the simulated screening
+scenario the following line can be used:
+#+BEGIN_SRC R :file inst/inc.png :results output graphics :exports both
+  plot(sim1, type = "incidence.rate", xlab="Age (years)", xlim=c(40, 90))
+#+END_SRC
+
+#+RESULTS:
+[[file:inst/inc.png]]
+
+** Groups in natural and clinical history
+The =predict= function returns various outcomes (/rate/, /rate ratios/
+or /prevalence/) as described above. It can also be used to predict
+outcomes by a number of subgroups. The available subgroups are two
+time-scales and four natural history categories:
+
++ =age= - grouping by single /year of age/ this is the default time-scale
++ =year= - grouping by single /calendar year/ as an alternative time-scale
++ =state= - grouping by /healthy/, /localised/ & /metastatic/
++ =grade= - grouping by /gleason grade/ ~<=6~, ~7~ & ~>=8~
++ =dx= - grouping by /not diagnosed/, /screen diagnosis/ & /clinical diagnosis/
++ =psa= - grouping by psa ~<3~ & ~>=3~
+
+Below is the PSA testing rate by calendar period predicted and
+displayed with =ggplot=.
+#+BEGIN_SRC R :file inst/psa.png :results output graphics :exports both
+  require(ggplot2)
+  ggplot(predict(sim1, group = "year", type="testing.rate"),aes(x=year, y=rate)) +
+      xlim(1990, 2020) + geom_line() +
+      ylab("PSA testing rate") + xlab("Calendar period (years)")
+#+END_SRC
+
+#+RESULTS:
+[[file:inst/psa.png]]
 
 
-# #+BEGIN_SRC R :file inst/scen.png :results output graphics :exports both
-#   ggplot(predict(sim1, sim2, group= "age", type = "incidence.rate"),
-#             aes(x=age, y=rate, colour = scenario)) + geom_line() + xlim(50, 85) +
-#       ylab("Incidence rate") + xlab("Age (years)")
-# #+END_SRC
+The outcomes can also be predicted by several subgroups at once. Plotted
+below is the prevalence by age, clinical state and diagnoses. Note
+that since this is a natural history of disease model also the
+unobserved /not diagnosed/ cancers are predicted.
+#+BEGIN_SRC R :file inst/prev.png :results output graphics :exports both
+  ggplot(predict(sim1, type = "prevalence", group=c("age", "state", "dx")),
+         aes(x=age, y=prevalence*1e5, colour = dx)) + geom_line() +
+      ylab("Prevalence (cases per 100,000)") +
+      xlab("Age (years)") + facet_grid(. ~ state)
+#+END_SRC
 
-# #+RESULTS:
-# [[file:inst/scen.png]]
+#+RESULTS:
+[[file:inst/prev.png]]
 
-# ** Rate ratios and reference scenarios
-# If you which to investigate e.g. the /prostate cancer mortality rate
-# ratio/ between the /current uptake pattern/ and the /no screening/
-# scenarios simply use =pc.mortality.rr= as
-# =type=. Note that the first argument (expects a simulation object)
-# will be used for the reference rate against which the rates in the
-# second argument (expects a simulation object or a list of simulation
-# objects) will be compared.
+** Comparing multiple scenarios
+In order to compare multiple screening scenarios the =predict=
+function has a second argument for simulation objects. It can be used
+to pass a second simulation objects if you which to compare two
+screening scenarios or a list of simulation objects for comparing
+several screening scenarios. The =type= and =group= argument works as
+described earlier. Below is the incidence rate with the /current
+uptake/ pattern compared with the hypothetical /no screening/
+scenario.
 
-# When we look at rare events such at prostate cancer death the outcomes
-# appear a little jumpy due to the stochasticity of the simulation. When
-# we look at rate ratios this effect will get even more prominent. A
-# larger simulation would reduce the Monte-Carlo variation, but for now
-# lets settle with smoothing and focus on the ages with most events.
-# #+BEGIN_SRC R :file inst/RR.png :results output graphics :exports both
-#   ggplot(predict(sim2, sim1, group = "age", type = "pc.mortality.rr"),
-#          aes(x=age, y=rate.ratio, colour = scenario)) +
-#       geom_smooth(span=5) + xlim(60, 85) +
-#       ylab("Prostate cancer mortality rate ratio") + xlab("Age (years)")
-# #+END_SRC
+#+BEGIN_SRC R :post commentify(*this*) :results output :exports both :eval never-export
+  sim2 <- callFhcrc(n=1e6, mc.cores=3, screen="noScreening")
+#+END_SRC
 
-# #+RESULTS:
-# [[file:inst/RR.png]]
+#+RESULTS:
+: #>    user  system elapsed
+: #> 106.032   0.660  54.287
 
-# # Local Variables:
-# # org-confirm-babel-evaluate: nil
-# # End:
 
-To be completed.
+#+BEGIN_SRC R :file inst/scen.png :results output graphics :exports both
+  ggplot(predict(sim1, sim2, group= "age", type = "incidence.rate"),
+            aes(x=age, y=rate, colour = scenario)) + geom_line() + xlim(50, 85) +
+      ylab("Incidence rate") + xlab("Age (years)")
+#+END_SRC
+
+#+RESULTS:
+[[file:inst/scen.png]]
+
+** Rate ratios and reference scenarios
+If you which to investigate e.g. the /prostate cancer mortality rate
+ratio/ between the /current uptake pattern/ and the /no screening/
+scenarios simply use =pc.mortality.rr= as
+=type=. Note that the first argument (expects a simulation object)
+will be used for the reference rate against which the rates in the
+second argument (expects a simulation object or a list of simulation
+objects) will be compared.
+
+When we look at rare events such at prostate cancer death the outcomes
+appear a little jumpy due to the stochasticity of the simulation. When
+we look at rate ratios this effect will get even more prominent. A
+larger simulation would reduce the Monte-Carlo variation, but for now
+lets settle with smoothing and focus on the ages with most events.
+#+BEGIN_SRC R :file inst/RR.png :results output graphics :exports both
+  ggplot(predict(sim2, sim1, group = "age", type = "pc.mortality.rr"),
+         aes(x=age, y=rate.ratio, colour = scenario)) +
+      geom_smooth(span=5) + xlim(60, 85) +
+      ylab("Prostate cancer mortality rate ratio") + xlab("Age (years)")
+#+END_SRC
+
+#+RESULTS:
+[[file:inst/RR.png]]
+
+# Local Variables:
+# org-confirm-babel-evaluate: nil
+# End:

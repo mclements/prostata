@@ -16,13 +16,11 @@
 * Background
 
 Prostata is a natural history model of prostate cancer model which
-extends the model developed by Ruth Etzioni and colleagues at the Fred
-Hutchinson Cancer Research Center[fn:: http://www.fredhutch.org]
-(FHCRC). This is a well validated prostate cancer natural history
-model developed within the Cancer Intervention and Surveillance
-Modeling Network (CISNET)[fn::
-http://cisnet.cancer.gov/prostate/profiles.html]. We here provide our
-extensions of the model with extended states and finer
+extends the model developed by Ruth Etzioni and colleagues at the[[http://www.fredhutch.org][Fred
+Hutchinson Cancer Research Center (FHCRC)]]. This is a well validated
+prostate cancer natural history model developed within the [[http://cisnet.cancer.gov/prostate/profiles.html][Cancer
+Intervention and Surveillance Modeling Network (CISNET)]]. We here
+provide our extensions of the model with extended states and finer
 calibration. The model is provided as an R package, depending on our
 [[https://github.com/mclements/microsimulation][microsimulation]] frame work.
 

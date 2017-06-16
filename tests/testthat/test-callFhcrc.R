@@ -1,10 +1,10 @@
-library(microsimulation)
+library(prostata)
 context("callFhcrc")
 
 ## To run all the test either:
 ## R CMD check
 ## or (faster)
-## test_dir("/home/andkar/src/ki/microsimulation/tests/.")
+## test_dir("/home/andkar/src/ki/prostata/tests/.")
 
 test_returned_object_structure <- function(obj = obj) {
     test_that(paste("Check the structure of the returned fhcrc object with scenario:", try(obj$screen)), {
@@ -43,7 +43,7 @@ test_speed <- function(time_str){
 }
 
 test_scenario <- function(screen){
-    test_that(paste("Check microsimulation scenario:", screen), {
+    test_that(paste("Check prostata scenario:", screen), {
 
         ## Make sure no errors are returned. N.b. double negation
         ## expect_failure() expect_error() <=> expect no error

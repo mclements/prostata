@@ -1,21 +1,21 @@
 
 if(.Platform$OS.type == "unix") {
     STATICPACKAGE <- "prostata"
-    prostata.init <- function () 
+    prostata.init <- function ()
         microsimulation::microsimulation.init(STATICPACKAGE)
-    prostata.exit <- function () 
+    prostata.exit <- function ()
         microsimulation::microsimulation.exit(STATICPACKAGE)
     ## http://r.789695.n4.nabble.com/How-to-construct-a-valid-seed-for-l-Ecuyer-s-method-with-given-Random-seed-td4656340.html
-    set.user.Random.seed <- function (seed) 
+    set.user.Random.seed <- function (seed)
         microsimulation::set.user.Random.seed(seed,STATICPACKAGE)
-    next.user.Random.substream <- function () 
+    next.user.Random.substream <- function ()
         microsimulation::next.user.Random.substream(STATICPACKAGE)
-    user.Random.seed <- function() 
+    user.Random.seed <- function()
         microsimulation::user.Random.seed(STATICPACKAGE)
 } else {
-    prostata.init <- function () 
+    prostata.init <- function ()
         return(1)
-    prostata.exit <- function () 
+    prostata.exit <- function ()
         return(1)
 }
 
@@ -84,8 +84,8 @@ FhcrcParameters <- list(
     discountRate.effectiveness = 0.03,
     discountRate.costs = 0.03,
     full_report = 1.0,
-    formal_costs = 1.0,
-    formal_compliance = 1.0,
+    formal_costs = 0.0,
+    formal_compliance = 0.0,
     start_screening = 50.0, # start of organised screening
     stop_screening = 70.0,  # end of organised screening
     screening_interval = 2.0, # screening interval for regular_screening
@@ -663,4 +663,3 @@ NN.fhcrc <- function(obj, ref.obj, startAge = 50, stopAge = Inf) {
     ## Include additional number needed to treat (NNT) [Gulati 2011] to show overdiagnosis?
     return(list(NNS=NNS,NND=NND))
 }
-

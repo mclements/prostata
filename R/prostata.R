@@ -30,8 +30,8 @@ FhcrcParameters <- list(
     grade.clinical.rate.high=0.3042454700,
     tau2 = 0.0829, # log PSA measurement variance  - normal
     g0=0.0005, # onset parameter
-    g3p=0.0004, # T3+ parameter
-    gm=0.0004, # metastatic parameter
+    g3p=exp(-6.664367), # T3+ parameter
+    gm=exp(-6.707478), # metastatic parameter
     gc=0.0015, # clinical diagnosis parameter
     thetac=19.1334, # clinical diagnosis parameter after metastatic
     mubeta0=-1.609, # mean of beta0, where beta0 is the log PSA intercept at age 35 years
@@ -42,10 +42,10 @@ FhcrcParameters <- list(
     sebeta2=c(0.0913,0.3968, 0.0), # base::grade: variance of beta2
     rev_mubeta2=c(0.051, 0.129, 0.1678), # ext::grade: same as above for extended gleason grade (6-, 7, 8+)
     rev_sebeta2=c(0.064, 0.087, 0.3968), # ext::grade
-    alpha7=log(0.01241490), # log of the proportion gleason 7 at age 35
-    beta7=log(0.01543417), # slope of log proportion of gleason 7
-    alpha8=-4.60517081, # log of the proportion of gleason 8+ at age 35
-    beta8=0.08770374, # slope of log proportion of gleason 8+
+    alpha7=-1.748381, # log of the proportion gleason 7 at age 35
+    beta7=0.072729, # slope of log proportion of gleason 7
+    alpha8=-4.884482, # log of the proportion of gleason 8+ at age 35
+    beta8=0.142083, # slope of log proportion of gleason 8+
     gamma_m_diff=0.0001, # rate difference between T1-T2 and T3+ stage, used to parameterise for T-stage dist.
     RR_T3plus=2.0, # prostate cancer mortality rate ratio comparing T3+ with T1-T2, add lit reference
     ## mubeta2.scale=1.0, # cf. 2.1
@@ -106,14 +106,14 @@ FhcrcParameters <- list(
         0.430279, 0.463636, 0.491275, 0.549738, 0.354545, 0.553846, 0.461538,
         0.782609),
     hr_locoregional=transform(expand.grid(age=c(50,60,70),ext_grade=0:2,psa10=0:1),
-                              hr=c(0.4852788, 0.7309101, 1.5703646,
-                                   3.1780491, 2.2476271, 3.1391895,
-                                   1.2743633, 0.9972281, 1.2596770,
-                                   1.0367029, 0.9528743, 1.3431982,
-                                   7.3491808, 3.4922388, 2.8214167,
-                                   0.7880672, 0.7624732, 0.7827559)),
+                              hr = c(0.3333216, 0.6571425, 1.4993114,
+                                     2.3983486, 2.3608167, 3.2013799,
+                                     2.2131399, 1.6802923, 2.4860426,
+                                     0.6924965, 0.8289258, 1.0958599,
+                                     2.5627764, 2.6614820, 2.2409916,
+                                     0.9096645, 0.8897631, 1.0110877)),
     hr_metastatic=data.frame(age=c(50, 60, 70),
-                             hr=c(0.8325735, 0.9403021, 0.7998358)),
+                             hr = c(0.8491468, 0.7709947, 0.7167124)),
     cost_parameters = c("Invitation" = 50,
                         "Formal PSA" = 130,
                         "Formal panel" = 730,

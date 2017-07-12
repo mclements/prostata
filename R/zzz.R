@@ -1,8 +1,11 @@
 .onLoad <- function (lib, pkg) {
-  prostata.init()
+    if(.Platform$OS.type == "unix") 
+        microsimulation.init(pkg)
 }
 
 .onUnload <- function (libpath) {
-  prostata.exit()
-  library.dynam.unload("prostata", libpath)
+    pkg <- utils::packageName()
+    if(.Platform$OS.type == "unix") 
+        microsimulation.exit(pkg)
+    library.dynam.unload(pkg, libpath)
 }

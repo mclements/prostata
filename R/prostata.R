@@ -1,22 +1,13 @@
 
 if(.Platform$OS.type == "unix") {
-    STATICPACKAGE <- "prostata"
-    prostata.init <- function ()
-        microsimulation::microsimulation.init(STATICPACKAGE)
-    prostata.exit <- function ()
-        microsimulation::microsimulation.exit(STATICPACKAGE)
+    pkg <- utils::packageName()
     ## http://r.789695.n4.nabble.com/How-to-construct-a-valid-seed-for-l-Ecuyer-s-method-with-given-Random-seed-td4656340.html
     set.user.Random.seed <- function (seed)
-        microsimulation::set.user.Random.seed(seed,STATICPACKAGE)
+        microsimulation::set.user.Random.seed(seed,pkg)
     next.user.Random.substream <- function ()
-        microsimulation::next.user.Random.substream(STATICPACKAGE)
+        microsimulation::next.user.Random.substream(pkg)
     user.Random.seed <- function()
-        microsimulation::user.Random.seed(STATICPACKAGE)
-} else {
-    prostata.init <- function ()
-        return(1)
-    prostata.exit <- function ()
-        return(1)
+        microsimulation::user.Random.seed(pkg)
 }
 
 ## initial values for the FHCRC model

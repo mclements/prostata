@@ -825,6 +825,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     RemoveKind(toMetastatic); // competing events
     RemoveKind(toT3plus);
     RemoveKind(toScreen);
+    RemoveKind(toBiopsyFollowUpScreen);
     scheduleAt(now(), toClinicalDiagnosticBiopsy); // assumes only one biopsy per clinical diagnosis
     scheduleAt(now(), toTreatment);
     break;
@@ -835,6 +836,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     RemoveKind(toT3plus);
     RemoveKind(toClinicalDiagnosis);
     RemoveKind(toScreen);
+    RemoveKind(toBiopsyFollowUpScreen);
     scheduleAt(now(), toTreatment);
     break;
 
@@ -899,6 +901,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     double lead_time = age_c - now();
     // calculate the age at cancer death by c_benefit_type
     double age_cancer_death=R_PosInf;
+    double age_cd = R_PosInf, age_sd = R_PosInf, weight = R_PosInf;
     if (in->parameter["c_benefit_type"]==LeadTimeBased) { // [new paper ref]
       double pcure = pow(1 - exp(-lead_time * in->parameter["c_benefit_value1"]),
       			 calculate_mortality_hr(age_c));
@@ -915,9 +918,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     else if (in->parameter["c_benefit_type"]==StageShiftBased) { // [annals paper ref]
       // calculate survival
       double u_surv = R::runif(0.0,1.0);
-      double age_cd = calculate_survival(u_surv,age_c,age_c,calculate_treatment(u_tx,age_c,year+lead_time));
-      double age_sd = calculate_survival(u_surv,now(),age_c,tx);
-      double weight = exp(- in->parameter["c_benefit_value0"]*lead_time);
+      age_cd = calculate_survival(u_surv,age_c,age_c,calculate_treatment(u_tx,age_c,year+lead_time));
+      age_sd = calculate_survival(u_surv,now(),age_c,tx);
+      weight = exp(- in->parameter["c_benefit_value0"]*lead_time);
       age_cancer_death = weight*age_cd + (1.0-weight)*age_sd;
     }
     else REprintf("c_benefit_type not matched.");
@@ -957,6 +960,12 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       out->diagnoses.record("tx",tx);
       out->diagnoses.record("cancer_death",(aoc>age_cancer_death) ? 1.0 : 0.0);
       out->diagnoses.record("age_at_death", (aoc>age_cancer_death) ? age_cancer_death : aoc);
+      out->diagnoses.record("age_cancer_death", age_cancer_death);
+      out->diagnoses.record("aoc", aoc);
+      out->diagnoses.record("age_cd", age_cd);
+      out->diagnoses.record("age_sd", age_sd);
+      out->diagnoses.record("weight", weight);
+      out->diagnoses.record("lead_time", lead_time);
     }
   } break;
 

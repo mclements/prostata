@@ -316,9 +316,9 @@ callFhcrc <- function(n=10,screen=screenT,nLifeHistories=10,
       with(fhcrcData$survival_dist,
            data.frame(Grade=Grade,Time=as.double(Time),
                       Survival=Survival))
-  updateParameters <- c(parms,
-                        list(nLifeHistories=as.integer(nLifeHistories),
-                             screen=as.integer(screenIndex)))
+  updateParameters <- parms
+  updateParameters$nLifeHistories <- as.integer(nLifeHistories)
+  updateParameters$screen <- as.integer(screenIndex)
   parameter <- FhcrcParameters
   for (name in names(updateParameters)){
       if(!(name %in% names(parameter)))

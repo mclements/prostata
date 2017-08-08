@@ -2,6 +2,40 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
+## ERSPC replication
+## Simple: compare no screening with four-yearly screening 60--69 years, with follow-up for fourteen years
+library(prostata)
+library(biostat3)
+parms <- list(start_screening = 60,
+              stop_screening = 70,
+              screening_interval = 4,
+              RR_T3plus = 3)
+noscreen <- callFhcrc(1e5,screen="noScreen",mc.cores=2,pop=1990-60,parms=parms)
+screen <- callFhcrc(1e5,screen="regular_screen",mc.cores=2,pop=1990-60,parms=parms)
+
+summary(noscreen)
+summary(screen)
+plot(screen, type="testing.rate")
+plot(screen, type="pc.mortality.rate")
+lines(noscreen, type="pc.mortality.rate", col=2)
+
+
+rates <- rbind(subset(predict(screen, type="pc.mortality.rate"), age %in% 60:75),
+               subset(predict(noscreen, type="pc.mortality.rate"), age %in% 60:75))
+fit <- glm(n ~ I(scenario == "regular_screen") + offset(log(pt)), data=rates, family=poisson)
+eform(fit)
+## In summary, varying RR_T3plus between 1 and 2 leads to approximately a 2% reduction in the prostate cancer mortality rate ratio; increasing RR_T3plus to 3 led to another 1% reduction in the rate ratio.
+
+## re-check survival
+library(prostata)
+today <- callFhcrc(1e5,screen="screenUptake",mc.cores=2,pop=1990-60,
+                   includeDiagnoses=TRUE, nLifeHistories=1e5)
+dim(today$diagnoses)
+subset(today$diagnoses, age_at_death<0)
+## TODO competing risks
+library(survival)
+plot(survfit(Surv(age_at_death - age, cancer_death) ~ 1, data=today$diagnoses))
+
 ## 9013 bug
 require(microsimulation)
 debug(callFhcrc)

@@ -9,22 +9,49 @@ library(biostat3)
 parms <- list(start_screening = 60,
               stop_screening = 70,
               screening_interval = 4,
-              RR_T3plus = 3)
-noscreen <- callFhcrc(1e5,screen="noScreen",mc.cores=2,pop=1990-60,parms=parms)
-screen <- callFhcrc(1e5,screen="regular_screen",mc.cores=2,pop=1990-60,parms=parms)
+              RR_T3plus = 2,
+              formal_compliance=1,
+              c_txlt_interaction = 0.75^(1/10))
+parms2Int <- parms4Int <- parms2 <- parms4 <- parms
+parms4Int$c_txlt_interaction <- parms2Int$
+parms2Int$screening_interval <- parms2$screening_interval <- 2
+
+noscreen <- callFhcrc(1e6,screen="noScreen",mc.cores=2,pop=1990-60,parms=parms)
+screen4 <- callFhcrc(1e6,screen="regular_screen",mc.cores=2,pop=1990-60,parms=parms4)
+screen2 <- callFhcrc(1e6,screen="regular_screen",mc.cores=2,pop=1990-60,parms=parms2)
+screen4Int <- callFhcrc(1e6,screen="regular_screen",mc.cores=2,pop=1990-60,parms=parms4Int)
+screen2Int <- callFhcrc(1e6,screen="regular_screen",mc.cores=2,pop=1990-60,parms=parms2Int)
 
 summary(noscreen)
-summary(screen)
+summary(screen4)
+summary(screen4Int)
+summary(screen2Int)
 plot(screen, type="testing.rate")
-plot(screen, type="pc.mortality.rate")
-lines(noscreen, type="pc.mortality.rate", col=2)
+plot(noscreen, type="pc.mortality.rate")
+lines(screen4Int, type="pc.mortality.rate", col="red")
+lines(screen2Int, type="pc.mortality.rate", col="green")
+
+compare <- function(ref,exposed) {
+    rates <- rbind(transform(subset(predict(ref, type="pc.mortality.rate"), age %in% 60:75), exposed=0),
+                   transform(subset(predict(exposed, type="pc.mortality.rate"), age %in% 60:75), exposed=1))
+    fit <- glm(n ~ exposed + offset(log(pt)), data=rates, family=poisson)
+    eform(fit)
+}
+compare(noscreen, screen4)
+compare(noscreen, screen2)
+compare(noscreen, screen4Int)
+compare(noscreen, screen2Int)
 
 
-rates <- rbind(subset(predict(screen, type="pc.mortality.rate"), age %in% 60:75),
-               subset(predict(noscreen, type="pc.mortality.rate"), age %in% 60:75))
-fit <- glm(n ~ I(scenario == "regular_screen") + offset(log(pt)), data=rates, family=poisson)
-eform(fit)
+##
+0.834 (4 interval)
+0.782 (4 interval + int@0.95)
+0.761 (2 interval + int)
+0.737 (0.5 interval + int)
+
 ## In summary, varying RR_T3plus between 1 and 2 leads to approximately a 2% reduction in the prostate cancer mortality rate ratio; increasing RR_T3plus to 3 led to another 1% reduction in the rate ratio.
+
+
 
 ## re-check survival
 library(prostata)

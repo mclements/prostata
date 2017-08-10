@@ -243,6 +243,8 @@ eventT <- c("toLocalised","toMetastatic","toClinicalDiagnosis",
 diagnosisT <- c("NotDiagnosed","ClinicalDiagnosis","ScreenDiagnosis")
 treatmentT <- c("no_treatment","CM","RP","RT")
 psaT <- c("PSA<3","PSA>=3") # not sure where to put this...
+fhcrcData$biopsyOpportunisticComplianceTable <- swedenOpportunisticBiopsyCompliance
+fhcrcData$biopsyFormalComplianceTable <- swedenFormalBiopsyCompliance
 
 callFhcrc <- function(n=10,screen=screenT,nLifeHistories=10,
                       seed=12345,
@@ -306,8 +308,6 @@ callFhcrc <- function(n=10,screen=screenT,nLifeHistories=10,
   ## fhcrcData$biopsyComplianceTable <-
   ##     data.frame(expand.grid(psa=c(4,7,10),age=seq(55,75,by=5)),
   ##                compliance=unlist(fhcrcData$biopsy_frequency[,-(1:2),]))
-  fhcrcData$biopsyOpportunisticComplianceTable <- swedenOpportunisticBiopsyCompliance
-  fhcrcData$biopsyFormalComplianceTable <- swedenFormalBiopsyCompliance
   fhcrcData$survival_local <-
       with(fhcrcData$survival_local,
            data.frame(Age=as.double(AgeLow),Grade=Grade,Time=as.double(Time),

@@ -34,7 +34,41 @@ dim(today$diagnoses)
 subset(today$diagnoses, age_at_death<0)
 ## TODO competing risks
 library(survival)
-plot(survfit(Surv(age_at_death - age, cancer_death) ~ 1, data=today$diagnoses))
+tmp <- subset(transform(today$diagnoses, age10 = floor(age/10)*10), age10>=50 & age10<90)
+##
+## Metastatic and loco-regional
+par(mfrow=c(1,2))
+plot(fit <- survfit(Surv(age_at_death - age, cancer_death) ~ age10, data=tmp, subset=state=="Metastatic"), col=1:4, main="Metastatic")
+plot(fit <- survfit(Surv(age_at_death - age, cancer_death) ~ age10, data=tmp, subset=state=="Localised"), col=1:4, main="Loco-regional")
+legend("topright",legend=levels(factor(tmp$age10)),col=1:4,lty=1)
+##
+## Loco-regional by PSA
+par(mfrow=c(1,2))
+plot(fit <- survfit(Surv(age_at_death - age, cancer_death) ~ age10, data=tmp, subset=state=="Localised" & psa<10), col=1:4, main="Loco-regional, PSA<10")
+plot(fit <- survfit(Surv(age_at_death - age, cancer_death) ~ age10, data=tmp, subset=state=="Localised" & psa>=10), col=1:4, main="Loco-regional, PSA>=10")
+legend("topright",legend=levels(factor(tmp$age10)),col=1:4,lty=1)
+##
+##
+## Loco-regional by Gleason
+par(mfrow=c(2,2))
+plot(fit <- survfit(Surv(age_at_death - age, cancer_death) ~ age10, data=tmp, subset=state=="Localised" & ext_grade=="Gleason_le_6"), col=1:4, main="Loco-regional, Gleason 6")
+plot(fit <- survfit(Surv(age_at_death - age, cancer_death) ~ age10, data=tmp, subset=state=="Localised" & ext_grade=="Gleason_7"), col=1:4, main="Loco-regional, Gleason 7")
+plot(fit <- survfit(Surv(age_at_death - age, cancer_death) ~ age10, data=tmp, subset=state=="Localised" & ext_grade=="Gleason_ge_8"), col=1:4, main="Loco-regional, Gleason 8+")
+legend("topright",legend=levels(factor(tmp$age10)),col=1:4,lty=1)
+
+## Predicted risk to 10 and 15 years
+tmp2 <- transform(droplevels(subset(tmp, state == "Localised")), psa10=(psa>=10), t3plus=ext_state=="T3plus", age10=factor(age10),time=age_at_death - age)
+fit <- coxph(Surv(time, cancer_death) ~ age10+ext_grade+psa10+t3plus, data=tmp2) # assumes multiplicitive
+newd <- unique(subset(tmp2,select=c(age10,ext_grade,t3plus,psa10)))
+newd <- newd[with(newd, order(age10,ext_grade,t3plus,psa10)),]
+pred <- data.frame(newd,
+                   surv10=as.vector(summary(survfit(fit,newdata=newd), time=10)$surv),
+                   surv15=as.vector(summary(survfit(fit,newdata=newd), time=15)$surv))
+xtabs(surv10 ~ age10 + ext_grade+t3plus+psa10, data=pred)
+
+
+
+## xtabs(Survival~ AgeLow+Grade,data=fhcrcData$survival_local, subset=Time==10)
 
 ## 9013 bug
 require(microsimulation)

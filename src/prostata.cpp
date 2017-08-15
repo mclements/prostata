@@ -339,11 +339,11 @@ namespace fhcrc_example {
     // (i)   cohorts aged <35 in 1995 have a llogis(3.8,15) from age 35 (cohort > 1960)
     // (ii)  cohorts aged 50+ in 1995 have a llogis(2,10) distribution from 1995 (cohort < 1945)
     // (iii) intermediate cohorts are a weighted mixture of (i) and (ii)
-    double pscreening = cohort>=1932.0 ? 0.9 : 0.9-(1932.0 - cohort)*0.03;
+    double pscreening = cohort>=1932.0 ? 0.9 : 0.9-(1932.0 - cohort)*0.0;
     double shapeA = 3.8;
     double scaleA = 15.0;
     double shapeT = 2.16;
-    double scaleT = 11.7;
+    double scaleT = 11.7*0.6;
     double uscreening = R::runif(0.0,1.0);
     double first_screen;
     if (cohort > 1960.0) {

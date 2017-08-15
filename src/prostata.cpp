@@ -178,7 +178,7 @@ namespace fhcrc_example {
     bool adt;
     double txhaz;
     int id;
-    double cohort, baseline_utility, delta_utility;
+    double cohort, baseline_utility, delta_utility, rescreening_frailty;
     bool everPSA, previousNegativeBiopsy, organised;
     FhcrcPerson(SimInput* in, SimOutput* out, const int id = 0, const double cohort = 1950) :
       in(in), out(out), id(id), cohort(cohort), baseline_utility(1.0), delta_utility(0.0) { };
@@ -460,6 +460,7 @@ void FhcrcPerson::init() {
 
   // schedule screening events that depend on screeningCompliance
   in->rngScreen->set();
+  rescreening_frailty = R::rgamma(1.25, 1.25);
   double u1 = R::runif(0.0,1.0);
   double u2 = R::runif(0.0,1.0);
   if (R::runif(0.0,1.0)<in->parameter["screeningCompliance"]) {
@@ -596,6 +597,7 @@ void FhcrcPerson::init() {
     out->outParameters.record("psa65",psameasured(65.0));
     out->outParameters.record("psa75",psameasured(75.0));
     out->outParameters.record("psa85",psameasured(85.0));
+    out->outParameters.record("rescreening_frailty",rescreening_frailty);
   }
 
   if (in->debug) Rprint_actions();

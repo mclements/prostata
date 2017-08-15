@@ -693,6 +693,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       out->psarecord.record("organised",organised); // only meaningful for mixed_programs
       out->psarecord.record("dx",dx);
       out->psarecord.record("age",age);
+      out->psarecord.record("cohort",cohort);
       out->psarecord.record("psa",psa);
       out->psarecord.record("t0",t0);
       out->psarecord.record("beta0",beta0);

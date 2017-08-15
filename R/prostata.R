@@ -14,10 +14,6 @@ if(.Platform$OS.type == "unix") {
 FhcrcParameters <- list(
     revised_natural_history=TRUE,
     ## panel=FALSE,
-    grade.onset.rate=0.0004629910,
-    grade.metastasis.rate=0.0005032055,
-    grade.clinical.rate.baseline=0.0028984595,
-    grade.clinical.rate.distant=34.9847840200,
     grade.clinical.rate.high=0.3042454700,
     tau2 = 0.0829, # log PSA measurement variance  - normal
     g0=0.0005, # onset parameter
@@ -37,7 +33,6 @@ FhcrcParameters <- list(
     beta7=0.072729, # slope of log proportion of gleason 7
     alpha8=-4.884482, # log of the proportion of gleason 8+ at age 35
     beta8=0.142083, # slope of log proportion of gleason 8+
-    gamma_m_diff=0.0001, # rate difference between T1-T2 and T3+ stage, used to parameterise for T-stage dist.
     RR_T3plus=2.0, # prostate cancer mortality rate ratio comparing T3+ with T1-T2, add lit reference
     ## mubeta2.scale=1.0, # cf. 2.1
     ## beta.rho=0.62,
@@ -55,19 +50,10 @@ FhcrcParameters <- list(
     nLifeHistories = 10L, screen = 0L, ## integers
     psaThreshold = 3.0,
     psaThresholdBiopsyFollowUp = 4.0, # revised PSA threshold for negative follow-up screen
-    ## BPThreshold=3.47,
-    ## BPThresholdBiopsyFollowUp=3.47,
-    ## BPThreshold=4.69,
-    ## BPThresholdBiopsyFollowUp=4.69,
     biomarker_model = 0, # biomarker_model = 0 random, biomarker_model = 1 psa/risk based correction of FP
     PSA_FP_threshold_nCa=4.15, # reduce FP in no cancers with PSA threshold
     PSA_FP_threshold_GG6=3.41, # reduce FP in GG 6 with PSA threshold
-    BPThreshold=4.2,
-    BPThresholdBiopsyFollowUp=4.2,
     ## Natural history calibration
-    gleason_le_6_hr = 1,
-    gleason_7_hr = 1,
-    gleason_ge_8_hr = 1,
     rTPF=1.0,
     rFPF=0.6,
     c_low_grade_slope=-0.006,

@@ -723,12 +723,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 				  bounds<double>(age,40,80)) :
       in->tableOpportunisticBiopsyCompliance(bounds<double>(psa,3.0,10.0),
 					 bounds<double>(age,40,80));
-    // bool positive_test =
-    //   (!panel && msg->kind == toScreen && psa >= parameter["psaThreshold"]) ? true :
-    //   ( panel && msg->kind == toScreen && biomarker >= parameter["BPThreshold"]) ? true :
-    //   (!panel && msg->kind == toBiopsyFollowUpScreen && psa >= parameter["psaThresholdBiopsyFollowUp"]) ? true :
-    //   ( panel && msg->kind == toBiopsyFollowUpScreen && biomarker >= parameter["BPThresholdBiopsyFollowUp"]) ? true :
-    //   false;
     bool positive_test =
       (msg->kind == toScreen && psa >= in->parameter["psaThreshold"]) ? true :
       (msg->kind == toBiopsyFollowUpScreen && psa >= in->parameter["psaThresholdBiopsyFollowUp"]) ? true :

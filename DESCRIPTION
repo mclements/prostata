@@ -10,6 +10,6 @@ License: GPL (>= 3)
 Depends: microsimulation
 Remotes: mclements/microsimulation@core
 Imports: parallel, grDevices, utils
-LinkingTo: microsimulation, Rcpp
+LinkingTo: microsimulation, Rcpp, BH
 Suggests: testthat
 LazyData: true

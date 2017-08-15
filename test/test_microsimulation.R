@@ -5,7 +5,16 @@
 ## ERSPC replication
 ## Simple: compare no screening with four-yearly screening 60--69 years, with follow-up for fourteen years
 library(prostata)
-library(biostat3)
+eform <- 
+function(object, parm, level = 0.95, method=c("Profile","Wald"), name="exp(beta)") {
+  method <- match.arg(method)
+  if (missing(parm))
+    parm <- TRUE
+  estfun <- switch(method, Profile = MASS:::confint.glm, Wald = stats::confint.default)
+  val <- exp(cbind(coef = coef(object), estfun(object, level = level)))
+  colnames(val) <- c(name,colnames(val)[-1])
+  val[parm, ]
+}
 parms <- list(start_screening = 60,
               stop_screening = 70,
               screening_interval = 4,

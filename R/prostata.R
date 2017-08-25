@@ -502,10 +502,11 @@ predict.fhcrc <- function(object, scenarios=NULL,
     ## Stripping of potential rate ratio option before matching
     abbr_type <- match.arg(sub(".?rr$|.?rate.?ratio$",
                                "", type, ignore.case = TRUE),
-                           c("incidence.rate", "testing.rate",
-                             "biopsy.rate", "metastasis.rate",
-                             "pc.mortality.rate",
-                             "allcause.mortality.rate", "prevalence"))
+                          c("incidence.rate", "symptomatic.incidence.rate",
+                            "screen.incidence.rate", "testing.rate",
+                            "biopsy.rate", "metastasis.rate",
+                            "pc.mortality.rate", "allcause.mortality.rate",
+                            "prevalence"))
 
     ## Allowing for several groups
     group <- match.arg(group,
@@ -513,12 +514,14 @@ predict.fhcrc <- function(object, scenarios=NULL,
                        several.ok = TRUE)
 
     event_types <- switch(abbr_type,
-                          incidence.rate = c("toClinicalDiagnosis", "toScreenDiagnosis"),
-                          testing.rate = "toScreen",
-                          biopsy.rate = c("toClinicalDiagnosticBiopsy", "toScreenInitiatedBiopsy"),
-                          metastasis.rate = "toMetastatic",
-                          pc.mortality.rate = "toCancerDeath",
-                          allcause.mortality.rate = c("toCancerDeath", "toOtherDeath"))
+                         incidence.rate = c("toClinicalDiagnosis", "toScreenDiagnosis"),
+                         symptomatic.incidence.rate = "toClinicalDiagnosis",
+                         screen.incidence.rate = "toScreenDiagnosis",
+                         testing.rate = "toScreen",
+                         biopsy.rate = c("toClinicalDiagnosticBiopsy", "toScreenInitiatedBiopsy"),
+                         metastasis.rate = "toMetastatic",
+                         pc.mortality.rate = "toCancerDeath",
+                         allcause.mortality.rate = c("toCancerDeath", "toOtherDeath"))
 
     ## Fixes colnames after group operation
     name_grp <- function(x) {names(x)[grep("^Var[0-9]+$", names(x))] <- group; x}

@@ -113,6 +113,8 @@ Some of the more commonly used outcomes are provided through a =plot=
 and a =predict= function. The available outcomes are:
 + =prevalence= - proportion of a population in the groups described below
 + =incidence.rate= - rate of /clinical diagnosis/ & /screen initiated diagnosis/
++ =symptomatic.incidence.rate= - rate of /clinical diagnosis/
++ =screen.incidence.rate= - rate of /screen initiated diagnosis/
 + =testing.rate= - rate of /screening tests/ (e.g. psa tests)
 + =biopsy.rate= - rate of /clinical diagnostic biopsies/ & /screen initiated biopsies/
 + =metastasis.rate= - rate of natural history transitions to /metastatic/ cancer

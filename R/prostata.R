@@ -16,7 +16,8 @@ FhcrcParameters <- list(
     ## panel=FALSE,
     grade.clinical.rate.high=0.3042454700,
     tau2 = 0.0829, # log PSA measurement variance  - normal
-    g0=0.0005, # onset parameter
+    susceptible = susceptible <- 1.0, # portion susceptible
+    g0=0.0005 / susceptible, # onset parameter
     g3p=exp(-6.664367), # T3+ parameter
     gm=exp(-6.707478), # metastatic parameter
     gc=0.0015, # clinical diagnosis parameter

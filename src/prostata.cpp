@@ -406,10 +406,10 @@ void FhcrcPerson::init() {
   dx = NotDiagnosed;
   everPSA = previousNegativeBiopsy = organised = adt = false;
   in->rngNh->set();
-  if (R::runif(0.0, 1.0) <= 1.0) // 100% susceptible
-    t0 = sqrt(2*R::rexp(1.0)/in->parameter["g0"]);
+  if (R::runif(0.0, 1.0) <= in->parameter["susceptible"]) // portion susceptible
+    t0 = sqrt(2*R::rexp(1.0)/in->parameter["g0"]); // is susceptible
   else
-    t0 = 200.0; // 0% not susceptible
+    t0 = 200.0; // not susceptible
   if (!in->bparameter["revised_natural_history"]){
     future_grade = (R::runif(0.0, 1.0)>=1+in->parameter["c_low_grade_slope"]*t0) ? base::Gleason_ge_8 : base::Gleason_le_7;
     beta2 = R::rnormPos(in->mubeta2[future_grade],in->sebeta2[future_grade]);

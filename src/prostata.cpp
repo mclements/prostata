@@ -339,28 +339,34 @@ namespace fhcrc_example {
     // (i)   cohorts aged <35 in 1995 have a llogis(3.8,15) from age 35 (cohort > 1960)
     // (ii)  cohorts aged 50+ in 1995 have a llogis(2,10) distribution from 1995 (cohort < 1945)
     // (iii) intermediate cohorts are a weighted mixture of (i) and (ii)
-    double pscreening = cohort>=1932.0 ? 0.9 : 0.9-(1932.0 - cohort)*0.0;
-    double shapeA = 3.8;
-    double scaleA = 15.0;
-    double shapeT = 2.16;
-    double scaleT = 11.7*0.6;
+    double pscreening = cohort>=in->parameter["startFullUptake"] ?
+      in->parameter["fullUptakePortion"] : in->parameter["fullUptakePortion"]
+      - (in->parameter["endUptakeMixture"] - cohort) * in->parameter["yearlyUptakeIncrease"];
+    // decrease for previous year instead of increase for next year
     double uscreening = R::runif(0.0,1.0);
     double first_screen;
-    if (cohort > 1960.0) {
-      first_screen = 35.0 + R::rllogis(shapeA,scaleA); // (i) age
-    } else if (cohort < 1945.0) {
-      first_screen = (1995.0 - cohort) + R::rllogis(shapeT,scaleT); // (ii) period
+    if (cohort > in->parameter["endUptakeMixture"]) {
+      first_screen = 35.0 + R::rllogis(in->parameter["shapeA"],
+				       in->parameter["scaleA"]); // (i) age
+    } else if (cohort < in->parameter["startUptakeMixture"]) {
+      first_screen = (in->parameter["screeningIntroduced"] - cohort) +
+	R::rllogis(in->parameter["shapeT"],in->parameter["scaleT"]); // (ii) period
     } else {
-      double age0 = 1995.0 - cohort;
+      double age0 = in->parameter["screeningIntroduced"] - cohort;
       double u = R::runif(0.0,1.0);
-      if ((age0 - 35.0)/15.0 < u) // (iii) mixture
-	first_screen = age0 + R::rllogis_trunc(shapeA,scaleA,age0-35.0);
-      else first_screen = age0 + R::rllogis(shapeT,scaleT);
+      if ((age0 - 35.0) / (in->parameter["endUptakeMixture"] -
+			   in->parameter["startUptakeMixture"]) < u) // (iii) mixture
+	first_screen = age0 + R::rllogis_trunc(in->parameter["shapeA"],
+					       in->parameter["scaleA"],
+					       age0-35.0);
+      else first_screen = age0 + R::rllogis(in->parameter["shapeT"],
+					    in->parameter["scaleT"]);
     }
     if (uscreening<pscreening)
       scheduleAt(first_screen, toScreen);
     if (in->debug)
-      Rprintf("(cohort=%f,pscreening=%f,uscreening=%f,first_screen=%f)\n",cohort,pscreening,uscreening,first_screen);
+      Rprintf("(cohort=%f,pscreening=%f,uscreening=%f,first_screen=%f)\n",
+	      cohort, pscreening, uscreening, first_screen);
   }
 
   Double rbinorm(Double mean, Double sd, double rho) {

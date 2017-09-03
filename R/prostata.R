@@ -15,6 +15,16 @@ FhcrcParameters <- list(
     revised_natural_history=TRUE,
     ## panel=FALSE,
     grade.clinical.rate.high=0.3042454700,
+    startFullUptake = 1932.0,
+    fullUptakePortion = 0.9,
+    yearlyUptakeIncrease = 0.03,
+    startUptakeMixture = 1945.0,
+    endUptakeMixture = 1960.0,
+    screeningIntroduced = 1995.0,
+    shapeA = 3.8,
+    scaleA = 15.0,
+    shapeT = 2.16,
+    scaleT = 11.7,
     tau2 = 0.0829, # log PSA measurement variance  - normal
     susceptible = susceptible <- 1.0, # portion susceptible
     g0=0.0005 / susceptible, # onset parameter

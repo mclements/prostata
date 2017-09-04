@@ -340,8 +340,8 @@ namespace fhcrc_example {
     // (ii)  cohorts aged 50+ in 1995 have a llogis(2,10) distribution from 1995 (cohort < 1945)
     // (iii) intermediate cohorts are a weighted mixture of (i) and (ii)
     double pscreening = double(cohort>=in->parameter["startFullUptake"]) ?
-      double(in->parameter["fullUptakePortion"]) : double(in->parameter["fullUptakePortion"])
-      - (double(in->parameter["endUptakeMixture"]) - cohort) * double(in->parameter["yearlyUptakeIncrease"]);
+      double(in->parameter["fullUptakePortion"]) : (double(in->parameter["fullUptakePortion"])
+      - (double(in->parameter["startUptakeMixture"]) - cohort) * double(in->parameter["yearlyUptakeIncrease"]));
     // decrease for previous year instead of increase for next year
     double uscreening = R::runif(0.0,1.0);
     double first_screen;

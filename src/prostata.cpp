@@ -354,8 +354,8 @@ namespace fhcrc_example {
     } else {
       double age0 = in->parameter["screeningIntroduced"] - cohort;
       double u = R::runif(0.0,1.0);
-      if ((age0 - 35.0) / (in->parameter["endUptakeMixture"] -
-			   in->parameter["startUptakeMixture"]) < u) // (iii) mixture
+      if ((age0 - 35.0) / (double(in->parameter["endUptakeMixture"]) -
+			   double(in->parameter["startUptakeMixture"])) < u) // (iii) mixture
 	first_screen = age0 + R::rllogis_trunc(in->parameter["shapeA"],
 					       in->parameter["scaleA"],
 					       age0-35.0);

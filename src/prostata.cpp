@@ -339,20 +339,20 @@ namespace fhcrc_example {
     // (i)   cohorts aged <35 in 1995 have a llogis(3.8,15) from age 35 (cohort > 1960)
     // (ii)  cohorts aged 50+ in 1995 have a llogis(2,10) distribution from 1995 (cohort < 1945)
     // (iii) intermediate cohorts are a weighted mixture of (i) and (ii)
-    double pscreening = cohort>=in->parameter["startFullUptake"] ?
-      in->parameter["fullUptakePortion"] : in->parameter["fullUptakePortion"]
-      - (in->parameter["endUptakeMixture"] - cohort) * in->parameter["yearlyUptakeIncrease"];
+    double pscreening = double(cohort>=in->parameter["startFullUptake"]) ?
+      double(in->parameter["fullUptakePortion"]) : double(in->parameter["fullUptakePortion"])
+      - (double(in->parameter["endUptakeMixture"]) - cohort) * double(in->parameter["yearlyUptakeIncrease"]);
     // decrease for previous year instead of increase for next year
     double uscreening = R::runif(0.0,1.0);
     double first_screen;
-    if (cohort > in->parameter["endUptakeMixture"]) {
+    if (cohort > double(in->parameter["endUptakeMixture"])) {
       first_screen = 35.0 + R::rllogis(in->parameter["shapeA"],
 				       in->parameter["scaleA"]); // (i) age
-    } else if (cohort < in->parameter["startUptakeMixture"]) {
-      first_screen = (in->parameter["screeningIntroduced"] - cohort) +
+    } else if (cohort < double(in->parameter["startUptakeMixture"])) {
+      first_screen = (double(in->parameter["screeningIntroduced"]) - cohort) +
 	R::rllogis(in->parameter["shapeT"],in->parameter["scaleT"]); // (ii) period
     } else {
-      double age0 = in->parameter["screeningIntroduced"] - cohort;
+      double age0 = double(in->parameter["screeningIntroduced"]) - cohort;
       double u = R::runif(0.0,1.0);
       if ((age0 - 35.0) / (double(in->parameter["endUptakeMixture"]) -
 			   double(in->parameter["startUptakeMixture"])) < u) // (iii) mixture

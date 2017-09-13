@@ -501,11 +501,10 @@ print.fhcrc <- function(x, ...)
                 x$n, x$screen),
         ...)
 
-## TODO: include prevalences and relative rate-ratios in switch. Also
-## allow for ceiling on groups to allow for other than yearly rates
-## for the time
-predict.fhcrc <- function(object, scenarios=NULL,
-                          type = "incidence.rate", group = "age", ...) {
+## TODO: better solve  issue with testing.rate for noScreening scenario
+predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
+                         group = "age", age.breaks = NULL, year.breaks = NULL,
+                         cohort.breaks = NULL, ...) {
     if(!inherits(object,"fhcrc")) stop("Expecting object to be an fhcrc object")
     if(!(is.null(scenarios) || all(sapply(scenarios,inherits,"fhcrc")) || inherits(object,"fhcrc")))
         stop("Expecting scenarios is NULL, a fhcrc object or a list of fhcrc objects")
@@ -521,7 +520,7 @@ predict.fhcrc <- function(object, scenarios=NULL,
 
     ## Allowing for several groups
     group <- match.arg(group,
-                       c("state", "ext_state", "grade", "dx", "psa", "age", "year"),
+                       c("state", "ext_state", "grade", "dx", "psa", "age", "year", "cohort"),
                        several.ok = TRUE)
 
     event_types <- switch(abbr_type,
@@ -534,12 +533,37 @@ predict.fhcrc <- function(object, scenarios=NULL,
                          pc.mortality.rate = "toCancerDeath",
                          allcause.mortality.rate = c("toCancerDeath", "toOtherDeath"))
 
+    ## fast operations by group using base-R
+    ## http://stackoverflow.com/questions/3685492/r-speeding-up-group-by-operations
+    grp_apply = function(XS, INDEX, FUN, ..., simplify=T) {
+        FUN = match.fun(FUN)
+        if (!is.list(XS))
+            XS = list(XS)
+        as.data.frame(as.table(tapply(1:length(XS[[1L]]), INDEX, function(s, ...)
+            do.call(FUN, c(lapply(XS, `[`, s), list(...))), ..., simplify=simplify)))
+    }
+
+
     ## Fixes colnames after group operation
     name_grp <- function(x) {names(x)[grep("^Var[0-9]+$", names(x))] <- group; x}
 
+    categorise_time <- function(df, age.breaks, year.breaks, cohort.breaks) {
+        if(!is.null(age.breaks)) {
+            df <- transform(df, age = as.factor(cut(age, breaks = age.breaks, right = FALSE, dig.lab=4)))
+        }
+        if(!is.null(year.breaks)) {
+            df <- transform(df, year = as.factor(cut(year, breaks = year.breaks, right = FALSE, dig.lab=4)))
+        }
+        if(!is.null(cohort.breaks)) {
+            df <- transform(df, cohort = as.factor(cut(cohort, breaks = cohort.breaks, right = FALSE, dig.lab=4)))
+        }
+        df
+    }
+
     ## Calculates rates of specific events by specified groups
     calc_rate <- function(object, event_types, group){
-        pt <- with(object$summary$pt,
+        pt <- with(categorise_time(object$summary$pt, age.breaks, year.breaks,
+                                  cohort.breaks),
                    name_grp(grp_apply(pt,
                                       lapply(as.list(group), function(x) eval(parse(text = x))),
                                       sum)))
@@ -549,13 +573,16 @@ predict.fhcrc <- function(object, scenarios=NULL,
             stop(paste("The event(s)", paste(event_types, collapse = ", "),
                        "was not found in the", object$screen, "scenario"))
         }
-        events <- with(subset(object$summary$events, event %in% event_types),
+        events <- with(subset(
+            categorise_time(object$summary$events, age.breaks, year.breaks,
+                            cohort.breaks), event %in% event_types),
                        name_grp(grp_apply(n,
                                           lapply(as.list(group), function(x) eval(parse(text = x))),
                                           sum)))
         within(merge(pt, events, by = group, all = TRUE),{
-            if("age" %in% group) age <- as.numeric(levels(age))[age] #important factor conversion
-            if("year" %in% group) year <- as.numeric(levels(year))[year] #important factor conversion
+            if("age" %in% group && is.null(age.breaks)) age <- as.numeric(levels(age))[age] #important factor conversion
+            if("year" %in% group && is.null(year.breaks)) year <- as.numeric(levels(year))[year] #important factor conversion
+            if("cohort" %in% group && is.null(cohort.breaks)) cohort <- as.numeric(levels(cohort))[cohort] #important factor conversion
             rate <- ifelse(is.na(Freq.y) & !is.na(Freq.x), 0, Freq.y/Freq.x) #no events but some pt -> 0
             n <- Freq.y
             pt <- Freq.x
@@ -564,13 +591,14 @@ predict.fhcrc <- function(object, scenarios=NULL,
 
     ## Calculate prevalences by specified groups
     calc_prev <- function(object, group){
-        within(with(object$summary$prev,
-                    name_grp(
+        within(with(categorise_time(object$summary$prev, age.breaks, year.breaks,
+                                    cohort.breaks), name_grp(
                         grp_apply(count,
                                   lapply(as.list(group),
                                          function(x) eval(parse(text = x))), sum))),{
-                                             if("age" %in% group) age <- as.numeric(levels(age))[age] #important factor conversion
-                                             if("year" %in% group) year <- as.numeric(levels(year))[year] #important factor conversion
+                                             if("age" %in% group && is.null(age.breaks)) age <- as.numeric(levels(age))[age] #important factor conversion
+                                             if("year" %in% group && is.null(year.breaks)) year <- as.numeric(levels(year))[year] #important factor conversion
+                                             if("cohort" %in% group && is.null(cohort.breaks)) cohort <- as.numeric(levels(cohort))[cohort] #important factor conversion
                                              prevalence <- Freq/object$n
                                              rm("Freq")
                                          })

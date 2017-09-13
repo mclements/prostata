@@ -146,10 +146,17 @@ time-scales and four natural history categories:
 
 + =age= - grouping by single /year of age/ this is the default time-scale
 + =year= - grouping by single /calendar year/ as an alternative time-scale
++ =cohort= - grouping by single year /birth cohort/ as an alternative time-scale
 + =state= - grouping by /healthy/, /localised/ & /metastatic/
 + =grade= - grouping by /gleason grade/ ~<=6~, ~7~ & ~>=8~
 + =dx= - grouping by /not diagnosed/, /screen diagnosis/ & /clinical diagnosis/
 + =psa= - grouping by psa ~<3~ & ~>=3~
+
+To use a time increment other then single year a specific interval can be
+supplied in addition to the corresponding time-scale group argument:
++ =age.breaks= a vector of interval breaks e.g. =c(seq(50, 85, 5), Inf)=
++ =year.breaks= a vector of interval breaks e.g. =seq(1990, 2020, 10)=
++ =cohort.breaks=  a vector of interval breaks e.g. =seq(1900, 2000, 20)=
 
 Below is the PSA testing rate by calendar period predicted and
 displayed with =ggplot=.

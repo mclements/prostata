@@ -242,6 +242,15 @@ treatmentT <- c("no_treatment","CM","RP","RT")
 psaT <- c("PSA<3","PSA>=3") # not sure where to put this...
 fhcrcData$biopsyOpportunisticComplianceTable <- swedenOpportunisticBiopsyCompliance
 fhcrcData$biopsyFormalComplianceTable <- swedenFormalBiopsyCompliance
+## https://www.socialstyrelsen.se/Lists/Artikelkatalog/Attachments/20008/2015-12-26.pdf
+ageStandards <- data.frame(Age = cut(seq(0, 85, 5),
+                                    breaks = c(seq(0,85,5), Inf),
+                                    right = FALSE),
+                          Sweden2000 = c(5.3, 6.9, 6.4, 5.7, 5.9, 6.7, 7.2, 6.9,
+                                         6.6, 6.6, 7.6, 6.3, 4.9, 4.3, 4.1, 3.9,
+                                         2.6, 2.3),
+                          World = c(12.0, 10.0, 9.0, 9.0, 8.0, 8.0, 6.0, 6.0, 6.0,
+                                    6.0, 5.0, 4.0, 4.0, 3.0, 2.0, 1.0, 0.5, 0.5))
 
 callFhcrc <- function(n=10,screen=screenT,nLifeHistories=10,
                       seed=12345,
@@ -501,14 +510,15 @@ print.fhcrc <- function(x, ...)
                 x$n, x$screen),
         ...)
 
-## TODO: include prevalences and relative rate-ratios in switch. Also
-## allow for ceiling on groups to allow for other than yearly rates
-## for the time
-predict.fhcrc <- function(object, scenarios=NULL,
-                          type = "incidence.rate", group = "age", ...) {
+## TODO: better solve issue below with testing.rate for noScreening scenario
+predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
+                         group = "age", age.breaks = NULL, year.breaks = NULL,
+                         cohort.breaks = NULL, age.weights = NULL, ...) {
     if(!inherits(object,"fhcrc")) stop("Expecting object to be an fhcrc object")
     if(!(is.null(scenarios) || all(sapply(scenarios,inherits,"fhcrc")) || inherits(object,"fhcrc")))
         stop("Expecting scenarios is NULL, a fhcrc object or a list of fhcrc objects")
+    if(is.null(scenarios) && (grepl(".?rate.?ratio$|.?rr$", type, ignore.case = TRUE)))
+        stop("More than one simulation object is needed to calculate a rate-ratio")
 
     ## Stripping of potential rate ratio option before matching
     abbr_type <- match.arg(sub(".?rr$|.?rate.?ratio$",
@@ -521,7 +531,7 @@ predict.fhcrc <- function(object, scenarios=NULL,
 
     ## Allowing for several groups
     group <- match.arg(group,
-                       c("state", "ext_state", "grade", "dx", "psa", "age", "year"),
+                       c("state", "ext_state", "grade", "dx", "psa", "age", "year", "cohort"),
                        several.ok = TRUE)
 
     event_types <- switch(abbr_type,
@@ -534,28 +544,107 @@ predict.fhcrc <- function(object, scenarios=NULL,
                          pc.mortality.rate = "toCancerDeath",
                          allcause.mortality.rate = c("toCancerDeath", "toOtherDeath"))
 
+    interval2break <- function(interval_vector) {
+        as.numeric(unique(unlist(regmatches(interval_vector,
+                                            gregexpr("[0-9]+|Inf", interval_vector)))))
+    }
+
+    ## Manipulate input, make sure age.breaks exists from age standardisation
+    if(!is.null(age.weights)) age.breaks <- interval2break(age.weights[,1])
+    ## Manipulate input, make sure time group exists for specified time interval
+    if(!is.null(age.breaks) && !("age" %in% group)) group <- c(group, "age")
+    if(!is.null(year.breaks) && !("year" %in% group)) group <- c(group, "year")
+    if(!is.null(cohort.breaks) && !("cohort" %in% group)) group <- c(group, "cohort")
+
+    ## fast operations by group using base-R
+    ## http://stackoverflow.com/questions/3685492/r-speeding-up-group-by-operations
+    grp_apply = function(XS, INDEX, FUN, ..., simplify=T) {
+        FUN = match.fun(FUN)
+        if (!is.list(XS))
+            XS = list(XS)
+        as.data.frame(as.table(tapply(1:length(XS[[1L]]), INDEX, function(s, ...)
+            do.call(FUN, c(lapply(XS, `[`, s), list(...))), ..., simplify=simplify)))
+    }
+
+
     ## Fixes colnames after group operation
-    name_grp <- function(x) {names(x)[grep("^Var[0-9]+$", names(x))] <- group; x}
+    name_grp <- function(x, grp = group) {names(x)[grep("^Var[0-9]+$", names(x))] <- grp; x}
+
+    ## After a group operation the group will become a factor, if the time scale
+    ## is not reported as an interval we convert it back to numeric. N.b. This
+    ## needs to be called after name_grp().
+    numeric_time_scale <- function(df, group) {
+        within(df, {
+            if("age" %in% group && is.null(age.breaks)) age <- as.numeric(levels(age))[age] #important factor conversion
+            if("year" %in% group && is.null(year.breaks)) year <- as.numeric(levels(year))[year] #important factor conversion
+            if("cohort" %in% group && is.null(cohort.breaks)) cohort <- as.numeric(levels(cohort))[cohort] #important factor conversion
+        })
+    }
+    categorise_time <- function(df, age.breaks, year.breaks, cohort.breaks) {
+        cut_t <- function(time, time.breaks) {
+            ## using first column or single vector as breaks
+            as.factor(cut(time, breaks = data.frame(time.breaks)[,1],
+                          right = FALSE, dig.lab=4, ordered_result = TRUE))
+        }
+        if(!is.null(age.breaks)) df <- transform(df, age = cut_t(age, age.breaks))
+        if(!is.null(year.breaks)) df <- transform(df, year = cut_t(year, year.breaks))
+        if(!is.null(cohort.breaks)) df <- transform(df, cohort = cut_t(cohort, cohort.breaks))
+        df
+    }
+
+    ## For standardising over a time scale e.g. ages
+    standardise_time <- function(df, timestr = "age", parstr = "rate",
+                                time.weights = age.weights) {
+        if(is.null(time.weights)) {
+            return(df)
+        } else {
+            collapsed_grps <- c(group[!group == timestr], "scenario")
+            ## Scale with weight
+            weight <- function(time, par, time.weights) {
+                par * sapply(t(time), {function(x) time.weights[x == time.weights[,1],2]})
+            }
+            ## Sum over the groups (at least scenario)
+            collapse <- function(df, collapsed_grps, parstr) {
+                within(with(df, grp_apply(eval(parse(text = parstr)),
+                                          lapply(as.list(collapsed_grps),
+                                          {function(x) eval(parse(text = x))}),
+                                          sum, na.rm = TRUE)) ,{
+                                              assign(eval(substitute(parstr)),
+                                                     Freq / sum(time.weights[,2]))
+                                              rm(Freq)
+                                          })
+            }
+            ## Standardise and rename
+            ## browser()
+            return(numeric_time_scale(name_grp(collapse(
+                within(df,
+                {assign(eval(substitute(parstr)), weight(eval(parse(text =timestr)),
+                                                         eval(parse(text = parstr)),
+                                                         time.weights))}),
+                collapsed_grps, parstr), collapsed_grps), collapsed_grps))
+        }
+    }
 
     ## Calculates rates of specific events by specified groups
     calc_rate <- function(object, event_types, group){
-        pt <- with(object$summary$pt,
-                   name_grp(grp_apply(pt,
+        pt <- with(categorise_time(object$summary$pt, age.breaks, year.breaks,
+                                  cohort.breaks),
+                  numeric_time_scale(name_grp(grp_apply(pt,
                                       lapply(as.list(group), function(x) eval(parse(text = x))),
-                                      sum)))
-        ## temp fix: no events causes angst
-        ## todo: if subset has no dim replace with zeros
+                                      sum)), group))
+        ## TODO: if subset has no dim replace with zeros, temp fix below:
         if(!any(object$summary$event$event %in% event_types)) {
             stop(paste("The event(s)", paste(event_types, collapse = ", "),
                        "was not found in the", object$screen, "scenario"))
         }
-        events <- with(subset(object$summary$events, event %in% event_types),
-                       name_grp(grp_apply(n,
-                                          lapply(as.list(group), function(x) eval(parse(text = x))),
-                                          sum)))
+        events <- with(subset(
+            categorise_time(object$summary$events, age.breaks, year.breaks,
+                            cohort.breaks), event %in% event_types),
+            numeric_time_scale(name_grp(grp_apply(n,
+                                                  lapply(as.list(group),
+                                                  {function(x) eval(parse(text = x))}),
+                                                  sum)), group))
         within(merge(pt, events, by = group, all = TRUE),{
-            if("age" %in% group) age <- as.numeric(levels(age))[age] #important factor conversion
-            if("year" %in% group) year <- as.numeric(levels(year))[year] #important factor conversion
             rate <- ifelse(is.na(Freq.y) & !is.na(Freq.x), 0, Freq.y/Freq.x) #no events but some pt -> 0
             n <- Freq.y
             pt <- Freq.x
@@ -564,16 +653,13 @@ predict.fhcrc <- function(object, scenarios=NULL,
 
     ## Calculate prevalences by specified groups
     calc_prev <- function(object, group){
-        within(with(object$summary$prev,
-                    name_grp(
-                        grp_apply(count,
-                                  lapply(as.list(group),
-                                         function(x) eval(parse(text = x))), sum))),{
-                                             if("age" %in% group) age <- as.numeric(levels(age))[age] #important factor conversion
-                                             if("year" %in% group) year <- as.numeric(levels(year))[year] #important factor conversion
-                                             prevalence <- Freq/object$n
-                                             rm("Freq")
-                                         })
+        within(with(categorise_time(object$summary$prev, age.breaks,
+                                    year.breaks, cohort.breaks),
+                    numeric_time_scale(name_grp(grp_apply(count,
+                                       lapply(as.list(group),
+                                              function(x) eval(parse(text = x))), sum)), group)), {
+                                                  prevalence <- Freq/object$n
+                                                  rm("Freq")})
     }
 
     ## Calculates the outcome in the passed function for all
@@ -592,22 +678,38 @@ predict.fhcrc <- function(object, scenarios=NULL,
 
     ## Rate-ratio if type ends with rate.ratio or RR
     if(grepl(".?rate.?ratio$|.?rr$", type, ignore.case = TRUE)){
-        scenario_rates <- predict_scenarios(unique(scenarios), calc_rate, event_types, group)
-        reference_rate <- predict_scenarios(list(object), calc_rate, event_types, group)
+        scenario_rates <- standardise_time(predict_scenarios(unique(scenarios),
+                                                            calc_rate,
+                                                            event_types, group),
+                                          timestr = "age",
+                                          parstr = "rate",
+                                          time.weights = age.weights)
+        reference_rate <- standardise_time(predict_scenarios(list(object),
+                                                            calc_rate,
+                                                            event_types, group),
+                                          timestr = "age",
+                                          parstr = "rate",
+                                          time.weights = age.weights)
+
+        ## Alt. check if it is part of the rates
+        if(!is.null(age.weights)) group <- group[!group == "age"]
         within(merge(scenario_rates, reference_rate, by = group),{
             scenario <- scenario.x
             rate.ratio <- rate.x/rate.y
             rate.ratio[!is.finite(rate.ratio)] <- NaN
             rm(list=ls(pattern=".x$|.y$"))})
 
+
         ## Prevalence if type ends with rate.ratio or RR
     } else if(grepl(".?prev$|.?prevalence$", type, ignore.case = TRUE)){
-        predict_scenarios(unique(c(list(object),scenarios)), calc_prev, group)
+        standardise_time(predict_scenarios(unique(c(list(object),scenarios)), calc_prev, group),
+                         timestr = "age", parstr = "prevalence", time.weights = age.weights)
 
         ## Defauls to plain rates. If reference object exist add it to
         ## scenario list and remove duplicates.
     }else{
-        predict_scenarios(unique(c(list(object),scenarios)), calc_rate, event_types, group)
+        standardise_time(predict_scenarios(unique(c(list(object),scenarios)), calc_rate, event_types, group),
+                         timestr = "age", parstr = "rate", time.weights = age.weights)
     }
 }
 

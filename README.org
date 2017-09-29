@@ -5,7 +5,6 @@
 #+OPTIONS: html-postamble:nil
 
 # Babel settings
-#+PROPERTY: session *R-prostata-README*
 # +PROPERTY: cache yes
 # +PROPERTY: results output graphics
 # +PROPERTY: exports both
@@ -32,13 +31,13 @@ cost-effectiveness of prostate cancer screening, where many
 A convenient, but not required, way of installing github-packages in R
 is to use [[https://cran.r-project.org/web/packages/devtools/README.html][devtools]]. Since [[https://cran.r-project.org/web/packages/devtools/README.html][devtools]] is available on [[https://cran.r-project.org/][CRAN]] just run the
 following in R.
-#+BEGIN_SRC R :exports code :eval never
+#+BEGIN_SRC R :session r-prostata-readme :exports code :eval never
   install.packages("devtools")
 #+END_SRC
 
 + 2a Installation with devtools: ::
 To install the microsimulation using [[https://cran.r-project.org/web/packages/devtools/README.html][devtools]] just run the following in R:
-#+BEGIN_SRC R :exports code :eval never
+#+BEGIN_SRC R :session r-prostata-readme :exports code :eval never
   require(devtools)
   install_github("mclements/prostata")
 #+END_SRC
@@ -58,7 +57,7 @@ To install the prostata R-package run this in your shell:
 * Running the simulation
 
 #+HEADERS: :var reRunSimulation = 0
-#+BEGIN_SRC R :exports none
+#+BEGIN_SRC R :session r-prostata-readme :exports none
   require(prostata)
   myFile <- file.path("~/Dropbox/microsimulation_runs","README_sim.RData")
 
@@ -98,7 +97,7 @@ ages.
 (concat "#> "(mapconcat 'identity (split-string result "\n") "\n#> "))
 #+end_src
 
-#+BEGIN_SRC R :post commentify(*this*) :results output :exports both :eval never-export
+#+BEGIN_SRC R :session r-prostata-readme :post commentify(*this*) :results output :exports both :eval never-export
   require(prostata)
   sim1 <- callFhcrc(n=1e6, mc.cores=3, screen="screenUptake")
 #+END_SRC
@@ -131,7 +130,7 @@ To construct an outcome not listed above you can use the objects in
 
 To simply plot e.g. the /incidence rate/ of the simulated screening
 scenario the following line can be used:
-#+BEGIN_SRC R :file inst/inc.png :results output graphics :exports both
+#+BEGIN_SRC R :session r-prostata-readme :file inst/inc.png :results output graphics :exports both
   plot(sim1, type = "incidence.rate", xlab="Age (years)", xlim=c(40, 90))
 #+END_SRC
 
@@ -146,17 +145,30 @@ time-scales and four natural history categories:
 
 + =age= - grouping by single /year of age/ this is the default time-scale
 + =year= - grouping by single /calendar year/ as an alternative time-scale
++ =cohort= - grouping by single year /birth cohort/ as an alternative time-scale
 + =state= - grouping by /healthy/, /localised/ & /metastatic/
 + =grade= - grouping by /gleason grade/ ~<=6~, ~7~ & ~>=8~
 + =dx= - grouping by /not diagnosed/, /screen diagnosis/ & /clinical diagnosis/
 + =psa= - grouping by psa ~<3~ & ~>=3~
 
-Below is the PSA testing rate by calendar period predicted and
-displayed with =ggplot=.
-#+BEGIN_SRC R :file inst/psa.png :results output graphics :exports both
+To use a time increment other then single year a specific interval can be
+supplied in addition to the corresponding time-scale group argument:
++ =age.breaks= a vector of interval breaks e.g. =c(seq(50, 85, 5), Inf)=
++ =year.breaks= a vector of interval breaks e.g. =seq(1990, 2020, 10)=
++ =cohort.breaks=  a vector of interval breaks e.g. =seq(1900, 2000, 20)=
+
+The predict function also support age-standardisation through the =age.weights=
+argument. As a starting point the prostata package supplies a data.frame,
+=ageStandards=, with age weights for Sweden the year 2000 and the Standard World
+Population. User defined weight on the same format is also supported.
+
+Below is the PSA testing rate by calendar period predicted and displayed with
+=ggplot=. In addition we here also give an example on how to age-standardise
+with the =age.weights= argument.
+#+BEGIN_SRC R :session r-prostata-readme :file inst/psa.png :results output graphics :exports both
   require(ggplot2)
-  ggplot(predict(sim1, group = "year", type="testing.rate"),aes(x=year, y=rate)) +
-      xlim(1990, 2020) + geom_line() +
+  ggplot(predict(sim1, group = "year", type = "testing.rate", age.weights = ageStandards[c("Age", "Sweden2000")]),
+         aes(x=year, y=rate)) + geom_line() + xlim(1990, 2015) +
       ylab("PSA testing rate") + xlab("Calendar period (years)")
 #+END_SRC
 
@@ -168,7 +180,7 @@ The outcomes can also be predicted by several subgroups at once. Plotted
 below is the prevalence by age, clinical state and diagnoses. Note
 that since this is a natural history of disease model also the
 unobserved /not diagnosed/ cancers are predicted.
-#+BEGIN_SRC R :file inst/prev.png :results output graphics :exports both
+#+BEGIN_SRC R :session r-prostata-readme :file inst/prev.png :results output graphics :exports both
   ggplot(predict(sim1, type = "prevalence", group=c("age", "state", "dx")),
          aes(x=age, y=prevalence*1e5, colour = dx)) + geom_line() +
       ylab("Prevalence (cases per 100,000)") +
@@ -188,7 +200,7 @@ described earlier. Below is the incidence rate with the /current
 uptake/ pattern compared with the hypothetical /no screening/
 scenario.
 
-#+BEGIN_SRC R :post commentify(*this*) :results output :exports both :eval never-export
+#+BEGIN_SRC R :session r-prostata-readme :post commentify(*this*) :results output :exports both :eval never-export
   sim2 <- callFhcrc(n=1e6, mc.cores=3, screen="noScreening")
 #+END_SRC
 
@@ -197,7 +209,7 @@ scenario.
 : #> 106.032   0.660  54.287
 
 
-#+BEGIN_SRC R :file inst/scen.png :results output graphics :exports both
+#+BEGIN_SRC R :session r-prostata-readme :file inst/scen.png :results output graphics :exports both
   ggplot(predict(sim1, sim2, group= "age", type = "incidence.rate"),
             aes(x=age, y=rate, colour = scenario)) + geom_line() + xlim(50, 85) +
       ylab("Incidence rate") + xlab("Age (years)")
@@ -220,7 +232,8 @@ appear a little jumpy due to the stochasticity of the simulation. When
 we look at rate ratios this effect will get even more prominent. A
 larger simulation would reduce the Monte-Carlo variation, but for now
 lets settle with smoothing and focus on the ages with most events.
-#+BEGIN_SRC R :file inst/RR.png :results output graphics :exports both
+
+#+BEGIN_SRC R :session r-prostata-readme :file inst/RR.png :results output graphics :exports both
   ggplot(predict(sim2, sim1, group = "age", type = "pc.mortality.rr"),
          aes(x=age, y=rate.ratio, colour = scenario)) +
       geom_smooth(span=5) + xlim(60, 85) +

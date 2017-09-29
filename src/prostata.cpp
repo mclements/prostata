@@ -601,6 +601,7 @@ void FhcrcPerson::init() {
     out->outParameters.record("future_ext_grade",future_ext_grade);
     out->outParameters.record("ext_grade",ext_grade);
     out->outParameters.record("age_psa",-1.0);
+    out->outParameters.record("age_pca",-1.0);
     out->outParameters.record("pca_death",0.0);
     out->outParameters.record("psa55",psameasured(55.0));
     out->outParameters.record("psa65",psameasured(65.0));
@@ -834,6 +835,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     RemoveKind(toBiopsyFollowUpScreen);
     scheduleAt(now(), toClinicalDiagnosticBiopsy); // assumes only one biopsy per clinical diagnosis
     scheduleAt(now(), toTreatment);
+    if (id < in->nLifeHistories) {
+      out->outParameters.revise("age_pca",now());
+    }
     break;
 
   case toScreenDiagnosis:
@@ -844,6 +848,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     RemoveKind(toScreen);
     RemoveKind(toBiopsyFollowUpScreen);
     scheduleAt(now(), toTreatment);
+    if (id < in->nLifeHistories) {
+      out->outParameters.revise("age_pca",now());
+    }
     break;
 
   // assumes that biopsies are 100% accurate

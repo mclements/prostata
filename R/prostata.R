@@ -77,7 +77,7 @@ FhcrcParameters <- list(
     start_screening = 50.0, # start of organised screening
     stop_screening = 70.0,  # end of organised screening
     screening_interval = 2.0, # screening interval for regular_screening and introduced_screening
-    introduction_year = 2015.0, # year to start organised screening for introduced_screening
+    introduction_year = 2015.0, # year to start organised screening for introduced_screening  & cancel the opportunistic testing under stopped_screening
     mu0=c(0.00219, 0.000304, 5.2e-05, 0.000139, 0.000141, 3.6e-05, 7.3e-05,
         0.000129, 3.8e-05, 0.000137, 6e-05, 8.1e-05, 6.1e-05, 0.00012,
         0.000117, 0.000183, 0.000185, 0.000397, 0.000394, 0.000585, 0.000448,
@@ -226,9 +226,12 @@ pop1 <- data.frame(cohort=2012:1900,
                        6691, 6511, 6857, 7304, 7308, 7859, 7277, 8323, 8561, 7173,
                        6942, 7128, 6819, 5037, 6798, rep(6567,46)))
 ## these enum strings should be moved to C++
-screenT <- c("noScreening", "randomScreen50to70", "twoYearlyScreen50to70", "fourYearlyScreen50to70", "screen50",
-             "screen60", "screen70", "screenUptake", "stockholm3_goteborg",
-             "stockholm3_risk_stratified", "goteborg", "risk_stratified", "mixed_screening","regular_screen","single_screen", "introduced_screening")
+screenT <- c("noScreening", "randomScreen50to70", "twoYearlyScreen50to70",
+             "fourYearlyScreen50to70", "screen50", "screen60", "screen70",
+             "screenUptake", "stockholm3_goteborg",
+             "stockholm3_risk_stratified", "goteborg", "risk_stratified",
+             "mixed_screening","regular_screen","single_screen",
+             "introduced_screening", "stopped_screening")
 stateT <- c("Healthy","Localised","Metastatic")
 ext_stateT <- c("Healthy","T1_T2","T3plus","Metastatic")
 gradeT <- c("Gleason_le_6","Gleason_7","Gleason_ge_8","Healthy")
@@ -236,7 +239,7 @@ eventT <- c("toLocalised","toMetastatic","toClinicalDiagnosis",
             "toCancerDeath","toOtherDeath","toScreen","toBiopsyFollowUpScreen",
             "toScreenInitiatedBiopsy","toClinicalDiagnosticBiopsy","toScreenDiagnosis",
             "toOrganised","toTreatment","toCM","toRP","toRT","toADT","toUtilityChange","toUtility",
-            "toSTHLM3", "toOpportunistic","toT3plus")
+            "toSTHLM3", "toOpportunistic","toT3plus", "toCancelScreens")
 diagnosisT <- c("NotDiagnosed","ClinicalDiagnosis","ScreenDiagnosis")
 treatmentT <- c("no_treatment","CM","RP","RT")
 psaT <- c("PSA<3","PSA>=3") # not sure where to put this...

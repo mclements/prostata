@@ -46,13 +46,17 @@ namespace fhcrc_example {
 
   enum diagnosis_t {NotDiagnosed,ClinicalDiagnosis,ScreenDiagnosis};
 
-  enum event_t {toLocalised,toMetastatic,toClinicalDiagnosis,toCancerDeath,toOtherDeath,toScreen,toBiopsyFollowUpScreen,
-		toScreenInitiatedBiopsy,toClinicalDiagnosticBiopsy,toScreenDiagnosis,toOrganised,toTreatment,toCM,toRP,toRT,toADT,toUtilityChange, toBaselineUtility, toSTHLM3, toOpportunistic, toT3plus };
+  enum event_t {toLocalised, toMetastatic, toClinicalDiagnosis, toCancerDeath,
+		toOtherDeath, toScreen, toBiopsyFollowUpScreen,
+		toScreenInitiatedBiopsy, toClinicalDiagnosticBiopsy,
+		toScreenDiagnosis, toOrganised, toTreatment, toCM, toRP, toRT,
+		toADT, toUtilityChange, toBaselineUtility, toSTHLM3,
+		toOpportunistic, toT3plus, toCancelScreens};
 
   enum screen_t {noScreening, randomScreen50to70, twoYearlyScreen50to70, fourYearlyScreen50to70,
 		 screen50, screen60, screen70, screenUptake, stockholm3_goteborg, stockholm3_risk_stratified,
 		 goteborg, risk_stratified, mixed_screening,
-		 regular_screen, single_screen, introduced_screening};
+		 regular_screen, single_screen, introduced_screening, stopped_screening};
 
   enum treatment_t {no_treatment, CM, RP, RT};
 
@@ -498,6 +502,7 @@ void FhcrcPerson::init() {
       break;
     case mixed_screening:
     case introduced_screening:
+    case stopped_screening:
     case stockholm3_goteborg:
     case stockholm3_risk_stratified:
     case screenUptake:
@@ -515,6 +520,10 @@ void FhcrcPerson::init() {
     opportunistic_uptake();
     scheduleAt(in->parameter["start_screening"], toOrganised);
     break;
+ case stopped_screening:
+   opportunistic_uptake();
+   scheduleAt(in->parameter["introduction_year"] - cohort, toCancelScreens);
+   break;
   case introduced_screening: //first screen
     opportunistic_uptake(); // 'toOrganised' will remove opportunistic screens
     if ( in->parameter["introduction_year"] - cohort <= in->parameter["start_screening"]) { // under screen age at 2015
@@ -690,6 +699,11 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     scheduleAt(now(), toScreen); // now start organised screening
     break;
 
+  case toCancelScreens:
+    organised = true;
+    RemoveKind(toScreen); // remove other screens
+    break;
+
   case toScreen:
   case toBiopsyFollowUpScreen: {
     in->rngScreen->set();
@@ -815,6 +829,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	case screen50:
 	case screen60:
 	case screen70:
+	case stopped_screening:
 	  break;
 	default:
 	  REprintf("Screening not matched: %s\n",in->screen);

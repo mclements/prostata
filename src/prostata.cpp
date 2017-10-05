@@ -884,9 +884,12 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     scheduleUtilityChange(now(), "Biopsy");
 
     if (state == Metastatic ||
-	(state == Localised && ext_state == ext::T3plus) ||
+	(state == Localised && ext_state == ext::T3plus &&
+	 R::runif(0.0, 1.0) < in->parameter["biopsySensitivityT3plus"] &&
+	 ((now() - onset()) < in->parameter["biopsySensitivityLagT3plus"])) ||
 	(state == Localised && ext_state == ext::T1_T2 &&
-	 R::runif(0.0, 1.0) < in->parameter["biopsySensitivity"])) { // diagnosed
+	 R::runif(0.0, 1.0) < in->parameter["biopsySensitivityT1T2"] &&
+	 ((now() - onset()) < in->parameter["biopsySensitivityLagT1T2"]))) { // diagnosed
       scheduleAt(now(), toScreenDiagnosis);
     } else if (!previousNegativeBiopsy) {
       previousNegativeBiopsy = true;

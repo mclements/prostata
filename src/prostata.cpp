@@ -195,6 +195,7 @@ namespace fhcrc_example {
     double calculate_transition_time(double u, double t_enter, double gamma);
     void opportunistic_rescreening(double psa);
     void opportunistic_uptake();
+    void cancel_events_after_diagnosis();
     void init();
     void add_costs(string item, cost_t cost_type = Direct);
     void lost_productivity(string item);
@@ -336,6 +337,22 @@ namespace fhcrc_example {
     if (u<prescreened) {
       scheduleAt(t, toScreen);
     }
+  }
+
+  void FhcrcPerson::cancel_events_after_diagnosis() {
+    RemoveKind(toLocalised);
+    RemoveKind(toMetastatic);
+    RemoveKind(toT3plus);
+    RemoveKind(toScreen);
+    RemoveKind(toOrganised);
+    RemoveKind(toBiopsyFollowUpScreen);
+    RemoveKind(toScreenInitiatedBiopsy);
+    RemoveKind(toSTHLM3);
+    RemoveKind(toOpportunistic);
+    RemoveKind(toCancelScreens);
+    RemoveKind(toScreenDiagnosis);
+    RemoveKind(toClinicalDiagnosis);
+    RemoveKind(toClinicalDiagnosticBiopsy);
   }
 
   void FhcrcPerson::opportunistic_uptake() {
@@ -844,10 +861,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toClinicalDiagnosis:
     dx = ClinicalDiagnosis;
-    RemoveKind(toMetastatic); // competing events
-    RemoveKind(toT3plus);
-    RemoveKind(toScreen);
-    RemoveKind(toBiopsyFollowUpScreen);
+    cancel_events_after_diagnosis();
     scheduleAt(now(), toClinicalDiagnosticBiopsy); // assumes only one biopsy per clinical diagnosis
     scheduleAt(now(), toTreatment);
     if (id < in->nLifeHistories) {
@@ -857,11 +871,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toScreenDiagnosis:
     dx = ScreenDiagnosis;
-    RemoveKind(toMetastatic); // competing events
-    RemoveKind(toT3plus);
-    RemoveKind(toClinicalDiagnosis);
-    RemoveKind(toScreen);
-    RemoveKind(toBiopsyFollowUpScreen);
+    cancel_events_after_diagnosis();
     scheduleAt(now(), toTreatment);
     if (id < in->nLifeHistories) {
       out->outParameters.revise("age_pca",now());

@@ -202,7 +202,8 @@ namespace fhcrc_example {
     virtual void handleMessage(const cMessage* msg);
     void scheduleUtilityChange(double at, std::string category, bool transient = true,
 			       double sign = -1.0);
-    bool onset();
+    bool onset_p();
+    double onset();
   };
 
   /**
@@ -318,7 +319,8 @@ namespace fhcrc_example {
     return age_d;
   }
 
-  bool FhcrcPerson::onset() { return now() <= this->t0+35.0; }
+  bool FhcrcPerson::onset_p() { return now() <= this->t0+35.0; }
+  double FhcrcPerson::onset() { return this->t0+35.0; }
 
   /** @brief Calculate transition times for h(t) = y(t)*gamma = exp(beta0+beta1*t+beta2*(t-t0))*gamma
       This is equivalent to solving H(t) = gamma/(beta1+beta2)*(y(t)-y(s)) = -log(U) for entry time s.
@@ -774,8 +776,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       }
       else if (int(in->parameter("biomarker_model"))==psa_informed_correction) { // optimistic model for the biomarker
 	if ((ext_grade == ext::Gleason_le_6 &&
-	     onset() && psa < in->parameter["PSA_FP_threshold_GG6"]) // FP GG 6 PSA threshold
-	    ||  (!onset() && psa < in->parameter["PSA_FP_threshold_nCa"])) {// FP no cancer PSA threshold
+	     onset_p() && psa < in->parameter["PSA_FP_threshold_GG6"]) // FP GG 6 PSA threshold
+	    ||  (!onset_p() && psa < in->parameter["PSA_FP_threshold_nCa"])) {// FP no cancer PSA threshold
 	  positive_test = false; // strong assumption
 	}
       }
@@ -783,7 +785,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	REprintf("Parameter biomarker_model not matched: %i\n", int(in->parameter("biomarker_model")));
       }
     }
-    if (in->includePSArecords && !onset() && positive_test) {
+    if (in->includePSArecords && !onset_p() && positive_test) {
       out->falsePositives.record("id",id);
       out->falsePositives.record("psa",psa);
       out->falsePositives.record("age",now());

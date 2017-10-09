@@ -56,10 +56,7 @@ FhcrcParameters <- list(
     screeningCompliance = 0.75, # probability of actually having the first PSA test
     rescreeningCompliance = 0.95, # probability of actually having the re-screening PSA tests
     biopsyCompliance = 0.858, # add reference!!
-    biopsySensitivityT1T2 = 0.6, # biopsy sensitivity for T1-T2 cancers
-    biopsySensitivityLagT1T2 = 0.0, # allows for a lag after cancer onset when T1-T2 the cancers are not biopsy detectable
-    biopsySensitivityT3plus = 0.8, # biopsy sensitivity for T3+ cancers
-    biopsySensitivityLagT3plus = 0.0,  # allows for a lag after cancer onset when T3plus cancers are not biopsy detectable
+    biopsySensitivityTimeProportionT1T2 = 0.8, # time portion when T1-T2 cancers are sensitivity to biopsies. The remaining part, starting at onset, is not detectable.
     studyParticipation = 50.0/260.0, # observed fraction of population who participated in STHLM3 study
     nLifeHistories = 10L, screen = 0L, ## integers
     psaThreshold = 3.0,

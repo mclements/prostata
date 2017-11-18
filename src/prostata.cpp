@@ -539,10 +539,10 @@ void FhcrcPerson::init() {
     opportunistic_uptake();
     scheduleAt(in->parameter["start_screening"], toOrganised);
     break;
- case stopped_screening:
-   opportunistic_uptake();
-   scheduleAt(in->parameter["introduction_year"] - cohort, toCancelScreens);
-   break;
+  case stopped_screening:
+    opportunistic_uptake();
+    scheduleAt(in->parameter["introduction_year"] - cohort, toCancelScreens);
+    break;
   case introduced_screening: //first screen
     opportunistic_uptake(); // 'toOrganised' will remove opportunistic screens
     if ( in->parameter["introduction_year"] - cohort <= in->parameter["start_screening"]) { // under screen age at 2015
@@ -657,7 +657,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   double age = now();
   double year = age + cohort;
   double compliance;
-  bool mixed_programs = (in->screen == mixed_screening) || (in->screen == introduced_screening);
+  bool mixed_programs = (in->screen == mixed_screening) || (in->screen == introduced_screening) || (in->screen == stopped_screening);
   bool formal_costs = in->parameter["formal_costs"]==1.0 && (!mixed_programs || organised);
   bool formal_compliance = in->parameter["formal_compliance"]==1.0 && (!mixed_programs || organised);
 

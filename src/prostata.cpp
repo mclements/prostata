@@ -47,11 +47,11 @@ namespace fhcrc_example {
   enum diagnosis_t {NotDiagnosed,ClinicalDiagnosis,ScreenDiagnosis};
 
   enum event_t {toLocalised, toMetastatic, toClinicalDiagnosis, toCancerDeath,
-		toOtherDeath, toScreen, toBiopsyFollowUpScreen,
-		toScreenInitiatedBiopsy, toClinicalDiagnosticBiopsy,
-		toScreenDiagnosis, toOrganised, toTreatment, toCM, toRP, toRT,
-		toADT, toUtilityChange, toBaselineUtility, toSTHLM3,
-		toOpportunistic, toT3plus, toCancelScreens};
+                toOtherDeath, toScreen, toBiopsyFollowUpScreen,
+                toScreenInitiatedBiopsy, toClinicalDiagnosticBiopsy,
+                toScreenDiagnosis, toOverDiagnosis, toOrganised, toTreatment,
+                toCM, toRP, toRT, toADT, toUtilityChange, toBaselineUtility,
+                toSTHLM3, toOpportunistic, toT3plus, toCancelScreens};
 
   enum screen_t {noScreening, randomScreen50to70, twoYearlyScreen50to70, fourYearlyScreen50to70,
 		 screen50, screen60, screen70, screenUptake, stockholm3_goteborg, stockholm3_risk_stratified,
@@ -353,6 +353,7 @@ namespace fhcrc_example {
     RemoveKind(toOpportunistic);
     RemoveKind(toCancelScreens);
     RemoveKind(toScreenDiagnosis);
+    RemoveKind(toOverDiagnosis);
     RemoveKind(toClinicalDiagnosis);
     RemoveKind(toClinicalDiagnosticBiopsy);
   }
@@ -875,9 +876,16 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     dx = ScreenDiagnosis;
     cancel_events_after_diagnosis();
     scheduleAt(now(), toTreatment);
+    if (aoc < min(tc,tmc)) {
+      scheduleAt(now(), toOverDiagnosis);
+    }
     if (id < in->nLifeHistories) {
       out->outParameters.revise("age_pca",now());
     }
+    break;
+
+  case toOverDiagnosis:
+    // only for recording
     break;
 
   // assumes that biopsies are 100% accurate

@@ -236,10 +236,11 @@ screenT <- c("noScreening", "randomScreen50to70", "twoYearlyScreen50to70",
 stateT <- c("Healthy","Localised","Metastatic")
 ext_stateT <- c("Healthy","T1_T2","T3plus","Metastatic")
 gradeT <- c("Gleason_le_6","Gleason_7","Gleason_ge_8","Healthy")
-eventT <- c("toLocalised","toMetastatic","toClinicalDiagnosis",
-            "toCancerDeath","toOtherDeath","toScreen","toBiopsyFollowUpScreen",
-            "toScreenInitiatedBiopsy","toClinicalDiagnosticBiopsy","toScreenDiagnosis",
-            "toOrganised","toTreatment","toCM","toRP","toRT","toADT","toUtilityChange","toUtility",
+eventT <- c("toLocalised","toMetastatic","toClinicalDiagnosis", "toCancerDeath",
+            "toOtherDeath","toScreen","toBiopsyFollowUpScreen",
+            "toScreenInitiatedBiopsy","toClinicalDiagnosticBiopsy",
+            "toScreenDiagnosis", "toOverDiagnosis", "toOrganised","toTreatment",
+            "toCM","toRP", "toRT","toADT","toUtilityChange","toBaselineUtility",
             "toSTHLM3", "toOpportunistic","toT3plus", "toCancelScreens")
 diagnosisT <- c("NotDiagnosed","ClinicalDiagnosis","ScreenDiagnosis")
 treatmentT <- c("no_treatment","CM","RP","RT")
@@ -527,11 +528,11 @@ predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
     ## Stripping of potential rate ratio option before matching
     abbr_type <- match.arg(sub(".?rr$|.?rate.?ratio$",
                                "", type, ignore.case = TRUE),
-                          c("incidence.rate", "symptomatic.incidence.rate",
-                            "screen.incidence.rate", "testing.rate",
-                            "biopsy.rate", "metastasis.rate",
-                            "pc.mortality.rate", "allcause.mortality.rate",
-                            "prevalence"))
+                           c("incidence.rate", "symptomatic.incidence.rate",
+                             "screen.incidence.rate", "overdiagnosis.rate",
+                             "testing.rate", "biopsy.rate", "metastasis.rate",
+                             "pc.mortality.rate", "allcause.mortality.rate",
+                             "prevalence"))
 
     ## Allowing for several groups
     group <- match.arg(group,
@@ -542,6 +543,7 @@ predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
                          incidence.rate = c("toClinicalDiagnosis", "toScreenDiagnosis"),
                          symptomatic.incidence.rate = "toClinicalDiagnosis",
                          screen.incidence.rate = "toScreenDiagnosis",
+                         overdiagnosis.rate = "toOverDiagnosis",
                          testing.rate = "toScreen",
                          biopsy.rate = c("toClinicalDiagnosticBiopsy", "toScreenInitiatedBiopsy"),
                          metastasis.rate = "toMetastatic",

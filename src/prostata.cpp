@@ -66,6 +66,8 @@ namespace fhcrc_example {
 
   enum cost_t {Direct,Indirect};
 
+  enum utility_scale_t {UtilityAdditive, UtilityMultiplicative, UtilityMinimum};
+  
   namespace FullState {
     typedef boost::tuple<short,short,short,bool,double> Type;
     enum Fields {ext_state, ext_grade, dx, psa_ge_3, cohort};

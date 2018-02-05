@@ -50,7 +50,7 @@ namespace fhcrc_example {
 		toOtherDeath, toScreen, toBiopsyFollowUpScreen,
 		toScreenInitiatedBiopsy, toClinicalDiagnosticBiopsy,
 		toScreenDiagnosis, toOrganised, toTreatment, toCM, toRP, toRT,
-		toADT, toUtilityChange, toBaselineUtility, toSTHLM3,
+		toADT, toUtilityChange, toUtilityRemove, toSTHLM3,
 		toOpportunistic, toT3plus, toCancelScreens};
 
   enum screen_t {noScreening, randomScreen50to70, twoYearlyScreen50to70, fourYearlyScreen50to70,
@@ -151,16 +151,45 @@ namespace fhcrc_example {
   // SimInput* in; // Person
   // in->hr_locoregional(...);
 
-  class cMessageUtilityChange : public cMessage {
+  class cMessageUtility : public cMessage {
   public:
-    cMessageUtilityChange(double change) : cMessage(toUtilityChange), change(change) { }
-    double change;
-  };
-
-  class cMessageBaselineUtility : public cMessage {
-  public:
-    cMessageBaselineUtility(double utility) : cMessage(toBaselineUtility), utility(utility) { }
+    cMessageUtility(short kind, int id, double utility = 1.0) :
+      cMessage(kind), id(id), utility(utility) { }
+    int id;
     double utility;
+  };
+  class Utilities {
+  public:
+    map<int,double> umap;
+    int counter;
+    utility_scale_t scale;
+    Utilities(utility_scale_t scale = UtilityAdditive) :counter(0), scale(scale) {}
+    double utility() {
+      // case: no utilities?
+      // case: value>1.0?
+      double value = 1.0;
+      for (map<int,double>::iterator it = umap.begin(); it!=umap.end(); it++) {
+	if (scale == UtilityAdditive) 
+	  value -= (1.0 - it->second);
+	else if (scale == UtilityMultiplicative)
+	  value *= it->second;
+	else if (scale == UtilityMinimum) {
+	  if (it->second < value) value = it->second;
+	}
+      }
+      if (value < 0.0) value = 0.0;
+      return value;
+    }
+    void clear() { umap.clear(); counter = 0; }
+    void handleMessage(const cMessage* msg) {
+      const cMessageUtility * umsg;
+      if ((umsg = dynamic_cast<const cMessageUtility *>(msg)) != 0) {
+	if (umsg->kind == toUtilityChange)
+	  umap[umsg->id] = umsg->utility;
+	else if (umsg->kind == toUtilityRemove)
+	  umap.erase(umsg->id);
+      }
+    }
   };
 
   template<class T>
@@ -173,6 +202,7 @@ namespace fhcrc_example {
   public:
     SimInput* in;
     SimOutput* out;
+    Utilities* utilities;
     double beta0, beta1, beta2;
     double t0, y0, t3p, tm, tc, tmc, aoc;
     state_t state;
@@ -184,11 +214,11 @@ namespace fhcrc_example {
     bool adt;
     double txhaz;
     int id;
-    double cohort, baseline_utility, delta_utility, rescreening_frailty;
+    double cohort, rescreening_frailty;
     bool everPSA, previousNegativeBiopsy, organised;
-    FhcrcPerson(SimInput* in, SimOutput* out, const int id = 0, const double cohort = 1950) :
-      in(in), out(out), id(id), cohort(cohort), baseline_utility(1.0), delta_utility(0.0) { };
-    double utility() { return baseline_utility + delta_utility; }
+    FhcrcPerson(SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950) :
+      in(in), out(out), utilities(utilities), id(id), cohort(cohort) { };
+    double utility() { return utilities->utility(); }
     double psamean(double age);
     double psameasured(double age);
     treatment_t calculate_treatment(double u, double age, double year);
@@ -202,8 +232,9 @@ namespace fhcrc_example {
     void add_costs(string item, cost_t cost_type = Direct);
     void lost_productivity(string item);
     virtual void handleMessage(const cMessage* msg);
-    void scheduleUtilityChange(double at, std::string category, bool transient = true,
-			       double sign = -1.0);
+    void scheduleUtilityChange(double at, std::string category, bool transient = true);
+    void scheduleUtilityChange(double at, double utility);
+    void scheduleUtilityChange(double from, double to, double utility);
     bool onset_p();
     double onset();
   };
@@ -240,15 +271,23 @@ namespace fhcrc_example {
   }
 
   /**
-     Schedule a transient utility change.
-     Default: sign = -1
+     Schedule a utility change.
    **/
-  void FhcrcPerson::scheduleUtilityChange(double at, std::string category, bool transient, double sign) {
-    scheduleAt(at, new cMessageUtilityChange(sign * in->utility_estimates[category]));
+  void FhcrcPerson::scheduleUtilityChange(double at, std::string category, bool transient) {
+    scheduleAt(at, new cMessageUtility(toUtilityChange,
+				       utilities->counter++,
+				       in->utility_estimates[category]));
     if (transient) {
       scheduleAt(at + in->utility_duration[category],
-		 new cMessageUtilityChange(-sign * in->utility_estimates[category]));
+		 new cMessageUtility(toUtilityRemove, utilities->counter));
     }
+  }
+  void FhcrcPerson::scheduleUtilityChange(double at, double utility) {
+    scheduleAt(at, new cMessageUtility(toUtilityChange, utilities->counter++, utility));
+  }
+  void FhcrcPerson::scheduleUtilityChange(double from, double to, double utility) {
+    scheduleAt(from, new cMessageUtility(toUtilityChange, utilities->counter++, utility));
+    scheduleAt(to, new cMessageUtility(toUtilityRemove, utilities->counter));
   }
 
   treatment_t FhcrcPerson::calculate_treatment(double u, double age, double year) {
@@ -429,6 +468,9 @@ void FhcrcPerson::init() {
   // declarations
   double ym;
 
+  // utilities
+  utilities->clear();
+  
   // change state variables
   state = Healthy;
   ext_state = ext::Healthy_state;
@@ -588,9 +630,7 @@ void FhcrcPerson::init() {
   // |       70 |       74 |  0.81 |    0.75 |
   // |       75 |       79 |  0.79 |    0.73 |
   // |       80 |       84 |  0.74 |    0.69 |
-  // (i) set initial baseline utility
-  baseline_utility = 1.00;
-  // (ii) schedule changes in the baseline utility by age
+  // Schedule changes in the baseline utility by age
   // Burström and Rehnberg (2006)
   // (require 'cl)
   // (let ((utilities
@@ -598,21 +638,21 @@ void FhcrcPerson::init() {
   // 	(ages
   // 	 (append (list 0 18) (loop for i from 25 to 80 by 5 collect i))))
   //  (loop for utility in utilities for age in ages
-  //   do (message (format "scheduleAt(%g, new cMessageBaselineUtility(%g));" age utility))))
-  scheduleAt(0, new cMessageBaselineUtility(1));
-  scheduleAt(18, new cMessageBaselineUtility(0.89));
-  scheduleAt(25, new cMessageBaselineUtility(0.89));
-  scheduleAt(30, new cMessageBaselineUtility(0.88));
-  scheduleAt(35, new cMessageBaselineUtility(0.87));
-  scheduleAt(40, new cMessageBaselineUtility(0.84));
-  scheduleAt(45, new cMessageBaselineUtility(0.84));
-  scheduleAt(50, new cMessageBaselineUtility(0.83));
-  scheduleAt(55, new cMessageBaselineUtility(0.83));
-  scheduleAt(60, new cMessageBaselineUtility(0.82));
-  scheduleAt(65, new cMessageBaselineUtility(0.83));
-  scheduleAt(70, new cMessageBaselineUtility(0.81));
-  scheduleAt(75, new cMessageBaselineUtility(0.79));
-  scheduleAt(80, new cMessageBaselineUtility(0.74));
+  //   do (message (format "scheduleUtilityChange(%g.0, 5.0, %g);" age utility))))
+  scheduleUtilityChange(0.0, 18.0, 1.00);
+  scheduleUtilityChange(18.0, 7.0, 0.89);
+  scheduleUtilityChange(25.0, 5.0, 0.89);
+  scheduleUtilityChange(30.0, 5.0, 0.88);
+  scheduleUtilityChange(35.0, 5.0, 0.87);
+  scheduleUtilityChange(40.0, 5.0, 0.84);
+  scheduleUtilityChange(45.0, 5.0, 0.84);
+  scheduleUtilityChange(50.0, 5.0, 0.83);
+  scheduleUtilityChange(55.0, 5.0, 0.83);
+  scheduleUtilityChange(60.0, 5.0, 0.82);
+  scheduleUtilityChange(65.0, 5.0, 0.83);
+  scheduleUtilityChange(70.0, 5.0, 0.81);
+  scheduleUtilityChange(75.0, 5.0, 0.79);
+  scheduleUtilityChange(80.0, 0.74);
 
   // record some parameters using SimpleReport - too many for a tuple
   if (id < in->nLifeHistories) {
@@ -922,7 +962,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     double u_adt = R::runif(0.0,1.0);
     if (state == Metastatic) {
       lost_productivity("Metastatic cancer");
-      scheduleAt(now(), new cMessageUtilityChange(- in->utility_estimates["Metastatic cancer"]));
+      // utilities->clear(); // should this be age-specific??
+      scheduleUtilityChange(now(), in->utility_estimates["Metastatic cancer"]);
     }
     else { // Loco-regional
       tx = calculate_treatment(u_tx,now(),year);
@@ -980,17 +1021,17 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       // Reset utilities for those in with a Metatatic diagnosis
       if (state == Metastatic) {
 	if (age_palliative > now())
-	  scheduleUtilityChange(age_palliative, "Metastatic cancer",false);
+	  scheduleUtilityChange(age_palliative, in->utility_estimates["Metastatic cancer"]);
 	else
-	  scheduleUtilityChange(now(), "Metastatic cancer", false);
+	  scheduleUtilityChange(now(), in->utility_estimates["Metastatic cancer"]);
       }
       if (age_palliative>now()) { // cancer death more than 36 months after diagnosis
-	scheduleUtilityChange(age_palliative, "Palliative therapy");
+	scheduleUtilityChange(age_palliative, age_terminal,
+			      in->utility_estimates["Palliative therapy"]);
 	scheduleUtilityChange(age_terminal, "Terminal illness");
       }
       else if (age_terminal>now()) { // cancer death between 36 and 6 months of diagnosis
-	scheduleUtilityChange(now(), "Palliative therapy",false, -1.0);
-	scheduleUtilityChange(age_terminal, "Palliative therapy", false, 1.0); // reset
+	scheduleUtilityChange(now(), age_terminal, in->utility_estimates["Palliative therapy"]);
 	scheduleUtilityChange(age_terminal,"Terminal illness");
       }
       else // cancer death within 6 months of diagnosis/treatment
@@ -1047,24 +1088,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     // costs & utilities??
     break;
 
-  case toBaselineUtility:
-    {
-      const cMessageBaselineUtility * msgUtility;
-      if ((msgUtility = dynamic_cast<const cMessageBaselineUtility *>(msg)) != 0) {
-	baseline_utility = msgUtility->utility;
-      } else {
-	REprintf("Could not cast to cMessageBaselineUtility.");
-      }
-    } break;
-
   case toUtilityChange:
+  case toUtilityRemove:
     {
-      const cMessageUtilityChange * msgUtilityChange;
-      if ((msgUtilityChange = dynamic_cast<const cMessageUtilityChange *>(msg)) != 0) {
-	delta_utility += msgUtilityChange->change;
-      } else {
-	REprintf("Could not cast to cMessageUtilityChange.");
-      }
+      utilities->handleMessage(msg);
     } break;
 
   default:
@@ -1087,7 +1114,8 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   in.rngScreen = new Rng();
   in.rngTreatment = new Rng();
   in.rngNh->set();
-
+  Utilities utilities;
+  
   // read in the parameters
   List parms(parmsIn);
   List tables = parms["tables"];
@@ -1220,9 +1248,9 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   out.costs.setPartition(ages);
 
   // main loop
-  FhcrcPerson person(&in, &out, 1, 2000);
+  FhcrcPerson person(&in, &out, &utilities, 1, 2000);
   for (int i = 0; i < n; ++i) {
-    person = FhcrcPerson(&in, &out, i+firstId, cohort[i]);
+    person = FhcrcPerson(&in, &out, &utilities, i+firstId, cohort[i]);
     Sim::create_process(&person);
     Sim::run_simulation();
     Sim::clear();

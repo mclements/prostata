@@ -160,7 +160,8 @@ namespace fhcrc_example {
   };
   class Utilities {
   public:
-    map<int,double> umap;
+    typedef map<int,double> UMap;
+    UMap umap;
     int counter;
     utility_scale_t scale;
     Utilities(utility_scale_t scale = UtilityAdditive) :counter(0), scale(scale) {}
@@ -168,8 +169,8 @@ namespace fhcrc_example {
       // case: no utilities?
       // case: value>1.0?
       double value = 1.0;
-      for (map<int,double>::iterator it = umap.begin(); it!=umap.end(); it++) {
-	if (scale == UtilityAdditive) 
+      for (UMap::iterator it = umap.begin(); it!=umap.end(); it++) {
+	if (scale == UtilityAdditive)
 	  value -= (1.0 - it->second);
 	else if (scale == UtilityMultiplicative)
 	  value *= it->second;
@@ -703,14 +704,15 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   bool mixed_programs = (in->screen == mixed_screening) || (in->screen == introduced_screening) || (in->screen == stopped_screening);
   bool formal_costs = in->parameter["formal_costs"]==1.0 && (!mixed_programs || organised);
   bool formal_compliance = in->parameter["formal_compliance"]==1.0 && (!mixed_programs || organised);
+  double utility = FhcrcPerson::utility();
 
   // record information
   if (in->parameter["full_report"] == 1.0)
-    out->report.add(FullState::Type(ext_state, ext_grade, dx, psa>=3.0, cohort), msg->kind, previousEventTime, age, utility());
-  out->shortReport.add(1, msg->kind, previousEventTime, age, utility());
+    out->report.add(FullState::Type(ext_state, ext_grade, dx, psa>=3.0, cohort), msg->kind, previousEventTime, age, utility);
+  out->shortReport.add(1, msg->kind, previousEventTime, age, utility);
 
   if (id < in->nLifeHistories) { // only record up to the first n individuals
-    out->lifeHistories.push_back(LifeHistory::Type(id, ext_state, ext_grade, dx, msg->kind, previousEventTime, age, year, psa, utility()));
+    out->lifeHistories.push_back(LifeHistory::Type(id, ext_state, ext_grade, dx, msg->kind, previousEventTime, age, year, psa, utility));
   }
 
   // handle messages by kind

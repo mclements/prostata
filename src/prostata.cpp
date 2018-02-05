@@ -160,7 +160,7 @@ namespace fhcrc_example {
   };
   class Utilities {
   public:
-    typedef map<int,double> UMap;
+    typedef boost::unordered_map<int,double> UMap;
     UMap umap;
     int counter;
     utility_scale_t scale;
@@ -192,7 +192,17 @@ namespace fhcrc_example {
       }
     }
   };
-
+  void Rprint(Utilities utilities) {
+    Rprintf("utilities: [");
+    for (Utilities::UMap::iterator it = utilities.umap.begin();
+	 it!=utilities.umap.end();
+	 it++) {
+      if (it != utilities.umap.begin()) Rprintf(",");
+      Rprintf("%f",it->second);
+    }
+    Rprintf("]\n");
+  }
+  
   template<class T>
   T bounds(T x, T a, T b) {
     return (x<a)?a:((x>b)?b:x);
@@ -233,7 +243,7 @@ namespace fhcrc_example {
     void add_costs(string item, cost_t cost_type = Direct);
     void lost_productivity(string item);
     virtual void handleMessage(const cMessage* msg);
-    void scheduleUtilityChange(double at, std::string category, bool transient = true);
+    void scheduleUtilityChange(double at, std::string category);
     void scheduleUtilityChange(double at, double utility);
     void scheduleUtilityChange(double from, double to, double utility);
     bool onset_p();
@@ -274,20 +284,21 @@ namespace fhcrc_example {
   /**
      Schedule a utility change.
    **/
-  void FhcrcPerson::scheduleUtilityChange(double at, std::string category, bool transient) {
+  void FhcrcPerson::scheduleUtilityChange(double at, std::string category) {
+    utilities->counter++; // increment
     scheduleAt(at, new cMessageUtility(toUtilityChange,
-				       utilities->counter++,
+				       utilities->counter,
 				       in->utility_estimates[category]));
-    if (transient) {
-      scheduleAt(at + in->utility_duration[category],
-		 new cMessageUtility(toUtilityRemove, utilities->counter));
-    }
+    scheduleAt(at + in->utility_duration[category],
+	       new cMessageUtility(toUtilityRemove, utilities->counter));
   }
+  // permanent change!!
   void FhcrcPerson::scheduleUtilityChange(double at, double utility) {
     scheduleAt(at, new cMessageUtility(toUtilityChange, utilities->counter++, utility));
   }
   void FhcrcPerson::scheduleUtilityChange(double from, double to, double utility) {
-    scheduleAt(from, new cMessageUtility(toUtilityChange, utilities->counter++, utility));
+    utilities->counter++; // increment
+    scheduleAt(from, new cMessageUtility(toUtilityChange, utilities->counter, utility));
     scheduleAt(to, new cMessageUtility(toUtilityRemove, utilities->counter));
   }
 
@@ -642,18 +653,18 @@ void FhcrcPerson::init() {
   //  (loop for utility in utilities for age in ages
   //   do (message (format "scheduleUtilityChange(%g.0, 5.0, %g);" age utility))))
   scheduleUtilityChange(0.0, 18.0, 1.00);
-  scheduleUtilityChange(18.0, 7.0, 0.89);
-  scheduleUtilityChange(25.0, 5.0, 0.89);
-  scheduleUtilityChange(30.0, 5.0, 0.88);
-  scheduleUtilityChange(35.0, 5.0, 0.87);
-  scheduleUtilityChange(40.0, 5.0, 0.84);
-  scheduleUtilityChange(45.0, 5.0, 0.84);
-  scheduleUtilityChange(50.0, 5.0, 0.83);
-  scheduleUtilityChange(55.0, 5.0, 0.83);
-  scheduleUtilityChange(60.0, 5.0, 0.82);
-  scheduleUtilityChange(65.0, 5.0, 0.83);
-  scheduleUtilityChange(70.0, 5.0, 0.81);
-  scheduleUtilityChange(75.0, 5.0, 0.79);
+  scheduleUtilityChange(18.0, 25.0, 0.89);
+  scheduleUtilityChange(25.0, 30.0, 0.89);
+  scheduleUtilityChange(30.0, 35.0, 0.88);
+  scheduleUtilityChange(35.0, 40.0, 0.87);
+  scheduleUtilityChange(40.0, 45.0, 0.84);
+  scheduleUtilityChange(45.0, 50.0, 0.84);
+  scheduleUtilityChange(50.0, 55.0, 0.83);
+  scheduleUtilityChange(55.0, 60.0, 0.83);
+  scheduleUtilityChange(60.0, 65.0, 0.82);
+  scheduleUtilityChange(65.0, 70.0, 0.83);
+  scheduleUtilityChange(70.0, 75.0, 0.81);
+  scheduleUtilityChange(75.0, 80.0, 0.79);
   scheduleUtilityChange(80.0, 0.74);
 
   // record some parameters using SimpleReport - too many for a tuple
@@ -715,6 +726,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     out->lifeHistories.push_back(LifeHistory::Type(id, ext_state, ext_grade, dx, msg->kind, previousEventTime, age, year, psa, utility));
   }
 
+  if (in->debug)
+    Rprint(*utilities);
+  
   // handle messages by kind
 
   switch(msg->kind) {

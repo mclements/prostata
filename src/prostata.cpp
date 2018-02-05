@@ -47,11 +47,11 @@ namespace fhcrc_example {
   enum diagnosis_t {NotDiagnosed,ClinicalDiagnosis,ScreenDiagnosis};
 
   enum event_t {toLocalised, toMetastatic, toClinicalDiagnosis, toCancerDeath,
-		toOtherDeath, toScreen, toBiopsyFollowUpScreen,
-		toScreenInitiatedBiopsy, toClinicalDiagnosticBiopsy,
-		toScreenDiagnosis, toOrganised, toTreatment, toCM, toRP, toRT,
-		toADT, toUtilityChange, toUtilityRemove, toSTHLM3,
-		toOpportunistic, toT3plus, toCancelScreens};
+                toOtherDeath, toScreen, toBiopsyFollowUpScreen,
+                toScreenInitiatedBiopsy, toClinicalDiagnosticBiopsy,
+                toScreenDiagnosis, toOverDiagnosis, toOrganised, toTreatment,
+                toCM, toRP, toRT, toADT, toUtilityChange, toUtilityRemove,
+                toSTHLM3, toOpportunistic, toT3plus, toCancelScreens};
 
   enum screen_t {noScreening, randomScreen50to70, twoYearlyScreen50to70, fourYearlyScreen50to70,
 		 screen50, screen60, screen70, screenUptake, stockholm3_goteborg, stockholm3_risk_stratified,
@@ -394,6 +394,7 @@ namespace fhcrc_example {
     RemoveKind(toOpportunistic);
     RemoveKind(toCancelScreens);
     RemoveKind(toScreenDiagnosis);
+    RemoveKind(toOverDiagnosis);
     RemoveKind(toClinicalDiagnosis);
     RemoveKind(toClinicalDiagnosticBiopsy);
   }
@@ -583,10 +584,10 @@ void FhcrcPerson::init() {
     opportunistic_uptake();
     scheduleAt(in->parameter["start_screening"], toOrganised);
     break;
- case stopped_screening:
-   opportunistic_uptake();
-   scheduleAt(in->parameter["introduction_year"] - cohort, toCancelScreens);
-   break;
+  case stopped_screening:
+    opportunistic_uptake();
+    scheduleAt(in->parameter["introduction_year"] - cohort, toCancelScreens);
+    break;
   case introduced_screening: //first screen
     opportunistic_uptake(); // 'toOrganised' will remove opportunistic screens
     if ( in->parameter["introduction_year"] - cohort <= in->parameter["start_screening"]) { // under screen age at 2015
@@ -699,7 +700,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   double age = now();
   double year = age + cohort;
   double compliance;
-  bool mixed_programs = (in->screen == mixed_screening) || (in->screen == introduced_screening);
+  bool mixed_programs = (in->screen == mixed_screening) || (in->screen == introduced_screening) || (in->screen == stopped_screening);
   bool formal_costs = in->parameter["formal_costs"]==1.0 && (!mixed_programs || organised);
   bool formal_compliance = in->parameter["formal_compliance"]==1.0 && (!mixed_programs || organised);
 
@@ -917,9 +918,16 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     dx = ScreenDiagnosis;
     cancel_events_after_diagnosis();
     scheduleAt(now(), toTreatment);
+    if (aoc < (35.0 + min(tc,tmc))) {
+      scheduleAt(now(), toOverDiagnosis);
+    }
     if (id < in->nLifeHistories) {
       out->outParameters.revise("age_pca",now());
     }
+    break;
+
+  case toOverDiagnosis:
+    // only for recording
     break;
 
   // assumes that biopsies are 100% accurate
@@ -938,12 +946,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     scheduleUtilityChange(now(), "Biopsy");
 
     if (state == Metastatic ||
-	(state == Localised && ext_state == ext::T3plus &&
-	 R::runif(0.0, 1.0) < in->parameter["biopsySensitivityT3plus"] &&
-	 ((now() - onset()) > in->parameter["biopsySensitivityLagT3plus"])) ||
+	(state == Localised && ext_state == ext::T3plus) ||
 	(state == Localised && ext_state == ext::T1_T2 &&
-	 R::runif(0.0, 1.0) < in->parameter["biopsySensitivityT1T2"] &&
-	 ((now() - onset()) > in->parameter["biopsySensitivityLagT1T2"]))) { // diagnosed
+	 (now() > t0 + 35.0 + (t3p - t0) *
+	  (1 - in->parameter["biopsySensitivityTimeProportionT1T2"])))) { // diagnosed
       scheduleAt(now(), toScreenDiagnosis);
     } else if (!previousNegativeBiopsy) {
       previousNegativeBiopsy = true;

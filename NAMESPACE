@@ -1,6 +1,7 @@
-useDynLib(prostata)
+useDynLib(prostata, .registration=TRUE)
 exportPattern("^[[:alpha:]]+")
 import(microsimulation)
 
 importFrom("graphics", "lines", "plot")
 importFrom("stats", "predict", "rnorm")
+importFrom(Rcpp, evalCpp)

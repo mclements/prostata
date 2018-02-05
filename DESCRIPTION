@@ -9,7 +9,7 @@ Description: Microsimulation using discrete event simulation in R and C++. This 
 License: GPL (>= 3)
 Depends: microsimulation
 Remotes: mclements/microsimulation@core
-Imports: parallel, grDevices, utils
+Imports: parallel, grDevices, utils, Rcpp
 LinkingTo: microsimulation, Rcpp, BH
 Suggests: testthat
 LazyData: true

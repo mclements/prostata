@@ -28,8 +28,8 @@ FhcrcParameters <- list(
     tau2 = 0.0829, # log PSA measurement variance  - normal
     susceptible = susceptible <- 1.0, # portion susceptible
     g0=0.0005 / susceptible, # onset parameter
-    g3p=exp(-6.664367), # T3+ parameter
-    gm=exp(-6.707478), # metastatic parameter
+    g3p = exp(-6.80397262), # T3+ parameter
+    gm = exp(-7.55059510), # metastatic parameter
     gc=0.0015, # clinical diagnosis parameter
     thetac=19.1334, # clinical diagnosis parameter after metastatic
     mubeta0=-1.609, # mean of beta0, where beta0 is the log PSA intercept at age 35 years
@@ -40,10 +40,10 @@ FhcrcParameters <- list(
     sebeta2=c(0.0913,0.3968, 0.0), # base::grade: variance of beta2
     rev_mubeta2=c(0.051, 0.129, 0.1678), # ext::grade: same as above for extended gleason grade (6-, 7, 8+)
     rev_sebeta2=c(0.064, 0.087, 0.3968), # ext::grade
-    alpha7=-1.748381, # log of the proportion gleason 7 at age 35
-    beta7=0.072729, # slope of log proportion of gleason 7
-    alpha8=-4.884482, # log of the proportion of gleason 8+ at age 35
-    beta8=0.142083, # slope of log proportion of gleason 8+
+    alpha7 = log(0.2), # log of the proportion gleason 7 at age 35
+    beta7 = 0.06739312, # slope of log proportion of gleason 7
+    alpha8 = log(0.002), # log of the proportion of gleason 8+ at age 35
+    beta8 = 0.20038884, # slope of log proportion of gleason 8+
     RR_T3plus=2.0, # prostate cancer mortality rate ratio comparing T3+ with T1-T2, add lit reference
     ## mubeta2.scale=1.0, # cf. 2.1
     ## beta.rho=0.62,
@@ -56,10 +56,7 @@ FhcrcParameters <- list(
     screeningCompliance = 0.75, # probability of actually having the first PSA test
     rescreeningCompliance = 0.95, # probability of actually having the re-screening PSA tests
     biopsyCompliance = 0.858, # add reference!!
-    biopsySensitivityT1T2 = 0.6, # biopsy sensitivity for T1-T2 cancers
-    biopsySensitivityLagT1T2 = 0.0, # allows for a lag after cancer onset when T1-T2 the cancers are not biopsy detectable
-    biopsySensitivityT3plus = 0.8, # biopsy sensitivity for T3+ cancers
-    biopsySensitivityLagT3plus = 0.0,  # allows for a lag after cancer onset when T3plus cancers are not biopsy detectable
+    biopsySensitivityTimeProportionT1T2 = 0.5276353, # time portion when T1-T2 cancers are sensitivity to biopsies (expit from calibration). The remaining part, starting at onset, is not detectable.
     studyParticipation = 50.0/260.0, # observed fraction of population who participated in STHLM3 study
     nLifeHistories = 10L, screen = 0L, ## integers
     psaThreshold = 3.0,
@@ -97,15 +94,16 @@ FhcrcParameters <- list(
         0.240339, 0.256215, 0.275103, 0.314157, 0.345252, 0.359275, 0.41768,
         0.430279, 0.463636, 0.491275, 0.549738, 0.354545, 0.553846, 0.461538,
         0.782609),
-    hr_locoregional=transform(expand.grid(age=c(50,60,70),ext_grade=0:2,psa10=0:1),
-                              hr = c(0.3333216, 0.6571425, 1.4993114,
-                                     2.3983486, 2.3608167, 3.2013799,
-                                     2.2131399, 1.6802923, 2.4860426,
-                                     0.6924965, 0.8289258, 1.0958599,
-                                     2.5627764, 2.6614820, 2.2409916,
-                                     0.9096645, 0.8897631, 1.0110877)),
-    hr_metastatic=data.frame(age=c(50, 60, 70),
-                             hr = c(0.8491468, 0.7709947, 0.7167124)),
+    hr_locoregional = transform(expand.grid(age=c(50,60,70), ext_grade=0:2,
+                                            psa10=0:1),
+                                hr = c(0.2272202, 0.5013418, 1.0320761,
+                                       2.2663525, 1.6194548, 1.7414632,
+                                       0.9649768, 0.9496575, 1.5331306,
+                                       1.7288223, 0.9313653, 1.1213371,
+                                       3.8747020, 2.3336343, 2.3652629,
+                                       0.8220104, 0.8284570, 0.8605004)),
+    hr_metastatic = data.frame(age = c(50, 60, 70),
+                               hr = c(0.8057063, 0.8038814, 0.6996823)),
     cost_parameters = c("Invitation" = 50,
                         "Formal PSA" = 130,
                         "Formal panel" = 730,
@@ -220,8 +218,8 @@ rescreening <- data.frame(age5 = c(30, 30, 30, 30, 35, 35, 35, 35, 40, 40,
 1.4543783566239, 1.01084363142901, 0.644940081254986, 1.29365253055963,
 1.4079170674224, 1.03720449704243, 0.643101192871478, 1.08541958643012,
 1.29524623033074, 1.02176143186057, 0.673175882772333))
-pop1 <- data.frame(cohort=2012:1900,
-                   pop=c(rep(17239,9), 16854, 16085, 15504, 15604, 16381, 16705,
+pop1 <- data.frame(cohort=2035:1900,
+                    pop=c(rep(17239,32), 16854, 16085, 15504, 15604, 16381, 16705,
                        16762, 16853, 15487, 14623, 14066, 13568, 13361, 13161, 13234,
                        13088, 12472, 12142, 12062, 12078, 11426, 12027, 11963, 12435,
                        12955, 13013, 13125, 13065, 12249, 11103, 9637, 9009, 8828,
@@ -238,10 +236,11 @@ screenT <- c("noScreening", "randomScreen50to70", "twoYearlyScreen50to70",
 stateT <- c("Healthy","Localised","Metastatic")
 ext_stateT <- c("Healthy","T1_T2","T3plus","Metastatic")
 gradeT <- c("Gleason_le_6","Gleason_7","Gleason_ge_8","Healthy")
-eventT <- c("toLocalised","toMetastatic","toClinicalDiagnosis",
-            "toCancerDeath","toOtherDeath","toScreen","toBiopsyFollowUpScreen",
-            "toScreenInitiatedBiopsy","toClinicalDiagnosticBiopsy","toScreenDiagnosis",
-            "toOrganised","toTreatment","toCM","toRP","toRT","toADT","toUtilityChange","toUtilityRemove",
+eventT <- c("toLocalised","toMetastatic","toClinicalDiagnosis", "toCancerDeath",
+            "toOtherDeath","toScreen","toBiopsyFollowUpScreen",
+            "toScreenInitiatedBiopsy","toClinicalDiagnosticBiopsy",
+            "toScreenDiagnosis", "toOverDiagnosis", "toOrganised","toTreatment",
+            "toCM","toRP", "toRT","toADT","toUtilityChange","toUtilityRemove",
             "toSTHLM3", "toOpportunistic","toT3plus", "toCancelScreens")
 diagnosisT <- c("NotDiagnosed","ClinicalDiagnosis","ScreenDiagnosis")
 treatmentT <- c("no_treatment","CM","RP","RT")
@@ -529,11 +528,11 @@ predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
     ## Stripping of potential rate ratio option before matching
     abbr_type <- match.arg(sub(".?rr$|.?rate.?ratio$",
                                "", type, ignore.case = TRUE),
-                          c("incidence.rate", "symptomatic.incidence.rate",
-                            "screen.incidence.rate", "testing.rate",
-                            "biopsy.rate", "metastasis.rate",
-                            "pc.mortality.rate", "allcause.mortality.rate",
-                            "prevalence"))
+                           c("incidence.rate", "symptomatic.incidence.rate",
+                             "screen.incidence.rate", "overdiagnosis.rate",
+                             "testing.rate", "biopsy.rate", "metastasis.rate",
+                             "pc.mortality.rate", "allcause.mortality.rate",
+                             "prevalence"))
 
     ## Allowing for several groups
     group <- match.arg(group,
@@ -544,6 +543,7 @@ predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
                          incidence.rate = c("toClinicalDiagnosis", "toScreenDiagnosis"),
                          symptomatic.incidence.rate = "toClinicalDiagnosis",
                          screen.incidence.rate = "toScreenDiagnosis",
+                         overdiagnosis.rate = "toOverDiagnosis",
                          testing.rate = "toScreen",
                          biopsy.rate = c("toClinicalDiagnosticBiopsy", "toScreenInitiatedBiopsy"),
                          metastasis.rate = "toMetastatic",

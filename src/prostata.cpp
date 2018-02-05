@@ -108,6 +108,7 @@ namespace fhcrc_example {
   typedef std::pair<double,double> Double;
   typedef Table<double,double,int,double> TablePrtx; // Age, DxY, G
   typedef Table<double,int,int,double> TableLocoHR; // Age, G, PSA10+
+  typedef Table<double,double> TableDD; // Age
   typedef Table<double,double> TableMetastaticHR; // Age
   typedef Table<int,double,double,int,double> TablePradt;
   typedef Table<double,double,double> TableBiopsyCompliance;
@@ -118,6 +119,7 @@ namespace fhcrc_example {
   public:
     TableLocoHR hr_locoregional;
     TableMetastaticHR hr_metastatic;
+    TableDD tableBiopsySensitivity;
     TablePrtx prtxCM, prtxRP;
     TablePradt pradt;
     TableBiopsyCompliance tableOpportunisticBiopsyCompliance, tableFormalBiopsyCompliance;
@@ -961,6 +963,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     lost_productivity("Biopsy");
     scheduleUtilityChange(now(), "Biopsy");
 
+    if (R::runif(0.0,1.0) < in->tableBiopsySensitivity(bounds(year,1987.0,2000.0)))
+      scheduleAt(now(), toScreenDiagnosis);
     if (state == Metastatic ||
 	(state == Localised && ext_state == ext::T3plus) ||
 	(state == Localised && ext_state == ext::T1_T2 &&
@@ -1173,6 +1177,7 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   in.pradt = TablePradt(as<DataFrame>(tables["pradt"]),"Tx","Age","DxY","Grade","ADT");
   in.hr_locoregional = TableLocoHR(as<DataFrame>(otherParameters["hr_locoregional"]),"age","ext_grade","psa10","hr");
   in.hr_metastatic = TableMetastaticHR(as<DataFrame>(otherParameters["hr_metastatic"]),"age","hr");
+  in.tableBiopsySensitivity = TableDD(as<DataFrame>(otherParameters["biopsy_sensitivity"]),"Year","Sensitivity");
   in.tableOpportunisticBiopsyCompliance = TableBiopsyCompliance(as<DataFrame>(tables["biopsyOpportunisticComplianceTable"]),
 						"psa","age","compliance");
   in.tableFormalBiopsyCompliance = TableBiopsyCompliance(as<DataFrame>(tables["biopsyFormalComplianceTable"]),

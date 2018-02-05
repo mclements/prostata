@@ -314,6 +314,7 @@ callFhcrc <- function(n=10,screen=screenT,nLifeHistories=10,
   fhcrcData$prtx$DxY <- as.double(fhcrcData$prtx$DxY)
   fhcrcData$prtx$G <- fhcrcData$prtx$G - 1L
   fhcrcData$pradt$Grade <- fhcrcData$pradt$Grade - 1L
+  fhcrcData$biopsy_sensitivity$Year <- as.double(fhcrcData$biopsy_sensitivity$Year)
   fhcrcData$pradt$Age <- as.double(fhcrcData$pradt$Age)
   fhcrcData$pradt$DxY <- as.double(fhcrcData$pradt$DxY)
   ## fhcrcData$biopsyComplianceTable <-

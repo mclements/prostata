@@ -149,6 +149,7 @@ time-scales and four natural history categories:
 + =year= - grouping by single /calendar year/ as an alternative time-scale
 + =cohort= - grouping by single year /birth cohort/ as an alternative time-scale
 + =state= - grouping by /healthy/, /localised/ & /metastatic/
++ =ext_state= - grouping by /healthy/, /T1-T2-stages/, /T3+-stages/ and /metastatic/
 + =grade= - grouping by /gleason grade/ ~<=6~, ~7~ & ~>=8~
 + =dx= - grouping by /not diagnosed/, /screen diagnosis/ & /clinical diagnosis/
 + =psa= - grouping by psa ~<3~ & ~>=3~

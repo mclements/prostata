@@ -67,7 +67,7 @@ namespace fhcrc_example {
   enum cost_t {Direct,Indirect};
 
   enum utility_scale_t {UtilityAdditive, UtilityMultiplicative, UtilityMinimum};
-  
+
   namespace FullState {
     typedef boost::tuple<short,short,short,bool,double> Type;
     enum Fields {ext_state, ext_grade, dx, psa_ge_3, cohort};
@@ -204,7 +204,7 @@ namespace fhcrc_example {
     }
     Rprintf("]\n");
   }
-  
+
   template<class T>
   T bounds(T x, T a, T b) {
     return (x<a)?a:((x>b)?b:x);
@@ -485,7 +485,7 @@ void FhcrcPerson::init() {
 
   // utilities
   utilities->clear();
-  
+
   // change state variables
   state = Healthy;
   ext_state = ext::Healthy_state;
@@ -730,7 +730,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   if (in->debug)
     Rprint(*utilities);
-  
+
   // handle messages by kind
 
   switch(msg->kind) {
@@ -963,13 +963,13 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     lost_productivity("Biopsy");
     scheduleUtilityChange(now(), "Biopsy");
 
-    if (R::runif(0.0,1.0) < in->tableBiopsySensitivity(bounds(year,1987.0,2000.0)))
-      scheduleAt(now(), toScreenDiagnosis);
     if (state == Metastatic ||
 	(state == Localised && ext_state == ext::T3plus) ||
 	(state == Localised && ext_state == ext::T1_T2 &&
 	 (now() > t0 + 35.0 + (t3p - t0) *
-	  (1 - in->parameter["biopsySensitivityTimeProportionT1T2"])))) { // diagnosed
+	  (1 - in->parameter["biopsySensitivityTimeProportionT1T2"]) *
+           in->tableBiopsySensitivity(bounds(year,1987.0,2000.0)) /
+            in->tableBiopsySensitivity(2000.0)))) { // diagnosed
       scheduleAt(now(), toScreenDiagnosis);
     } else if (!previousNegativeBiopsy) {
       previousNegativeBiopsy = true;
@@ -1141,7 +1141,7 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   in.rngTreatment = new Rng();
   in.rngNh->set();
   Utilities utilities;
-  
+
   // read in the parameters
   List parms(parmsIn);
   List tables = parms["tables"];

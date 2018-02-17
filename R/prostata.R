@@ -751,20 +751,18 @@ lines.fhcrc <- function(x,...) {
 
 NN.fhcrc <- function(obj, ref.obj, startAge = 50, stopAge = Inf) {
     pNNS <- function(thisScenario) {
-        with(subset(thisScenario$summary$events,
-                    event=="toCancerDeath" & age>=startAge & age<stopAge),
-             sum(n)) / # divided by
-            with(subset(thisScenario$summary$prev,
-                        age==round(startAge)),
-                 sum(count))
+        with(thisScenario$summary$events,
+             sum(n[event=="toCancerDeath" & age>=startAge
+                   & age<stopAge])) / # divided by
+            with(thisScenario$summary$prev,
+                        sum(count[age==round(startAge)]))
     }
     pNND <- function(thisScenario) {
-        with(subset(thisScenario$summary$events,
-                    event=="toCancerDeath" & age>=startAge & age<stopAge),
-             sum(n)) / # divided by
-            with(subset(thisScenario$summary$events,
-                        event %in% c("toScreenDiagnosis","toClinicalDiagnosis") & age>=startAge & age<stopAge),
-                 sum(n))
+        with(thisScenario$summary$events,
+             sum(n[event=="toCancerDeath" & age>=startAge & age<stopAge])) / # divided by
+            with(thisScenario$summary$events,
+                 sum(n[event %in% c("toScreenDiagnosis","toClinicalDiagnosis")
+                       & age>=startAge & age<stopAge]))
     }
     NNS <- 1 / (pNNS(ref.obj) - pNNS(obj)) #number needed to screen to prevent 1 PCa death
     NND <- 1 / (pNND(ref.obj) - pNND(obj)) #number needed to detect to prevent 1 PCa death

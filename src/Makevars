@@ -1,7 +1,6 @@
 PKG_LIBS = `$(R_HOME)/bin/Rscript -e "microsimulation:::LdFlags()"`
 
-PKG_CXXFLAGS = -I. 
-PKG_CFLAGS = -I. 
+PKG_CXXFLAGS = -I.
+PKG_CFLAGS = -I.
 
-OBJECTS = prostata.o
-
+OBJECTS = prostata.o prostata_init.o

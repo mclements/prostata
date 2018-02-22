@@ -1,1 +1,13 @@
-^prostata.*\.tar\.gz$
+^Makefile$
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.Rhistory$
+^.*\.sh$
+^README\..*$
+^cran-comments\.md$
+^NEWS\.md$
+^\.travis\.yml$
+^.*\.tar\.gz$
+^\.git$
+^\.gitignore$
+^test.*$

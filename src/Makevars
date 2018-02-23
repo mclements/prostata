@@ -4,3 +4,8 @@ PKG_CXXFLAGS = -I.
 PKG_CFLAGS = -I.
 
 OBJECTS = prostata.o prostata_init.o
+
+strippedLib: $(SHLIB)
+	if test -e "/usr/bin/strip"; then /usr/bin/strip --strip-debug $(SHLIB); fi
+
+.phony: strippedLib

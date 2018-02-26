@@ -15,7 +15,7 @@
 * Background
 
 Prostata is a natural history model of prostate cancer model which
-extends the model developed by Ruth Etzioni and colleagues at the[[http://www.fredhutch.org][Fred
+extends the model developed by Ruth Etzioni and colleagues at the [[http://www.fredhutch.org][Fred
 Hutchinson Cancer Research Center (FHCRC)]]. This is a well validated
 prostate cancer natural history model developed within the [[http://cisnet.cancer.gov/prostate/profiles.html][Cancer
 Intervention and Surveillance Modeling Network (CISNET)]]. We here

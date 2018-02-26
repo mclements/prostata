@@ -1,11 +1,65 @@
+#' prostata
+#'
+#' @section Introduction:
+#'
+#' The packages provides implementations of discrete event simulation in both R
+#' and C++.
+#'
+#' @section Background:
+#'
+#' Prostata is a natural history model of prostate cancer model which extends
+#' the model developed by Ruth Etzioni and colleagues at the
+#' [[http://www.fredhutch.org][Fred Hutchinson Cancer Research Center
+#' (FHCRC)]]. This is a well validated prostate cancer natural history model
+#' developed within the
+#' [[http://cisnet.cancer.gov/prostate/profiles.html][Cancer Intervention and
+#' Surveillance Modeling Network (CISNET)]]. We here provide our extensions of
+#' the model with extended states and finer calibration. The model is provided
+#' as an R package, depending on our
+#' [[https://github.com/mclements/microsimulation][microsimulation]] frame work.
+#' We specifically developed this package for modelling the cost-effectiveness
+#' of prostate cancer screening, where many (e.g. 10^7) men are followed from
+#' birth to death.
+#'
+#' @section Running the simulation:
+#'
+#' There are a number of available testing scenarios. They determine testing
+#' frequencies and re-testing intervals over calendar period and ages.
+#'
+#' @docType package
+#' @name prostata-package
+#' @aliases prostata
+#' @author Mark Clements \email{mark.clements@ki.se
+#' Andreas}
+#' @references \url{https://github.com/mclements/prostata}
+#' @references \url{https://github.com/mclements/microsimulation}
+#' @seealso \code{\link{Rcpp}}
+#' @useDynLib prostata, .registration=TRUE
+#' @import microsimulation
+#' @importFrom Rcpp evalCpp compileAttributes
+NULL
 
 if(.Platform$OS.type == "unix") {
-    pkg <- utils::packageName()
+    #' @importFrom utils packageName
+    pkg <- packageName()
     ## http://r.789695.n4.nabble.com/How-to-construct-a-valid-seed-for-l-Ecuyer-s-method-with-given-Random-seed-td4656340.html
+
+    #' @rdname set.user.Random.seed
+    #' @param seed PARAM_DESCRIPTION
+    #' @keywords internal
+    #' @importFrom microsimulation set.user.Random.seed
     set.user.Random.seed <- function (seed)
         microsimulation::set.user.Random.seed(seed,pkg)
+
+    #' @rdname next.user.Random.substream
+    #' @keywords internal
+    #' @importFrom microsimulation next.user.Random.substream
     next.user.Random.substream <- function ()
         microsimulation::next.user.Random.substream(pkg)
+
+    #' @rdname user.Random.seed
+    #' @keywords internal
+    #' @importFrom microsimulation user.Random.seed
     user.Random.seed <- function()
         microsimulation::user.Random.seed(pkg)
 }
@@ -166,12 +220,71 @@ FhcrcParameters <- list(
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]
 ## ParameterIV <- FhcrcParameters[sapply(FhcrcParameters,class)=="integer" & sapply(FhcrcParameters,length)==1]
+
+#' @title DATASET_TITLE
+#' @description DATASET_DESCRIPTION
+#' @format A data frame with 15 rows and 3 variables:
+#' \describe{
+#'   \item{\code{psa}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{age}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{compliance}}{double COLUMN_DESCRIPTION}
+#'}
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @rdname FUNCTION_NAME
+#' @export
+"swedenOpportunisticBiopsyCompliance"
 swedenOpportunisticBiopsyCompliance <- data.frame(
     psa = c(3, 5, 10, 3, 5, 10, 3, 5, 10, 3, 5, 10, 3, 5, 10),
     age = c(40, 40, 40, 50, 50, 50, 60, 60, 60, 70, 70, 70, 80, 80, 80),
     compliance = c(0.3764045, 0.5680751, 0.7727273, 0.3110770, 0.5726548, 0.7537372, 0.2385155, 0.4814588, 0.6929770, 0.1754264, 0.3685056, 0.5602030, 0.1629213, 0.2697368, 0.5010052))
+
+#' @title DATASET_TITLE
+#' @description DATASET_DESCRIPTION
+#' @format A data frame with 15 rows and 3 variables:
+#' \describe{
+#'   \item{\code{psa}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{age}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{compliance}}{double COLUMN_DESCRIPTION}
+#'}
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @rdname FUNCTION_NAME
+#' @export
+"swedenFormalBiopsyCompliance"
 swedenFormalBiopsyCompliance <- cbind(expand.grid(psa=c(3,5,10),age=seq(40,80,10)),
                                 compliance=0.858)
+#' @title DATASET_TITLE
+#' @description DATASET_DESCRIPTION
+#' @format A data frame with 24 rows and 6 variables:
+#' \describe{
+#'   \item{\code{DxY}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{Age}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{G}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{CM}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{RP}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{RT}}{double COLUMN_DESCRIPTION}
+#'}
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @rdname FUNCTION_NAME
+#' @export
+"stockholmTreatment"
 stockholmTreatment <-
     data.frame(DxY=2008,
                Age=c(50,50,50,55,55,55,60,60,60,65,65,65,70,70,70,75,75,75,80,80,80,85,85,85),
@@ -179,6 +292,27 @@ stockholmTreatment <-
                CM=c(0.231023,0.044872,0.25,0.333333,0.09542,0.328358,0.409439,0.12825,0.348101,0.479167,0.178182,0.401639,0.689013,0.359143,0.56087,0.876543,0.744444,0.809524,1,0.970711,0.952096,0.9375,1,1),
                RP=c(0.700623,0.815839,0.5,0.553592,0.740111,0.326226,0.49981,0.6866,0.291437,0.409879,0.552483,0.279235,0.210949,0.318374,0.179363,0.041152,0.058652,0.049689,0,0.009763,0.023952,0.0625,0,0),
                RT=c(0.068354,0.13929,0.25,0.113074,0.164469,0.345416,0.090751,0.185151,0.360462,0.110954,0.269335,0.319126,0.100038,0.322482,0.259767,0.082305,0.196903,0.140787,0,0.019526,0.023952,0,0,0))
+
+#' @title DATASET_TITLE
+#' @description DATASET_DESCRIPTION
+#' @format A data frame with 52 rows and 5 variables:
+#' \describe{
+#'   \item{\code{age5}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{total_cat}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{shape}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{cure}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{scale}}{double COLUMN_DESCRIPTION}
+#'}
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @rdname FUNCTION_NAME
+#' @export
+"rescreening"
 rescreening <- data.frame(age5 = c(30, 30, 30, 30, 35, 35, 35, 35, 40, 40,
 40, 40, 45, 45, 45, 45, 50, 50, 50, 50, 55, 55, 55, 55, 60, 60,
 60, 60, 65, 65, 65, 65, 70, 70, 70, 70, 75, 75, 75, 75, 80, 80,
@@ -225,6 +359,23 @@ rescreening <- data.frame(age5 = c(30, 30, 30, 30, 35, 35, 35, 35, 40, 40,
 1.4543783566239, 1.01084363142901, 0.644940081254986, 1.29365253055963,
 1.4079170674224, 1.03720449704243, 0.643101192871478, 1.08541958643012,
 1.29524623033074, 1.02176143186057, 0.673175882772333))
+#' @title DATASET_TITLE
+#' @description DATASET_DESCRIPTION
+#' @format A data frame with 136 rows and 2 variables:
+#' \describe{
+#'   \item{\code{cohort}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{pop}}{double COLUMN_DESCRIPTION}
+#'}
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @rdname FUNCTION_NAME
+#' @export
+"pop1"
 pop1 <- data.frame(cohort=2035:1900,
                     pop=c(rep(17239,32), 16854, 16085, 15504, 15604, 16381, 16705,
                        16762, 16853, 15487, 14623, 14066, 13568, 13361, 13161, 13234,
@@ -233,28 +384,120 @@ pop1 <- data.frame(cohort=2035:1900,
                        8350, 7677, 7444, 7175, 6582, 6573, 6691, 6651, 6641, 6268,
                        6691, 6511, 6857, 7304, 7308, 7859, 7277, 8323, 8561, 7173,
                        6942, 7128, 6819, 5037, 6798, rep(6567,46)))
-## these enum strings should be moved to C++
-screenT <- c("noScreening", "randomScreen50to70", "twoYearlyScreen50to70",
-             "fourYearlyScreen50to70", "screen50", "screen60", "screen70",
-             "screenUptake", "stockholm3_goteborg",
-             "stockholm3_risk_stratified", "goteborg", "risk_stratified",
-             "mixed_screening","regular_screen","single_screen",
-             "introduced_screening", "stopped_screening")
-stateT <- c("Healthy","Localised","Metastatic")
-ext_stateT <- c("Healthy","T1_T2","T3plus","Metastatic")
-gradeT <- c("Gleason_le_6","Gleason_7","Gleason_ge_8","Healthy")
-eventT <- c("toLocalised","toMetastatic","toClinicalDiagnosis", "toCancerDeath",
-            "toOtherDeath","toScreen","toBiopsyFollowUpScreen",
-            "toScreenInitiatedBiopsy","toClinicalDiagnosticBiopsy",
-            "toScreenDiagnosis", "toOverDiagnosis", "toOrganised","toTreatment",
-            "toCM","toRP", "toRT","toADT","toUtilityChange","toUtilityRemove",
-            "toSTHLM3", "toOpportunistic","toT3plus", "toCancelScreens")
-diagnosisT <- c("NotDiagnosed","ClinicalDiagnosis","ScreenDiagnosis")
-treatmentT <- c("no_treatment","CM","RP","RT")
-psaT <- c("PSA<3","PSA>=3") # not sure where to put this...
+
+#' @title List tables for the simulation
+#' @description DATASET_DESCRIPTION
+#' \strong{all_cause_mortality}
+#' @format A data frame with 12120 rows and 4 variables:
+#' \describe{
+#'   \item{\code{BirthCohort}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{Age}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{AnnualMortality}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{Survival}}{double COLUMN_DESCRIPTION}
+#'}
+#' \strong{biopsy_frequency}
+#' @format A data frame with 3 rows and 7 variables:
+#' \describe{
+#'   \item{\code{PSA.beg}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{PSA.end}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{X55.59}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{X60.64}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{X65.69}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{X70.74}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{X75.79}}{double COLUMN_DESCRIPTION}
+#'}
+#'
+#' \strong{biopsy_sensitivity}
+#' @format A data frame with 14 rows and 2 variables:
+#' \describe{
+#'   \item{\code{Year}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{Sensitivity}}{double COLUMN_DESCRIPTION}
+#'}
+#'
+#' \strong{dre}
+#' @format A data frame with 4 rows and 4 variables:
+#' \describe{
+#'   \item{\code{psa.low}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{psa.high}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{sensitivity}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{specificity}}{double COLUMN_DESCRIPTION}
+#'}
+#'
+#' \strong{prob_grade7}
+#' @format A data frame with 51 rows and 2 variables:
+#' \describe{
+#'   \item{\code{slope}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{Pr.grade.7.}}{double COLUMN_DESCRIPTION}
+#'}
+#' \strong{pradt}
+#' @format A data frame with 8208 rows and 6 variables:
+#' \describe{
+#'   \item{\code{Tx}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{Age}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{DxY}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{Grade}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{NoADT}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{ADT}}{double COLUMN_DESCRIPTION}
+#'}
+#' \strong{prtx}
+#' @format A data frame with 2664 rows and 6 variables:
+#' \describe{
+#'   \item{\code{Age}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{DxY}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{G}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{CM}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{RP}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{RT}}{double COLUMN_DESCRIPTION}
+#'}
+#' \strong{survival_dist}
+#' @format A data frame with 42 rows and 3 variables:
+#' \describe{
+#'   \item{\code{Grade}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{Time}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{Survival}}{double COLUMN_DESCRIPTION}
+#'}
+#' \strong{survival_local}
+#' @format A data frame with 294 rows and 5 variables:
+#' \describe{
+#'   \item{\code{AgeLow}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{AgeHigh}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{Grade}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{Time}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{Survival}}{double COLUMN_DESCRIPTION}
+#'}
+#' \strong{prob_earlystage}
+#' @format A data frame with 84 rows and 6 variables:
+#' \describe{
+#'   \item{\code{BeginAge}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{EndAge}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{BeginPSA}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{EndPSA}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{Grade}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{Prob}}{double COLUMN_DESCRIPTION}
+#'}
+#' @export
+"fhcrcData"
 fhcrcData$biopsyOpportunisticComplianceTable <- swedenOpportunisticBiopsyCompliance
 fhcrcData$biopsyFormalComplianceTable <- swedenFormalBiopsyCompliance
 ## https://www.socialstyrelsen.se/Lists/Artikelkatalog/Attachments/20008/2015-12-26.pdf
+#' @title DATASET_TITLE
+#' @description DATASET_DESCRIPTION
+#' @format A data frame with 18 rows and 3 variables:
+#' \describe{
+#'   \item{\code{Age}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{Sweden2000}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{World}}{double COLUMN_DESCRIPTION}
+#'}
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @rdname FUNCTION_NAME
+#' @export
+"ageStandards"
 ageStandards <- data.frame(Age = cut(seq(0, 85, 5),
                                     breaks = c(seq(0,85,5), Inf),
                                     right = FALSE),
@@ -264,12 +507,73 @@ ageStandards <- data.frame(Age = cut(seq(0, 85, 5),
                           World = c(12.0, 10.0, 9.0, 9.0, 8.0, 8.0, 6.0, 6.0, 6.0,
                                     6.0, 5.0, 4.0, 4.0, 3.0, 2.0, 1.0, 0.5, 0.5))
 
-callFhcrc <- function(n=10,screen=screenT,nLifeHistories=10,
-                      seed=12345,
-                      panel=FALSE,
-                      includePSArecords=FALSE, includeDiagnoses=FALSE,
-                      flatPop = FALSE, pop = pop1, tables = IHE, debug=FALSE,
-                      parms = NULL, mc.cores = 1, print.timing = TRUE,...) {
+#' @title Define and run simulation
+#' @description Function to specify and run the microsimulation. A large number
+#'     of simulated men, \code{n}, will cause the simulation to take longer time
+#'     but will reduce the stochastic variation particularly for rare events.
+#' @param n Integer number of men to simulate. Default: 10
+#' @param screen String with one of the following simulated screening scenarios:
+#'    \describe{
+#'      \item{\code{noScreening}}{no screening test, only diagnosis from symptoms}
+#'      \item{\code{randomScreen50to70}}{TBA}
+#'      \item{\code{twoYearlyScreen50to70}}{two-yearly screening from age 50 to 70}
+#'      \item{\code{fourYearlyScreen50to70}}{four-yearly screening from age 50 to 70}
+#'      \item{\code{screen50}}{one screen at age 50}
+#'      \item{\code{screen60}}{one screen at age 60}
+#'      \item{\code{screen70}}{one screen at age 70}
+#'      \item{\code{screenUptake}}{current testing pattern in Sweden}
+#'      \item{\code{stockholm3_goteborg}}{TBA}
+#'      \item{\code{stockholm3_risk_stratified}}{TBA}
+#'      \item{\code{goteborg}}{risk stratified re-screening 2+4 from age 50 to 70}
+#'      \item{\code{risk_stratified}}{risk stratified re-screening 4+8 from age 50 to 70}
+#'      \item{\code{mixed_screening}}{risk stratified re-screening 2+4 from age 50 to 70 & opportunistic testing for other ages}
+#'      \item{\code{regular_screen}}{TBA}
+#'      \item{\code{single_screen}}{TBA}
+#'      \item{\code{introduced_screening}}{TBA}
+#'      \item{\code{stopped_screening}}{TBA}
+#'    } . Default: 'noScreening'
+#'
+#' @param nLifeHistories Integer with number of men for all events should be
+#'     recorded, Default: 10
+#' @param seed Integer random number seed, Default: 12345
+#' @param panel Boolean to use the Stockholm3 biomarker panel test
+#'     characteristics, otherwise PSA is used, Default: FALSE
+#' @param includePSArecords Boolean for extra reporting at the time of a
+#'     screening test, Default: FALSE
+#' @param includeDiagnoses Boolean for extra reporting at the time of diagnosis,
+#'     Default: FALSE
+#' @param flatPop Boolean to set all birth cohorts of equal size, Default: FALSE
+#' @param pop Data.frame with two integer columns \code{cohort} with year of the
+#'     birth cohorts and \code{pop} with the size of the corresponding birth
+#'     cohorts, Default: pop1
+#' @param tables List of data.frames to update the tables in fhcrcData, Default:
+#'     IHE
+#' @param debug Boolean to print debugging, Default: FALSE
+#' @param parms List to update FhcrcParameters, Default: NULL
+#' @param mc.cores Integer with the number of cores to use for the computation,
+#'     Default: 1
+#' @param print.timing Boolean should the required time be printed after the
+#'     simulation run, Default: TRUE
+#' @param ... TBA
+#' @return A fhcrc object
+#' @details TBA
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  library(prostata)
+#'  sim1 <- callFhcrc(n=1e6, screen="screenUptake", mc.cores=3)
+#'  }
+#' }
+#' @seealso
+#'  \code{\link[parallel]{mclapply}}
+#' @rdname callFhcrc
+#' @export
+#' @importFrom parallel mclapply
+callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
+                      seed=12345, panel=FALSE, includePSArecords=FALSE,
+                      includeDiagnoses=FALSE, flatPop = FALSE, pop = pop1,
+                      tables = IHE, debug=FALSE, parms = NULL, mc.cores = 1,
+                      print.timing = TRUE,...) {
   ## save the random number state for resetting later
   state <- RNGstate(); on.exit(state$reset())
   ## yes, we use the user-defined RNG
@@ -277,9 +581,28 @@ callFhcrc <- function(n=10,screen=screenT,nLifeHistories=10,
   set.user.Random.seed(seed)
   ## birth cohorts that should give approximately the number of men alive in Stockholm in 2012
   ## check the input arguments
-  screen <- match.arg(screen)
+  screenT <- c("noScreening", "randomScreen50to70", "twoYearlyScreen50to70",
+               "fourYearlyScreen50to70", "screen50", "screen60", "screen70",
+               "screenUptake", "stockholm3_goteborg",
+               "stockholm3_risk_stratified", "goteborg", "risk_stratified",
+               "mixed_screening","regular_screen", "single_screen",
+               "introduced_screening", "stopped_screening")
+  screen <- match.arg(screen, screenT)
   stopifnot(is.na(n) || is.integer(as.integer(n)))
   stopifnot(is.integer(as.integer(nLifeHistories)))
+  ## these enum strings should be moved to C++
+  stateT <- c("Healthy","Localised","Metastatic")
+  ext_stateT <- c("Healthy","T1_T2","T3plus","Metastatic")
+  gradeT <- c("Gleason_le_6","Gleason_7","Gleason_ge_8","Healthy")
+  eventT <- c("toLocalised","toMetastatic","toClinicalDiagnosis", "toCancerDeath",
+            "toOtherDeath","toScreen","toBiopsyFollowUpScreen",
+            "toScreenInitiatedBiopsy","toClinicalDiagnosticBiopsy",
+            "toScreenDiagnosis", "toOverDiagnosis", "toOrganised","toTreatment",
+            "toCM","toRP", "toRT","toADT","toUtilityChange","toUtilityRemove",
+            "toSTHLM3", "toOpportunistic","toT3plus", "toCancelScreens")
+  diagnosisT <- c("NotDiagnosed","ClinicalDiagnosis","ScreenDiagnosis")
+  treatmentT <- c("no_treatment","CM","RP","RT")
+  psaT <- c("PSA<3","PSA>=3") # not sure where to put this...
   screenIndex <- which(screen == screenT) - 1
   timingfunction <- if (print.timing) function(x) print(system.time(x)) else function(x) x
   ## NB: sample() calls the random number generator (!)
@@ -412,6 +735,7 @@ callFhcrc <- function(n=10,screen=screenT,nLifeHistories=10,
       names(summary$pt) <- c(states,"age","pt")
       names(summary$ut) <- c(states,"age","ut")
       names(summary$events) <- c(states,"event","age","n")
+      if(FALSE) age <- NULL # To pass false-positive check note
       summary <- lapply(summary,function(obj) within(obj,year <- cohort+age))
       enum(summary$events$event) <- eventT
 }
@@ -464,6 +788,20 @@ callFhcrc <- function(n=10,screen=screenT,nLifeHistories=10,
 
 ## R --slave -e "options(width=200); require(microsimulation); callFhcrc(100,nLifeHistories=1e5,screen=\"screen50\")[[\"parameters\"]]"
 
+#' @title Summarise simulation results
+#' @description FUNCTION_DESCRIPTION
+#' @param object PARAM_DESCRIPTION
+#' @param ... PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @rdname summary.fhcrc
+#' @export
 summary.fhcrc <- function(object, ...) {
     newobj <- object[c("n","screen")]
     with(object,
@@ -478,6 +816,20 @@ summary.fhcrc <- function(object, ...) {
                    class="summary.fhcrc"))
 }
 
+#' @title Print a selection of the summarised simulation
+#' @description FUNCTION_DESCRIPTION
+#' @param x PARAM_DESCRIPTION
+#' @param ... PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @rdname print.summary.fhcrc
+#' @export
 print.summary.fhcrc <- function(x, ...) {
     obj <- x
     cat(sprintf(
@@ -494,6 +846,22 @@ obj$discountRate.effectiveness,
 obj$discountRate.costs))
 }
 
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param object1 PARAM_DESCRIPTION
+#' @param object2 PARAM_DESCRIPTION
+#' @param perspective PARAM_DESCRIPTION, Default: c("societal.costs", "healthsector.costs")
+#' @param ... PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @rdname ICER.fhcrc
+#' @export
 ICER.fhcrc <- function(object1, object2,
                        perspective = c("societal.costs",
                                        "healthsector.costs"), ...) {
@@ -518,12 +886,48 @@ ICER.fhcrc <- function(object1, object2,
     out
 }
 
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param x PARAM_DESCRIPTION
+#' @param ... PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @rdname print.fhcrc
+#' @export
 print.fhcrc <- function(x, ...)
     cat(sprintf("FHCRC prostate cancer model with %i individual(s) under scenario '%s'.\n",
                 x$n, x$screen),
         ...)
 
 ## TODO: better solve issue below with testing.rate for noScreening scenario
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param object PARAM_DESCRIPTION
+#' @param scenarios PARAM_DESCRIPTION, Default: NULL
+#' @param type PARAM_DESCRIPTION, Default: 'incidence.rate'
+#' @param group PARAM_DESCRIPTION, Default: 'age'
+#' @param age.breaks PARAM_DESCRIPTION, Default: NULL
+#' @param year.breaks PARAM_DESCRIPTION, Default: NULL
+#' @param cohort.breaks PARAM_DESCRIPTION, Default: NULL
+#' @param age.weights PARAM_DESCRIPTION, Default: NULL
+#' @param ... PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @importFrom stats predict
+#' @rdname predict.fhcrc
+#' @export
 predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
                          group = "age", age.breaks = NULL, year.breaks = NULL,
                          cohort.breaks = NULL, age.weights = NULL, ...) {
@@ -562,6 +966,9 @@ predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
         as.numeric(unique(unlist(regmatches(interval_vector,
                                             gregexpr("[0-9]+|Inf", interval_vector)))))
     }
+
+    if(FALSE) {age <- year <- cohort <- Freq <- event <- Freq.y <- Freq.x <-
+    scenario.x <- rate.x <- rate.y <- NULL} # To pass false-positive check note
 
     ## Manipulate input, make sure age.breaks exists from age standardisation
     if(!is.null(age.weights)) age.breaks <- interval2break(age.weights[,1])
@@ -727,6 +1134,27 @@ predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
     }
 }
 
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param x PARAM_DESCRIPTION
+#' @param type PARAM_DESCRIPTION, Default: c("incidence.rate", "testing.rate", "biopsy.rate", "metastasis.rate",
+#'    "pc.mortality.rate", "allcause.mortality.rate")
+#' @param plot.type PARAM_DESCRIPTION, Default: 'l'
+#' @param add PARAM_DESCRIPTION, Default: FALSE
+#' @param xlab PARAM_DESCRIPTION, Default: 'Age (years)'
+#' @param ylab PARAM_DESCRIPTION, Default: NULL
+#' @param ... PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @importFrom graphics plot
+#' @rdname plot.fhcrc
+#' @export
 plot.fhcrc <- function(x, type=c("incidence.rate", "testing.rate",
                                  "biopsy.rate", "metastasis.rate",
                                  "pc.mortality.rate",
@@ -745,11 +1173,49 @@ plot.fhcrc <- function(x, type=c("incidence.rate", "testing.rate",
     rates$rate = rates$rate*switch(type, testing.rate=1000, biopsy.rate=1000, incidence.rate=1e5, metastasis.rate=1e5,pc.mortality.rate=1e5,allcause.mortality.rate=1e5)
     if (!add) plot(rate~age, data=rates, type=plot.type, xlab=xlab, ylab=ylab, ...) else lines(rate~age, data=rates,  ...)
 }
+
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param x PARAM_DESCRIPTION
+#' @param ... PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @rdname lines.fhcrc
+#' @importFrom graphics lines
+#' @export
 lines.fhcrc <- function(x,...) {
     plot(x, ..., add=TRUE)
 }
 
-NN.fhcrc <- function(obj, ref.obj, startAge = 50, stopAge = Inf) {
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param object1 PARAM_DESCRIPTION
+#' @param object2 PARAM_DESCRIPTION
+#' @param startAge PARAM_DESCRIPTION, Default: 50
+#' @param stopAge PARAM_DESCRIPTION, Default: Inf
+#' @param ... PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @rdname nn.fhcrc
+#' @export
+nn <- function(object1, object2, startAge = 50, stopAge = Inf, ...){
+  UseMethod("nn")
+}
+
+#' @export
+nn.fhcrc <- function(object1, object2, startAge = 50, stopAge = Inf, ...) {
     pNNS <- function(thisScenario) {
         with(thisScenario$summary$events,
              sum(n[event=="toCancerDeath" & age>=startAge
@@ -764,8 +1230,8 @@ NN.fhcrc <- function(obj, ref.obj, startAge = 50, stopAge = Inf) {
                  sum(n[event %in% c("toScreenDiagnosis","toClinicalDiagnosis")
                        & age>=startAge & age<stopAge]))
     }
-    NNS <- 1 / (pNNS(ref.obj) - pNNS(obj)) #number needed to screen to prevent 1 PCa death
-    NND <- 1 / (pNND(ref.obj) - pNND(obj)) #number needed to detect to prevent 1 PCa death
+    NNS <- 1 / (pNNS(object2) - pNNS(object1)) #number needed to screen to prevent 1 PCa death
+    NND <- 1 / (pNND(object2) - pNND(object1)) #number needed to detect to prevent 1 PCa death
     ## Include additional number needed to treat (NNT) [Gulati 2011] to show overdiagnosis?
-    return(list(NNS=NNS,NND=NND))
+    structure(.Data = list(NNS=NNS,NND=NND), class = "nn.fhcrc")
 }

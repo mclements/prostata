@@ -1,15 +1,19 @@
 Package: prostata
 Type: Package
 Title: Prostate Cancer Microsimulation for Sweden
-Version: 1.1
-Date: 2017-06-14
-Author: Mark Clements, Alexandra Jauhiainen, Andreas Karlsson.
-Maintainer: Mark Clements <mark.clements@ki.se>
+Version: 1.2
+Date: 2018-02-24
+Authors@R: c(person("Mark", "Clements", role = c("aut", "cre"),
+                     email = "mark.clements@ki.se"),
+              person("Alexandra", "Jauhiainen", role = "ctb",
+                     email = "alexandra.jauhiainen@astrazeneca.com"),
+              person("Andreas Karlsson", role = "aut",
+                     email = "andreas.a.karlsson@ki.se"))
 Description: Microsimulation using discrete event simulation in R and C++. This includes a full prostate cancer model.
 License: GPL (>= 3)
 Depends: microsimulation
-Remotes: mclements/microsimulation@core
-Imports: parallel, grDevices, utils, Rcpp
+Imports: Rcpp, graphics, utils, parallel, stats
 LinkingTo: microsimulation, Rcpp, BH
 Suggests: testthat
 LazyData: true
+RoxygenNote: 6.0.1

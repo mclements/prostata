@@ -549,12 +549,12 @@ void FhcrcPerson::init() {
   scheduleAt(t0+35.0,toLocalised);
   scheduleAt(aoc,toOtherDeath);
 
-  // schedule screening events that depend on screeningCompliance
+  // schedule screening events that depend on screeningParticipation
   in->rngScreen->set();
   rescreening_frailty = R::rgamma(1.25, 1.25);
   double u1 = R::runif(0.0,1.0);
   double u2 = R::runif(0.0,1.0);
-  if (R::runif(0.0,1.0)<in->parameter["screeningCompliance"]) {
+  if (R::runif(0.0,1.0)<in->parameter["screeningParticipation"]) {
     switch(in->screen) {
     case noScreening:
       break; // no screening
@@ -584,7 +584,7 @@ void FhcrcPerson::init() {
     case stockholm3_goteborg:
     case stockholm3_risk_stratified:
     case screenUptake:
-      // see below (models compliance)
+      // see below (models screening participation)
       break;
     default:
       REprintf("Screening not matched: %i\n",in->screen);
@@ -592,7 +592,7 @@ void FhcrcPerson::init() {
     }
   }
 
-  // schedule screening events that already incorporate screening compliance
+  // schedule screening events that already incorporate screening participation
   switch(in->screen) {
   case mixed_screening:
     opportunistic_uptake();
@@ -861,7 +861,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     } // assumes similar biopsy compliance, reasonable? An option to different psa-thresholds would be to use different biopsyCompliance. /AK
     else { // re-screening schedules
       // Check for organised screens - opportunistic screens are described later
-      if (R::runif(0.0,1.0) < in->parameter["rescreeningCompliance"]) {
+      if (R::runif(0.0,1.0) < in->parameter["rescreeningParticipation"]) {
 	switch (in->screen) {
 	case mixed_screening:
 	case stockholm3_goteborg:
@@ -915,9 +915,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	  REprintf("Screening not matched: %s\n",in->screen);
 	  break;
 	}
-      } // rescreening compliance
+      } // rescreening participation
       if (in->screen == screenUptake || (mixed_programs && !organised))
-	opportunistic_rescreening(psa); // includes rescreening compliance
+	opportunistic_rescreening(psa); // includes rescreening participation
     } // rescreening
     in->rngNh->set();
   } break;
@@ -974,9 +974,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     } else if (!previousNegativeBiopsy) {
       previousNegativeBiopsy = true;
       // first re-screen after negative biopsy
-      if (R::runif(0.0,1.0) < in->parameter["rescreeningCompliance"])
+      if (R::runif(0.0,1.0) < in->parameter["rescreeningParticipation"])
 	scheduleAt(now() + 1, toBiopsyFollowUpScreen); // schedule one quick PSA retest
-    } else if (R::runif(0.0,1.0) < in->parameter["rescreeningCompliance"]) { // next rescreen after negative biopsy
+    } else if (R::runif(0.0,1.0) < in->parameter["rescreeningParticipation"]) { // next rescreen after negative biopsy
       opportunistic_rescreening(psa); // schedule a routine future screen
     }
     in->rngNh->set();
@@ -1238,7 +1238,7 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
       Rprintf("hr_localregional(50,7,1)=%g\n",in.hr_locoregional(age_diag<50.0 ? 50.0 : age_diag, ext::Gleason_7, 1));
       Rprintf("hr_localregional(50,<=6,0)=%g\n",in.hr_locoregional(age_diag<50.0 ? 50.0 : age_diag, ext::Gleason_le_6, 0));
       Rprintf("hr_localregional(50,<=6,1)=%g\n",in.hr_locoregional(age_diag<50.0 ? 50.0 : age_diag, ext::Gleason_le_6, 1));
-      Rprintf("screeningCompliance=%g\n",as<double>(in.parameter["screeningCompliance"]));
+      Rprintf("screeningParticipation=%g\n",as<double>(in.parameter["screeningParticipation"]));
     }
   }
 

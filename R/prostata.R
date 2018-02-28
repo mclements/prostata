@@ -107,8 +107,8 @@ FhcrcParameters <- list(
     sxbenefit = 1.0, # hazard rate ratio for screening benefit, defaults to no effect
     c_benefit_type = 0, # 0=stage-shift (=> c_benefit_value0=10), 1=lead-time based (=> c_benefit_value1=0.1)
     c_benefit_value1 = 0.1, # approximate increase in cure for each year of lead-time, used for the lead-time based screening effect
-    screeningCompliance = 0.75, # probability of actually having the first PSA test
-    rescreeningCompliance = 0.95, # probability of actually having the re-screening PSA tests
+    screeningParticipation = 0.75, # probability of actually having the first PSA test
+    rescreeningParticipation = 0.95, # probability of actually having the re-screening PSA tests
     biopsyCompliance = 0.858, # add reference!!
     biopsySensitivityTimeProportionT1T2 = 0.5276353, # time portion when T1-T2 cancers are sensitivity to biopsies (expit from calibration). The remaining part, starting at onset, is not detectable.
     studyParticipation = 50.0/260.0, # observed fraction of population who participated in STHLM3 study

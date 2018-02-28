@@ -359,7 +359,7 @@ namespace fhcrc_example {
     double age_d = -1.0;        // age at death (output)
     double age_m = tm + 35.0;   // age at onset of metastatic cancer
     bool localised = (age_diag < age_m);
-    double txhaz = (localised && (tx == RP || tx == RT)) ? 0.62 : 1.0; // hazard ratio from SPCG-4
+    double txhaz = (localised && (tx == RP || tx == RT)) ? in->parameter["RP_mortHR"] : 1.0; // assume same HR for RP & RT
     // calibration HR(age_diag,PSA,ext_grade) for loco-regional or HR(age_diag) for metastatic cancer
     double lead_time = age_c - age_diag;
     double txbenefit = exp(log(txhaz)+log(double(in->parameter["c_txlt_interaction"]))*lead_time); // treatment lead-time interaction

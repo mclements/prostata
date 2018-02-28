@@ -107,6 +107,7 @@ FhcrcParameters <- list(
     sxbenefit = 1.0, # hazard rate ratio for screening benefit, defaults to no effect
     c_benefit_type = 0, # 0=stage-shift (=> c_benefit_value0=10), 1=lead-time based (=> c_benefit_value1=0.1)
     c_benefit_value1 = 0.1, # approximate increase in cure for each year of lead-time, used for the lead-time based screening effect
+    RP_mortHR <- 0.56, # mortality hazard ratio for surgery over watchful-waiting from SPCG-4 Bill-Axelson 2014
     screeningParticipation = 0.75, # probability of actually having the first PSA test
     rescreeningParticipation = 0.95, # probability of actually having the re-screening PSA tests
     biopsyCompliance = 0.856, # Formal biopsy compliance, Schröder ERSPC 2014

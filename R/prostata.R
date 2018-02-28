@@ -109,7 +109,7 @@ FhcrcParameters <- list(
     c_benefit_value1 = 0.1, # approximate increase in cure for each year of lead-time, used for the lead-time based screening effect
     screeningParticipation = 0.75, # probability of actually having the first PSA test
     rescreeningParticipation = 0.95, # probability of actually having the re-screening PSA tests
-    biopsyCompliance = 0.858, # add reference!!
+    biopsyCompliance = 0.856, # Formal biopsy compliance, Schröder ERSPC 2014
     biopsySensitivityTimeProportionT1T2 = 0.5276353, # time portion when T1-T2 cancers are sensitivity to biopsies (expit from calibration). The remaining part, starting at onset, is not detectable.
     studyParticipation = 50.0/260.0, # observed fraction of population who participated in STHLM3 study
     nLifeHistories = 10L, screen = 0L, ## integers
@@ -263,7 +263,7 @@ swedenOpportunisticBiopsyCompliance <- data.frame(
 #' @export
 "swedenFormalBiopsyCompliance"
 swedenFormalBiopsyCompliance <- cbind(expand.grid(psa=c(3,5,10),age=seq(40,80,10)),
-                                compliance=0.858)
+                                compliance=FhcrcParameters$biopsyCompliance)
 #' @title DATASET_TITLE
 #' @description DATASET_DESCRIPTION
 #' @format A data frame with 24 rows and 6 variables:

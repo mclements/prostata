@@ -107,7 +107,7 @@ FhcrcParameters <- list(
     sxbenefit = 1.0, # hazard rate ratio for screening benefit, defaults to no effect
     c_benefit_type = 0, # 0=stage-shift (=> c_benefit_value0=10), 1=lead-time based (=> c_benefit_value1=0.1)
     c_benefit_value1 = 0.1, # approximate increase in cure for each year of lead-time, used for the lead-time based screening effect
-    RP_mortHR <- 0.56, # mortality hazard ratio for surgery over watchful-waiting from SPCG-4 Bill-Axelson 2014
+    RP_mortHR = 0.56, # mortality hazard ratio for surgery over watchful-waiting from SPCG-4 Bill-Axelson 2014
     screeningParticipation = 0.75, # probability of actually having the first PSA test
     rescreeningParticipation = 0.95, # probability of actually having the re-screening PSA tests
     biopsyCompliance = 0.856, # Formal biopsy compliance, Schröder ERSPC 2014
@@ -293,6 +293,11 @@ stockholmTreatment <-
                CM=c(0.231023,0.044872,0.25,0.333333,0.09542,0.328358,0.409439,0.12825,0.348101,0.479167,0.178182,0.401639,0.689013,0.359143,0.56087,0.876543,0.744444,0.809524,1,0.970711,0.952096,0.9375,1,1),
                RP=c(0.700623,0.815839,0.5,0.553592,0.740111,0.326226,0.49981,0.6866,0.291437,0.409879,0.552483,0.279235,0.210949,0.318374,0.179363,0.041152,0.058652,0.049689,0,0.009763,0.023952,0.0625,0,0),
                RT=c(0.068354,0.13929,0.25,0.113074,0.164469,0.345416,0.090751,0.185151,0.360462,0.110954,0.269335,0.319126,0.100038,0.322482,0.259767,0.082305,0.196903,0.140787,0,0.019526,0.023952,0,0,0))
+
+secularTrendTreatment2008OR <-
+    data.frame(year=as.numeric(1988:2009),
+               OR=c(0.194409,0.155874,0.130704,0.154104,0.148039,0.237752,0.299491,0.330934,0.407047,0.377968,0.443079,0.551047,0.686101,0.700657,0.846134,0.93956,1.03026,1.191726,1.067736,1.012136,1,0.911471))
+
 
 #' @title DATASET_TITLE
 #' @description DATASET_DESCRIPTION
@@ -480,6 +485,7 @@ pop1 <- data.frame(cohort=2035:1900,
 "fhcrcData"
 fhcrcData$biopsyOpportunisticComplianceTable <- swedenOpportunisticBiopsyCompliance
 fhcrcData$biopsyFormalComplianceTable <- swedenFormalBiopsyCompliance
+fhcrcData$secularTrendTreatment2008OR <- secularTrendTreatment2008OR
 ## https://www.socialstyrelsen.se/Lists/Artikelkatalog/Attachments/20008/2015-12-26.pdf
 #' @title DATASET_TITLE
 #' @description DATASET_DESCRIPTION
@@ -636,6 +642,9 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   ns <- cumsum(sapply(chunks,length))
   ns <- c(0,ns[-length(ns)])
   ## Minor changes to fhcrcData
+  fhcrcData$biopsyOpportunisticComplianceTable <- swedenOpportunisticBiopsyCompliance
+  fhcrcData$biopsyFormalComplianceTable <- swedenFormalBiopsyCompliance
+  fhcrcData$secularTrendTreatment2008OR <- secularTrendTreatment2008OR
   if (!is.null(tables))
       for (name  in names(tables))
           fhcrcData[[name]] <- tables[[name]]

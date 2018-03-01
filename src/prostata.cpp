@@ -119,7 +119,7 @@ namespace fhcrc_example {
   public:
     TableLocoHR hr_locoregional;
     TableMetastaticHR hr_metastatic;
-    TableDD tableBiopsySensitivity;
+    TableDD tableBiopsySensitivity, tableSecularTrendTreatment2008OR;
     TablePrtx prtxCM, prtxRP;
     TablePradt pradt;
     TableBiopsyCompliance tableOpportunisticBiopsyCompliance, tableFormalBiopsyCompliance;
@@ -305,7 +305,8 @@ namespace fhcrc_example {
   }
 
   treatment_t FhcrcPerson::calculate_treatment(double u, double age, double year) {
-    double pCM, pRP;
+    double pCM, pRP, pRT;
+    // treatment probabilities in 2008
     if (in->bparameter["stockholmTreatment"]) {
        pCM = in->prtxCM(bounds<double>(age,50.0,85.0),
 		    bounds<double>(year,2008.0,2012.0),
@@ -320,6 +321,17 @@ namespace fhcrc_example {
        pRP = in->prtxRP(bounds<double>(age,50.0,79.0),
 		    bounds<double>(year,1973.0,2004.0),
 		    int(grade));
+    }
+    pRT = 1.0 - pCM - pRP;
+    // adjust for secular trend in odds of RP or RT
+    {
+      double OR = in->tableSecularTrendTreatment2008OR(bounds(year,1988.0,2009.0));
+      double gamma = log(OR);
+      double betaRT = log(pRT/pCM);
+      double betaRP = log(pRP/pCM);
+      pCM = 1.0/(1.0+exp(betaRT+gamma)+exp(betaRP+gamma));
+      pRP = exp(betaRP+gamma)*pCM;
+      pRT = exp(betaRT+gamma)*pCM;
     }
     treatment_t tx = (u<pCM) ? CM :
       (u<pCM+pRP) ? RP : RT;
@@ -1178,6 +1190,7 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   in.hr_locoregional = TableLocoHR(as<DataFrame>(otherParameters["hr_locoregional"]),"age","ext_grade","psa10","hr");
   in.hr_metastatic = TableMetastaticHR(as<DataFrame>(otherParameters["hr_metastatic"]),"age","hr");
   in.tableBiopsySensitivity = TableDD(as<DataFrame>(otherParameters["biopsy_sensitivity"]),"Year","Sensitivity");
+  in.tableSecularTrendTreatment2008OR = TableDD(as<DataFrame>(tables["secularTrendTreatment2008OR"]),"year","OR");
   in.tableOpportunisticBiopsyCompliance = TableBiopsyCompliance(as<DataFrame>(tables["biopsyOpportunisticComplianceTable"]),
 						"psa","age","compliance");
   in.tableFormalBiopsyCompliance = TableBiopsyCompliance(as<DataFrame>(tables["biopsyFormalComplianceTable"]),

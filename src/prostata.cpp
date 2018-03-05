@@ -325,7 +325,7 @@ namespace fhcrc_example {
     pRT = 1.0 - pCM - pRP;
     // adjust for secular trend in odds of RP or RT
     {
-      double OR = in->tableSecularTrendTreatment2008OR(bounds(year,1988.0,2009.0));
+      double OR = in->tableSecularTrendTreatment2008OR(bounds(year,1988.0,2008.0));
       double gamma = log(OR);
       double betaRT = log(pRT/pCM);
       double betaRP = log(pRP/pCM);

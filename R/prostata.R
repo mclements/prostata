@@ -826,6 +826,49 @@ summary.fhcrc <- function(object, ...) {
                    class="summary.fhcrc"))
 }
 
+#' @title Minus operator method for \code{summary.fhcrc} objects
+#' @description Calculates the difference between two \code{summary.fhcrc}
+#'     objects.
+#' @param object1 The positive reference \code{summary.fhcrc} object.
+#' @param object2 The negative \code{summary.fhcrc} object which is subtracted
+#'     from \code{object1}.
+#' @return A \code{summary.fhcrc} object representing the difference between the
+#'     two compared \code{summary.fhcrc}.
+#' @details Calculates the difference between two \code{summary.fhcrc} objects,
+#'     e.g. the difference in life expectancy, quality of life etc. The
+#'     exceptions are \code{discountRate.costs} and
+#'     \code{discountRate.effectiveness} which are required two be the same for
+#'     the two scenarios and the original value is returned. If \code{n} has the
+#'     same value the original value is returned if they differ a list with both
+#'     is returned.
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  scenario1 <- summary(callFhcrc(screen = "screenUptake"))
+#'  scenario2 <-summary(callFhcrc(screen = "noScreening"))
+#'  scenario1 - scenario2
+#'  }
+#' }
+#' @rdname summary.fhcrc
+#' @export
+'-.summary.fhcrc' <- function(object1, object2) {
+    if(object1$discountRate.costs != object2$discountRate.costs)
+        stop("The two scenarios have different discount rates for the costs.")
+    if(object1$discountRate.effectiveness != object2$discountRate.effectiveness)
+        stop("The two scenarios have different discount rates for the effectiveness.")
+    if(object1$n != object2$n)
+        warning("The two scenarios have different number of men.")
+    structure(.Data= list(n = if(object1$n == object2$n) {object1$n} else {list(object1$n, object2$n)},
+                          screen = sprintf("%s-%s", object1$screen, object2$screen),
+                          discountRate.costs = object1$discountRate.costs,
+                          discountRate.effectiveness = object1$discountRate.effectiveness,
+                          LE = object1$LE - object2$LE,
+                          QALE = object1$QALE - object2$QALE,
+                          healthsector.costs = object1$healthsector.cost - object2$healthsector.cost,
+                          societal.costs = object1$societal.cost - object2$societal.cost),
+              class="summary.fhcrc")
+}
+
 #' @title Print a selection of the summarised simulation
 #' @description FUNCTION_DESCRIPTION
 #' @param x PARAM_DESCRIPTION

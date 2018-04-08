@@ -659,6 +659,10 @@ void FhcrcPerson::init() {
   // |       80 |       84 |  0.74 |    0.69 |
   // Schedule changes in the baseline utility by age
   // Burström and Rehnberg (2006)
+  // This one?
+  // http://libris.kb.se/bib/10708053?vw=short
+  // or this (has the plot but not the table):
+  // https://link.springer.com/content/pdf/10.1007%2Fs11136-007-9243-z.pdf
   // (require 'cl)
   // (let ((utilities
   // 	 (list 1 0.89 0.89 0.88 0.87 0.84 0.84 0.83 0.83 0.82 0.83 0.81 0.79 0.74))

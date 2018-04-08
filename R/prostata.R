@@ -82,8 +82,8 @@ FhcrcParameters <- list(
     tau2 = 0.0829, # log PSA measurement variance  - normal
     susceptible = susceptible <- 1.0, # portion susceptible
     g0=0.0005 / susceptible, # onset parameter
-    g3p = exp(-6.80397262), # T3+ parameter
-    gm = exp(-7.55059510), # metastatic parameter
+    g3p = exp(-6.9353063), # T3+ parameter
+    gm = exp(-6.4824485), # metastatic parameter
     gc=0.0015, # clinical diagnosis parameter
     thetac=19.1334, # clinical diagnosis parameter after metastatic
     mubeta0=-1.609, # mean of beta0, where beta0 is the log PSA intercept at age 35 years
@@ -95,9 +95,9 @@ FhcrcParameters <- list(
     rev_mubeta2=c(0.051, 0.129, 0.1678), # ext::grade: same as above for extended gleason grade (6-, 7, 8+)
     rev_sebeta2=c(0.064, 0.087, 0.3968), # ext::grade
     alpha7 = log(0.2), # log of the proportion gleason 7 at age 35
-    beta7 = 0.06739312, # slope of log proportion of gleason 7
+    beta7 = 0.0642775, # slope of log proportion of gleason 7
     alpha8 = log(0.002), # log of the proportion of gleason 8+ at age 35
-    beta8 = 0.20038884, # slope of log proportion of gleason 8+
+    beta8 = 0.1864655, # slope of log proportion of gleason 8+
     RR_T3plus=2.0, # prostate cancer mortality rate ratio comparing T3+ with T1-T2, add lit reference
     ## mubeta2.scale=1.0, # cf. 2.1
     ## beta.rho=0.62,
@@ -111,7 +111,7 @@ FhcrcParameters <- list(
     screeningParticipation = 0.75, # probability of actually having the first PSA test
     rescreeningParticipation = 0.95, # probability of actually having the re-screening PSA tests
     biopsyCompliance = 0.856, # Formal biopsy compliance, Schröder ERSPC 2014
-    biopsySensitivityTimeProportionT1T2 = 0.5276353, # time portion when T1-T2 cancers are sensitivity to biopsies (expit from calibration). The remaining part, starting at onset, is not detectable.
+    biopsySensitivityTimeProportionT1T2 = 0.5272495, # time portion when T1-T2 cancers are sensitivity to biopsies (expit from calibration). The remaining part, starting at onset, is not detectable.
     studyParticipation = 50.0/260.0, # observed fraction of population who participated in STHLM3 study
     nLifeHistories = 10L, screen = 0L, ## integers
     psaThreshold = 3.0,

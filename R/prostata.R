@@ -997,7 +997,7 @@ predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
                              "screen.incidence.rate", "overdiagnosis.rate",
                              "testing.rate", "biopsy.rate", "metastasis.rate",
                              "pc.mortality.rate", "allcause.mortality.rate",
-                             "prevalence"))
+                             "prevalence", "ly", "life.years"))
 
     ## Allowing for several groups
     group <- match.arg(group,
@@ -1136,6 +1136,17 @@ predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
                                                   rm("Freq")})
     }
 
+    ## Calculate prevalences by specified groups
+    calc_ly <- function(object, group){
+        within(with(categorise_time(object$summary$pt, age.breaks,
+                                    year.breaks, cohort.breaks),
+                    numeric_time_scale(name_grp(grp_apply(pt,
+                                       lapply(as.list(group),
+                                              function(x) eval(parse(text = x))), sum)), group)), {
+                                                  ly <- Freq/object$n
+                                                  rm("Freq")})
+    }
+
     ## Calculates the outcome in the passed function for all
     ## simulation objects in the 'scenarios' list. Then the object
     ## outcome (e.g. rates or prev) are for the scenarios are added as
@@ -1179,9 +1190,14 @@ predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
         standardise_time(predict_scenarios(unique(c(list(object),scenarios)), calc_prev, group),
                          timestr = "age", parstr = "prevalence", time.weights = age.weights)
 
-        ## Defauls to plain rates. If reference object exist add it to
+        ## Life-years if type is ly or life*years
+    } else if(grepl("^ly$|^life.?years$", type, ignore.case = TRUE)){
+        standardise_time(predict_scenarios(unique(c(list(object),scenarios)), calc_ly, group),
+                         timestr = "age", parstr = "LY", time.weights = age.weights)
+
+        ## Defaults to plain rates. If reference object exist add it to
         ## scenario list and remove duplicates.
-    }else{
+    } else {
         standardise_time(predict_scenarios(unique(c(list(object),scenarios)), calc_rate, event_types, group),
                          timestr = "age", parstr = "rate", time.weights = age.weights)
     }

@@ -872,7 +872,6 @@ summary.fhcrc <- function(object, ...) {
               class="summary.fhcrc")
 }
 
-
 #' @title Multiplaction with scalar operator method for \code{summary.fhcrc} objects
 #' @description Calculates the results per a number of persons of a
 #'     \code{summary.fhcrc} object.

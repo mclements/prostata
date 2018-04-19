@@ -872,6 +872,45 @@ summary.fhcrc <- function(object, ...) {
               class="summary.fhcrc")
 }
 
+
+#' @title Multiplaction with scalar operator method for \code{summary.fhcrc} objects
+#' @description Calculates the results per a number of persons of a
+#'     \code{summary.fhcrc} object.
+#' @param obj The \code{summary.fhcrc} object.
+#' @param perpersons a scalar to multiply the summary results with.
+#' @return A \code{summary.fhcrc} object scaled for a number of persons.
+#' @details N.b. this is unfortunatly not a commutative
+#'     operator. Therefor the first parameter must be the
+#'     \code{summary.fhcrc} object and the second parameter a nummeric
+#'     scalar.
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  ## Example 1
+#'  scenario1 <- summary(callFhcrc(screen = "screenUptake"))
+#'  scenario1 * 1000 # the summaery per thousand persons
+#'
+#'  ## Example 2
+#'  scenario2 <-summary(callFhcrc(screen = "noScreening"))
+#'  (scenario1 - scenario2) * 1000 # the difference per thousand persons
+#'  }
+#' }
+#' @rdname summary.fhcrc
+#' @export
+'*.summary.fhcrc' <- function(obj, perpersons) {
+    if(!is.numeric(perpersons))
+        stop("The 'perpersons' variable needs to be a numeric.")
+    structure(.Data= list(n = ifelse(is.list(obj$n), list(lapply(obj$n, function(x) x * perpersons)), obj$n * perpersons),
+                          screen = sprintf("(%s)*%d", obj$screen, perpersons),
+                          discountRate.costs = obj$discountRate.costs,
+                          discountRate.effectiveness = obj$discountRate.effectiveness,
+                          LE = obj$LE * perpersons,
+                          QALE = obj$QALE * perpersons,
+                          healthsector.costs = obj$healthsector.cost * perpersons,
+                          societal.costs = obj$societal.cost * perpersons),
+              class="summary.fhcrc")
+}
+
 #' @title Print a selection of the summarised simulation
 #' @description FUNCTION_DESCRIPTION
 #' @param x PARAM_DESCRIPTION

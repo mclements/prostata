@@ -773,7 +773,9 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   societal.costs <- do.call("rbind",lapply(out,function(obj) data.frame(obj$costs))) #split in sociatal and healthcare perspective
   ## names(costs) <- c("type","item","cohort","age","costs")
   names(societal.costs) <- c("type","item","age","costs")
-  societal.costs$type <- ifelse(societal.costs$type, "Productivity loss", "Health sector cost") # societal perspective
+  societal.costs$type <- factor(ifelse(societal.costs$type,
+                                       "Productivity loss",
+                                       "Health sector cost")) # societal perspective
   healthsector.costs <- societal.costs[societal.costs["type"] == "Health sector cost", c("item", "age", "costs")] # healthcare perspective
   names(lifeHistories) <- c("id", "ext_state", "ext_grade", "dx", "event", "begin", "end", "year", "psa", "utility")
   enum(lifeHistories$ext_state) <- ext_stateT
@@ -820,12 +822,28 @@ summary.fhcrc <- function(object, ...) {
     with(object,
          structure(.Data=c(newobj,
                        with(object, list(
-                           discountRate.costs=simulation.parameters$discountRate.costs,
-                           discountRate.effectiveness=simulation.parameters$discountRate.effectiveness,
-                           LE=sum(summary$pt$pt)/n,
-                           QALE=sum(summary$ut$ut)/n,
-                           healthsector.costs=sum(healthsector.costs$costs)/n,
-                           societal.costs=sum(societal.costs$costs)/n))),
+                           discountRate.costs = simulation.parameters$discountRate.costs,
+                           discountRate.effectiveness = simulation.parameters$discountRate.effectiveness,
+                           screening.tests = with(summary$events,
+                                                sum(n[event == "toScreen"])) / n,
+                           biopsies = with(summary$events,
+                                           sum(n[event %in% c("toScreenInitiatedBiopsy",
+                                                              "toClinicalDiagnosticBiopsy")])) / n,
+                           negative.biopsies = with(summary$events,
+                                                   sum(n[event %in% c("toScreenInitiatedBiopsy",
+                                                                      "toClinicalDiagnosticBiopsy")])
+                                                   - sum(n[event %in% c("toScreenDiagnosis",
+                                                                        "toClinicalDiagnosis")])) / n,
+                           screen.diagnosis = with(summary$events,
+                                                   - sum(n[event == "toScreenDiagnosis"])) / n,
+                           over.diagnosis = with(summary$events,
+                                                 sum(n[event == "toOverDiagnosis"])) / n,
+                           cancer.deaths = with(summary$events,
+                                                sum(n[event == "toCancerDeath"])) / n,
+                           LE = sum(summary$pt$pt) / n,
+                           QALE = sum(summary$ut$ut) / n,
+                           healthsector.costs = sum(healthsector.costs$costs) / n,
+                           societal.costs = sum(societal.costs$costs) / n))),
                    class="summary.fhcrc"))
 }
 
@@ -861,14 +879,16 @@ summary.fhcrc <- function(object, ...) {
         stop("The two scenarios have different discount rates for the effectiveness.")
     if(object1$n != object2$n)
         warning("The two scenarios have different number of men.")
-    structure(.Data= list(n = if(object1$n == object2$n) {object1$n} else {list(object1$n, object2$n)},
-                          screen = sprintf("%s-%s", object1$screen, object2$screen),
-                          discountRate.costs = object1$discountRate.costs,
-                          discountRate.effectiveness = object1$discountRate.effectiveness,
-                          LE = object1$LE - object2$LE,
-                          QALE = object1$QALE - object2$QALE,
-                          healthsector.costs = object1$healthsector.cost - object2$healthsector.cost,
-                          societal.costs = object1$societal.cost - object2$societal.cost),
+    structure(.Data= c(list(n = if(object1$n == object2$n) {object1$n} else {list(object1$n, object2$n)},
+                            screen = sprintf("%s-%s", object1$screen, object2$screen),
+                            discountRate.costs = object1$discountRate.costs,
+                            discountRate.effectiveness = object1$discountRate.effectiveness),
+                       ## exempt special elements calc difference on all others
+                       sapply(names(object1)[!names(object1) %in% c("n", "screen",
+                                                                    "discountRate.costs",
+                                                                    "discountRate.effectiveness")],
+                              function(x) object1[[x]] - object2[[x]],
+                              simplify = FALSE, USE.NAMES = TRUE)),
               class="summary.fhcrc")
 }
 
@@ -887,7 +907,7 @@ summary.fhcrc <- function(object, ...) {
 #' if(interactive()){
 #'  ## Example 1
 #'  scenario1 <- summary(callFhcrc(screen = "screenUptake"))
-#'  scenario1 * 1000 # the summaery per thousand persons
+#'  scenario1 * 1000 # the summery per thousand persons
 #'
 #'  ## Example 2
 #'  scenario2 <-summary(callFhcrc(screen = "noScreening"))
@@ -899,14 +919,50 @@ summary.fhcrc <- function(object, ...) {
 '*.summary.fhcrc' <- function(obj, perpersons) {
     if(!is.numeric(perpersons))
         stop("The 'perpersons' variable needs to be a numeric.")
-    structure(.Data= list(n = ifelse(is.list(obj$n), list(lapply(obj$n, function(x) x * perpersons)), obj$n * perpersons),
-                          screen = sprintf("(%s)*%d", obj$screen, perpersons),
-                          discountRate.costs = obj$discountRate.costs,
-                          discountRate.effectiveness = obj$discountRate.effectiveness,
-                          LE = obj$LE * perpersons,
-                          QALE = obj$QALE * perpersons,
-                          healthsector.costs = obj$healthsector.cost * perpersons,
-                          societal.costs = obj$societal.cost * perpersons),
+    structure(.Data= c(list(n = ifelse(is.list(obj$n),
+                                       list(lapply(obj$n, function(x) x * perpersons)),
+                                       obj$n * perpersons),
+                            screen = sprintf("(%s)*%d", obj$screen, perpersons),
+                            discountRate.costs = obj$discountRate.costs,
+                            discountRate.effectiveness = obj$discountRate.effectiveness),
+                       ## exempt special elements scale all others
+                       lapply(obj[!names(obj) %in% c("n", "screen",
+                                                     "discountRate.costs",
+                                                     "discountRate.effectiveness")],
+                              function(x) x * perpersons)),
+              class="summary.fhcrc")
+}
+
+#' @title Divide with scalar operator method for \code{summary.fhcrc} objects
+#' @description Calculates the results divided by a denominator \code{summary.fhcrc} object.
+#' @param obj The \code{summary.fhcrc} object.
+#' @param denominator a scalar to divide the summary results with.
+#' @return A \code{summary.fhcrc} object scaled by a denominator.
+#' @details N.b. this is unfortunatly not a commutative
+#'     operator. Therefor the first parameter must be the
+#'     \code{summary.fhcrc} object and the second parameter a nummeric
+#'     scalar.
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  }
+#' }
+#' @rdname summary.fhcrc
+#' @export
+'/.summary.fhcrc' <- function(obj, denominator) {
+    if(!is.numeric(denominator))
+        stop("The 'denominator' variable needs to be a numeric.")
+    structure(.Data= c(list(n = ifelse(is.list(obj$n),
+                                       list(lapply(obj$n, function(x) x / denominator)),
+                                       obj$n * denominator),
+                            screen = sprintf("(%s)/%d", obj$screen, denominator),
+                            discountRate.costs = obj$discountRate.costs,
+                            discountRate.effectiveness = obj$discountRate.effectiveness),
+                       ## exempt special elements scale all others
+                       lapply(obj[!names(obj) %in% c("n", "screen",
+                                                     "discountRate.costs",
+                                                     "discountRate.effectiveness")],
+                              function(x) x / denominator)),
               class="summary.fhcrc")
 }
 

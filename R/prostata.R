@@ -80,8 +80,8 @@ FhcrcParameters <- list(
     shapeT = 2.16,
     scaleT = 11.7,
     tau2 = 0.0829, # log PSA measurement variance  - normal
-    susceptible = susceptible <- 1.0, # portion susceptible
-    g0=0.0005 / susceptible, # onset parameter
+    susceptible = 1.0, # portion susceptible
+    g0=0.0005, # onset parameter
     g3p = exp(-6.9353063), # T3+ parameter
     gm = exp(-6.4824485), # metastatic parameter
     gc=0.0015, # clinical diagnosis parameter
@@ -677,6 +677,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   updateParameters <- parms
   updateParameters$nLifeHistories <- as.integer(nLifeHistories)
   updateParameters$screen <- as.integer(screenIndex)
+  updateParameters$g0 <- FhcrcParameters$g0 / FhcrcParameters$susceptible
   updateParameters$cost_parameters <- FhcrcParameters$currency_rate * FhcrcParameters$cost_parameters
   parameter <- FhcrcParameters
   for (name in names(updateParameters)){

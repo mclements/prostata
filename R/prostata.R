@@ -169,6 +169,7 @@ FhcrcParameters <- list(
                                                     0.749, 0.782, 0.803, 0.814,
                                                     0.821, 0.830, 0.844, 0.866,
                                                     0.894, 0.925)),
+    currency_rate = 0.747/8.727, # PPP EU19@2017/Swe@2014 https://data.oecd.org/conversion/purchasing-power-parities-ppp.htm
     cost_parameters = c("Invitation" = 50,
                         "Formal PSA" = 130,
                         "Formal panel" = 730,
@@ -191,6 +192,8 @@ FhcrcParameters <- list(
                                    "Radiation therapy"=0.1250,
                                    "Active surveillance"=0.0833,
                                    "Metastatic cancer"=0.7602),
+    #Should add cost add cost and dis-utilities for using test characteristics based on prostate volume 7% from supplement
+
     utility_estimates = c("Invitation" = 1,
                           "Formal PSA" = 0.99,
                           "Formal panel" = 0.99,
@@ -674,6 +677,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   updateParameters <- parms
   updateParameters$nLifeHistories <- as.integer(nLifeHistories)
   updateParameters$screen <- as.integer(screenIndex)
+  updateParameters$cost_parameters <- FhcrcParameters$currency_rate * FhcrcParameters$cost_parameters
   parameter <- FhcrcParameters
   for (name in names(updateParameters)){
       if(!(name %in% names(parameter)))

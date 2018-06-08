@@ -116,7 +116,7 @@ FhcrcParameters <- list(
     nLifeHistories = 10L, screen = 0L, ## integers
     psaThreshold = 3.0,
     psaThresholdBiopsyFollowUp = 4.0, # revised PSA threshold for negative follow-up screen
-    biomarker_model = 0, # biomarker_model = 0 random, biomarker_model = 1 psa/risk based correction of FP
+    biomarker_model = 1, # biomarker_model = 0 random, biomarker_model = 1 psa/risk based correction of FP
     PSA_FP_threshold_nCa=4.19, # reduce FP in no cancers with PSA threshold
     PSA_FP_threshold_GG6=3.51, # reduce FP in GG 6 with PSA threshold
     ## Natural history calibration

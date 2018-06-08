@@ -847,15 +847,15 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     // Important case: PSA<1 (to check)
     // Reduce false positives wrt Gleason 7+ by 1-rFPF: which BPThreshold?
     if (in->panel && positive_test && psa < 10.) {
-      if (int(in->parameter("biomarker_model"))==random_correction) { // base model for the biomarker
+      if (int(in->parameter("biomarker_model"))==random_correction) { // simplistic model for the biomarker
 	if (R::runif(0.0,1.0) < 1.0 - in->parameter["rFPF"])
 	  positive_test = false;
       }
-      else if (int(in->parameter("biomarker_model"))==psa_informed_correction) { // optimistic model for the biomarker
+      else if (int(in->parameter("biomarker_model"))==psa_informed_correction) { // PSA based model for the biomarker
 	if ((ext_grade == ext::Gleason_le_6 &&
 	     onset_p() && psa < in->parameter["PSA_FP_threshold_GG6"]) // FP GG 6 PSA threshold
 	    ||  (!onset_p() && psa < in->parameter["PSA_FP_threshold_nCa"])) {// FP no cancer PSA threshold
-	  positive_test = false; // strong assumption
+	  positive_test = false; // assumption relying on PSA being a strong panel component
 	}
       }
       else {

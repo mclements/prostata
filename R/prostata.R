@@ -679,6 +679,8 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   updateParameters$screen <- as.integer(screenIndex)
   updateParameters$g0 <- FhcrcParameters$g0 / FhcrcParameters$susceptible
   updateParameters$cost_parameters <- FhcrcParameters$currency_rate * FhcrcParameters$cost_parameters
+  updateParameters$production <- data.frame(ages = FhcrcParameters$production$ages,
+                                            values = FhcrcParameters$currency_rate * FhcrcParameters$production$values)
   parameter <- FhcrcParameters
   for (name in names(updateParameters)){
       if(!(name %in% names(parameter)))

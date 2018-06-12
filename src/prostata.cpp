@@ -386,8 +386,8 @@ namespace fhcrc_example {
     return age_d;
   }
 
-  bool FhcrcPerson::onset_p() { return now() <= this->t0+35.0; }
   double FhcrcPerson::onset() { return this->t0+35.0; }
+  bool FhcrcPerson::onset_p() { return onset() <= now(); }
 
   /** @brief Calculate transition times for h(t) = y(t)*gamma = exp(beta0+beta1*t+beta2*(t-t0))*gamma
       This is equivalent to solving H(t) = gamma/(beta1+beta2)*(y(t)-y(s)) = -log(U) for entry time s.

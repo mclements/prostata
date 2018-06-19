@@ -51,7 +51,8 @@ namespace fhcrc_example {
                 toScreenInitiatedBiopsy, toClinicalDiagnosticBiopsy,
                 toScreenDiagnosis, toOverDiagnosis, toOrganised, toTreatment,
                 toCM, toRP, toRT, toADT, toUtilityChange, toUtilityRemove,
-                toSTHLM3, toOpportunistic, toT3plus, toCancelScreens};
+                toSTHLM3, toOpportunistic, toT3plus, toCancelScreens,
+                toYearlyActiveSurveillance, toYearlyPostTxFollowUp};
 
   enum screen_t {noScreening, randomScreen50to70, twoYearlyScreen50to70, fourYearlyScreen50to70,
 		 screen50, screen60, screen70, screenUptake, stockholm3_goteborg, stockholm3_risk_stratified,
@@ -1102,6 +1103,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toRP:
     add_costs("Prostatectomy");
+    scheduleAt(now() + 1.0, toYearlyPostTxFollowUp);
     lost_productivity("Prostatectomy");
     // Scheduling utilities for the first 2 months after procedure
     scheduleUtilityChange(now(), "Prostatectomy part 1");
@@ -1112,6 +1114,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toRT:
     add_costs("Radiation therapy");
+    scheduleAt(now() + 1.0, toYearlyPostTxFollowUp);
     lost_productivity("Radiation therapy");
     // Scheduling utilities for the first 2 months after procedure
     scheduleUtilityChange(now(), "Radiation therapy part 1");
@@ -1121,9 +1124,20 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     break;
 
   case toCM:
-    add_costs("Active surveillance"); // expand here
     lost_productivity("Active surveillance");
+    add_costs("Active surveillance - single MR"); // expand here
+    scheduleAt(now() + 1.0, toYearlyActiveSurveillance);
     scheduleUtilityChange(now(), "Active surveillance");
+    break;
+
+  case toYearlyActiveSurveillance:
+    add_costs("Active surveillance - yearly");
+    scheduleAt(now() + 1.0, toYearlyActiveSurveillance);
+    break;
+
+  case toYearlyPostTxFollowUp: // not active surveillance
+    add_costs("Post-Tx follow-up - yearly");
+    scheduleAt(now() + 1.0, toYearlyPostTxFollowUp);
     break;
 
   case toADT:

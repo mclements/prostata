@@ -169,17 +169,6 @@ FhcrcParameters <- list(
                                                     0.749, 0.782, 0.803, 0.814,
                                                     0.821, 0.830, 0.844, 0.866,
                                                     0.894, 0.925)),
-    currency_rate = 0.747/8.727, # PPP EU19@2017/Swe@2014 https://data.oecd.org/conversion/purchasing-power-parities-ppp.htm
-    cost_parameters = c("Invitation" = 50,
-                        "Formal PSA" = 130,
-                        "Formal panel" = 730,
-                        "Opportunistic PSA" = 1910,
-                        "Opportunistic panel" = 2510, #N.B. This one is new and should be used
-                        "Biopsy" = 12348,
-                        "Prostatectomy" = 117171,
-                        "Radiation therapy" = 117171,
-                        "Active surveillance" = 141358,
-                        "Cancer death" = 585054),
     ## IHE doesn't use the postrecovery period (as reported in the Heijnsdijk 2012 reference), should we?
     production = data.frame(ages = c(0, 55, 65, 75),
                             values=c(467433.137375286, 369392.309986899, 45759.6141748681, 0.0)),
@@ -193,7 +182,40 @@ FhcrcParameters <- list(
                                    "Active surveillance"=0.0833,
                                    "Metastatic cancer"=0.7602),
     #Should add cost add cost and dis-utilities for using test characteristics based on prostate volume 7% from supplement
+    currency_rate = 0.747/9.077, # PPP EU19@2017/Swe@2016 https://data.oecd.org/conversion/purchasing-power-parities-ppp.htm
 
+    ## Swedish governmental report on organised PSA testing (p.22):
+    ## https://www.socialstyrelsen.se/SiteCollectionDocuments/2018-2-13-halsoekonomisk-analys.pdf
+    ## Based on the Swedish south region 2017:
+    ## http://sodrasjukvardsregionen.se/avtal-priser/regionala-priser-och-ersattningar-foregaende-ar/
+    cost_parameters = c("Invitation" = 7                          # Invitation letter
+                        + 7,                                      # Results letter
+                        "Formal PSA" = 349                        # test sampling, primary care
+                        + 45                                      # PSA analysis
+                        + 0 * 1539,                               # No GP primary care
+                        "Formal panel" = 930,                     # From IHE spreadsheet # TODO should this be updated
+                        "Opportunistic PSA" = 349                 # test sampling, primary care
+                        + 45                                      # PSA analysis
+                        + 0.2 * 1539,                             # GP primary care
+                        "Opportunistic panel" = 2710,             # From IHE spreadsheet # TODO should this be updated
+                        "Biopsy" = 4733                           # Biopsy cost
+                        + 1794,                                   # Urology visit
+                        "Prostatectomy" = 80000                   # Surgery
+                        + 100000 * 0.25                           # Radiation therapy
+                        + 1794 * 2                                # Urology visit
+                        + 1205 * 2,                               # Nurse visit
+                        "Radiation therapy" = 100000              # Radiation therapy
+                        + 1794 * 2                                # Urology visit
+                        + 1205 * 2,                               # Nurse visit
+                        "Active surveillance - yearly" = 1794     # Urology visit
+                        + 45 * 2                                  # PSA analysis
+                        + 4733 * 0.5,                             # Biopsy
+                        "Active surveillance - single MR" = 3090, # TODO use once for active surveillance
+                        "Post-Tx follow-up - yearly" = 349        # PSA test sampling # TODO use this!!
+                        + 45                                      # PSA analysis,
+                        + 474,                                    # Telefollow-up by urologist
+                        "Cancer death" = 100160 * 3               # Care for spread disease
+                        + 68000 * 3),                             # Drugs for spread disease
     utility_estimates = c("Invitation" = 1,
                           "Formal PSA" = 0.99,
                           "Formal panel" = 0.99,
@@ -612,7 +634,8 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
             "toScreenInitiatedBiopsy","toClinicalDiagnosticBiopsy",
             "toScreenDiagnosis", "toOverDiagnosis", "toOrganised","toTreatment",
             "toCM","toRP", "toRT","toADT","toUtilityChange","toUtilityRemove",
-            "toSTHLM3", "toOpportunistic","toT3plus", "toCancelScreens")
+            "toSTHLM3", "toOpportunistic","toT3plus", "toCancelScreens",
+            "toYearlyActiveSurveillance", "toYearlyPostTxFollowUp")
   diagnosisT <- c("NotDiagnosed","ClinicalDiagnosis","ScreenDiagnosis")
   treatmentT <- c("no_treatment","CM","RP","RT")
   psaT <- c("PSA<3","PSA>=3") # not sure where to put this...

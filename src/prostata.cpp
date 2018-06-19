@@ -137,7 +137,7 @@ namespace fhcrc_example {
     LogicalVector bparameter;
 
     // read in the parameters
-    NumericVector cost_parameters, utility_estimates, utility_duration, lost_production_proportions;
+    NumericVector cost_parameters, utility_estimates, utility_duration, lost_production_years;
     NumericVector mubeta2, sebeta2; // otherParameters["mubeta2"] rather than as<NumericVector>(otherParameters["mubeta2"])
     int screen, nLifeHistories;
     bool includePSArecords, panel, includeDiagnoses, debug;
@@ -280,7 +280,7 @@ namespace fhcrc_example {
       Report on lost productivity
   */
   void FhcrcPerson::lost_productivity(string item) {
-    double loss = in->lost_production_proportions[item] * in->production(now());
+    double loss = in->lost_production_years[item] * in->production(now());
     out->costs.add(CostKey((int) Indirect,item),now(),loss);
   }
 
@@ -973,6 +973,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   case toClinicalDiagnosticBiopsy:
     add_costs("Biopsy");
     lost_productivity("Biopsy");
+    lost_productivity("Assessment");
     scheduleUtilityChange(now(), "Biopsy");
     break;
 
@@ -980,6 +981,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     in->rngScreen->set();
     add_costs("Biopsy");
     lost_productivity("Biopsy");
+    lost_productivity("Assessment");
     scheduleUtilityChange(now(), "Biopsy");
 
     if (state == Metastatic ||
@@ -1082,6 +1084,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       }
       else // cancer death within 6 months of diagnosis/treatment
 	scheduleUtilityChange(now(), "Terminal illness");
+        lost_productivity("Terminal illness");
     }
     if (in->includeDiagnoses) {
       out->diagnoses.record("id",id);
@@ -1127,7 +1130,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     break;
 
   case toCM:
-    lost_productivity("Active surveillance");
     add_costs("Active surveillance - single MR"); // expand here
     scheduleAt(now() + 1.0, toYearlyActiveSurveillance);
     scheduleUtilityChange(now(), "Active surveillance");
@@ -1135,6 +1137,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toYearlyActiveSurveillance:
     add_costs("Active surveillance - yearly");
+    lost_productivity("Active surveillance - yearly");
     scheduleAt(now() + 1.0, toYearlyActiveSurveillance);
     break;
 
@@ -1195,7 +1198,7 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   in.utility_duration = as<NumericVector>(otherParameters["utility_duration"]);
 
   in.production = Table<double,double>(as<DataFrame>(otherParameters["production"]), "ages", "values");
-  in.lost_production_proportions = as<NumericVector>(otherParameters["lost_production_proportions"]);
+  in.lost_production_years = as<NumericVector>(otherParameters["lost_production_years"]);
 
   int n = as<int>(parms["n"]);
   in.includePSArecords = as<bool>(parms["includePSArecords"]);

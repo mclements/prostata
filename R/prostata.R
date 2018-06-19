@@ -169,20 +169,9 @@ FhcrcParameters <- list(
                                                     0.749, 0.782, 0.803, 0.814,
                                                     0.821, 0.830, 0.844, 0.866,
                                                     0.894, 0.925)),
-    ## IHE doesn't use the postrecovery period (as reported in the Heijnsdijk 2012 reference), should we?
-    production = data.frame(ages = c(0, 55, 65, 75),
-                            values=c(467433.137375286, 369392.309986899, 45759.6141748681, 0.0)),
-    lost_production_proportions= c("Formal PSA"=0.0011,
-                                   "Formal panel"=0.0011,
-                                   "Opportunistic PSA"=0.0025,
-                                   "Opportunistic panel"=0.0025,
-                                   "Biopsy"=0.0044,
-                                   "Prostatectomy"=0.1083,
-                                   "Radiation therapy"=0.1250,
-                                   "Active surveillance"=0.0833,
-                                   "Metastatic cancer"=0.7602),
-    #Should add cost add cost and dis-utilities for using test characteristics based on prostate volume 7% from supplement
     currency_rate = 0.747/9.077, # PPP EU19@2017/Swe@2016 https://data.oecd.org/conversion/purchasing-power-parities-ppp.htm
+
+    ## Should we add cost and dis-utilities for using test characteristics based on prostate volume 7% from supplement
 
     ## Swedish governmental report on organised PSA testing (p.22):
     ## https://www.socialstyrelsen.se/SiteCollectionDocuments/2018-2-13-halsoekonomisk-analys.pdf
@@ -216,6 +205,32 @@ FhcrcParameters <- list(
                         + 474,                                    # Telefollow-up by urologist
                         "Cancer death" = 100160 * 3               # Care for spread disease
                         + 68000 * 3),                             # Drugs for spread disease
+
+    ## Swedish governmental report on organised PSA testing (p.23):
+    ## https://www.socialstyrelsen.se/SiteCollectionDocuments/2018-2-13-halsoekonomisk-analys.pdf
+    production = data.frame(ages = c(0, 54, 64, 74),
+                            values=apply(
+                                rbind(0.878, 0.756, 0.158, 0), # employment portion, full time
+                                1,
+                                function(empl) empl
+                                * 30.7/40                      # average working hours
+                                * 32800*12                     # average salary
+                                * 1.485)),                     # including non-optional social fees
+    lost_production_years= c("Formal PSA"=2/24/365.25,
+                             "Formal panel"=2/24/365.25,
+                             "Opportunistic PSA"=2/24/365.25,
+                             "Opportunistic panel"=2/24/365.25,
+                             "Assessment"=2/24/365.25,         # Urology assessment
+                             "Biopsy"=2/24/365.25,
+                             "Prostatectomy"=6/52,
+                             "Radiation therapy"=8/52,
+                             "Active surveillance - yearly"=
+                                 1 * 2/24/365.25               # Urology assessment
+                             + 2 * 2/24/365.25                 # PSA tests
+                             + 0.5 * 2/24/365.25,              # Biopsy
+                             "Metastatic cancer"=6/12,
+                             "Terminal illness" = 6/12),
+
     ## Heijnsdijk 2012
     utility_estimates = c("Invitation" = 1,
                           "Formal PSA" = 0.99,

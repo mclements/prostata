@@ -216,20 +216,23 @@ FhcrcParameters <- list(
                         + 474,                                    # Telefollow-up by urologist
                         "Cancer death" = 100160 * 3               # Care for spread disease
                         + 68000 * 3),                             # Drugs for spread disease
+    ## Heijnsdijk 2012
     utility_estimates = c("Invitation" = 1,
                           "Formal PSA" = 0.99,
                           "Formal panel" = 0.99,
                           "Opportunistic PSA" = 0.99,
                           "Opportunistic panel" = 0.99,
                           "Biopsy" = 0.90,
+                          "Cancer diagnosis" = 0.80,
                           "Prostatectomy part 1" = 0.67,
                           "Prostatectomy part 2" = 0.77,
                           "Radiation therapy part 1" = 0.73,
                           "Radiation therapy part 2" = 0.78,
                           "Active surveillance" = 0.97,
+                          "Postrecovery period" = 0.95,
                           "Palliative therapy" = 0.60,
                           "Terminal illness" = 0.40,
-                          "Metastatic cancer" = 0.85,
+                          "Metastatic cancer" = 0.85, # Pataky 2014
                           "Death" = 0.00),
     ## Utility duration is given in years.
     utility_duration = c("Invitation" = 0.0,
@@ -238,11 +241,13 @@ FhcrcParameters <- list(
                          "Opportunistic PSA" = 1/52,
                          "Opportunistic panel" = 1/52,
                          "Biopsy" = 3/52,
+                         "Cancer diagnosis" = 1/12,
                          "Prostatectomy part 1" = 2/12,
                          "Prostatectomy part 2" = 10/12,
                          "Radiation therapy part 1" = 2/12,
                          "Radiation therapy part 2" = 10/12,
                          "Active surveillance" = 7,
+                         "Postrecovery period" = 9,
                          "Palliative therapy" = 30/12,
                          "Terminal illness" = 6/12)
 )

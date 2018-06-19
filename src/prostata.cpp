@@ -940,6 +940,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   } break;
 
   case toClinicalDiagnosis:
+    scheduleUtilityChange(now(), "Cancer diagnosis");
     dx = ClinicalDiagnosis;
     cancel_events_after_diagnosis();
     scheduleAt(now(), toClinicalDiagnosticBiopsy); // assumes only one biopsy per clinical diagnosis
@@ -950,6 +951,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     break;
 
   case toScreenDiagnosis:
+    scheduleUtilityChange(now(), "Cancer diagnosis");
     dx = ScreenDiagnosis;
     cancel_events_after_diagnosis();
     scheduleAt(now(), toTreatment);
@@ -1042,6 +1044,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       if (cured) {
 	RemoveKind(toMetastatic);
 	RemoveKind(toT3plus);
+        scheduleUtilityChange(now(), "Postrecovery period");
       } else {
       double u_surv = R::runif(0.0,1.0);
       age_cancer_death = calculate_survival(u_surv,age_c,age_c,calculate_treatment(u_tx,age_c,year+lead_time));

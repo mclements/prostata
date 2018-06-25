@@ -169,6 +169,21 @@ FhcrcParameters <- list(
                                                     0.749, 0.782, 0.803, 0.814,
                                                     0.821, 0.830, 0.844, 0.866,
                                                     0.894, 0.925)),
+    neg_biopsy_to_psa=structure(list(age = c(50, 60, 70, 80),
+                   meanlog = c(-0.314249298970759, -0.36332284250614,
+                               -0.333753007363153, -0.175063351183678),
+                   sdlog = c(0.996188493950768, 0.974965602213158,
+                             1.0490009138328, 1.23085968935057)),
+              .Names = c("age", "meanlog", "sdlog"),
+              row.names = c(NA, -4L),
+              class = "data.frame"),
+    neg_biopsy_to_biopsy = structure(list(age = c(50, 60, 70, 80),
+                   meanlog = c(3.05337156798731, 2.65573907207411,
+                               1.78297474442106, 1.11581637027693),
+                   sdlog = c(2.41326118058954, 2.3225660366395,
+                             1.86615343381663, 2.04687048711335)),
+              .Names = c("age", "meanlog", "sdlog"),
+              row.names = c(NA, -4L), class = "data.frame"),
     currency_rate = 0.747/9.077, # PPP EU19@2017/Swe@2016 https://data.oecd.org/conversion/purchasing-power-parities-ppp.htm
 
     ## Should we add cost and dis-utilities for using test characteristics based on prostate volume 7% from supplement
@@ -460,14 +475,35 @@ pop1 <- data.frame(cohort=2035:1900,
 #'   \item{\code{X70.74}}{double COLUMN_DESCRIPTION}
 #'   \item{\code{X75.79}}{double COLUMN_DESCRIPTION}
 #'}
-#'
 #' \strong{biopsy_sensitivity}
 #' @format A data frame with 14 rows and 2 variables:
 #' \describe{
 #'   \item{\code{Year}}{integer COLUMN_DESCRIPTION}
 #'   \item{\code{Sensitivity}}{double COLUMN_DESCRIPTION}
 #'}
-#'
+#' \strong{neg_biopsy_to_psa}
+#' @format A data frame with 4 rows and 3 variables. Describing the
+#'     time to the next PSA test following a negative biopsy. Modelled
+#'     as a competing risk with a biopsy. Informed by the Stockholm
+#'     PSA and Biopsy Register (SPBR).:
+#' \describe{
+#'   \item{\code{age}}{integer with age groups}
+#'   \item{\code{meanlog}}{double for the mean of a log-normal time to
+#'   a PSA test following a negative biopsy.}
+#'   \item{\code{sdlog}}{double for the standard deviation of a
+#'   log-normal.}
+#' }
+#' \strong{neg_biopsy_to_biopsy}
+#' @format A data frame with 4 rows and 3 variables. Describing the
+#'     time to the next biopsy following a negative biopsy. Modelled
+#'     as a competing risk with a PSA test. Informed by the Stockholm
+#'     PSA and Biopsy Register (SPBR).:
+#' \describe{
+#'   \item{\code{age}}{integer with age groups}
+#'   \item{\code{meanlog}}{double describing the mean of a log-normal}
+#'   \item{\code{sdlog}}{double describing the standard deviation of a
+#'   log-normal}
+#' }
 #' \strong{dre}
 #' @format A data frame with 4 rows and 4 variables:
 #' \describe{
@@ -535,6 +571,7 @@ fhcrcData$biopsyOpportunisticComplianceTable <- swedenOpportunisticBiopsyComplia
 fhcrcData$biopsyFormalComplianceTable <- swedenFormalBiopsyCompliance
 fhcrcData$secularTrendTreatment2008OR <- secularTrendTreatment2008OR
 ## https://www.socialstyrelsen.se/Lists/Artikelkatalog/Attachments/20008/2015-12-26.pdf
+
 #' @title DATASET_TITLE
 #' @description DATASET_DESCRIPTION
 #' @format A data frame with 18 rows and 3 variables:
@@ -704,6 +741,8 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   fhcrcData$prtx$G <- fhcrcData$prtx$G - 1L
   fhcrcData$pradt$Grade <- fhcrcData$pradt$Grade - 1L
   fhcrcData$biopsy_sensitivity$Year <- as.double(fhcrcData$biopsy_sensitivity$Year)
+  fhcrcData$neg_biopsy_to_psa$age <- as.double(fhcrcData$neg_biopsy_to_psa$age)
+  fhcrcData$neg_biopsy_to_biopsy$age <- as.double(fhcrcData$neg_biopsy_to_biopsy$age)
   fhcrcData$pradt$Age <- as.double(fhcrcData$pradt$Age)
   fhcrcData$pradt$DxY <- as.double(fhcrcData$pradt$DxY)
   ## fhcrcData$biopsyComplianceTable <-

@@ -120,7 +120,9 @@ namespace fhcrc_example {
   public:
     TableLocoHR hr_locoregional;
     TableMetastaticHR hr_metastatic;
-    TableDD tableBiopsySensitivity, tableSecularTrendTreatment2008OR;
+    TableDD tableBiopsySensitivity, tableSecularTrendTreatment2008OR,
+      tableNegBiopsyToPSAmeanlog, tableNegBiopsyToPSAsdlog, tableNegBiopsyToBiopsymeanlog,
+      tableNegBiopsyToBiopsysdlog;
     TablePrtx prtxCM, prtxRP;
     TablePradt pradt;
     TableBiopsyCompliance tableOpportunisticBiopsyCompliance, tableFormalBiopsyCompliance;
@@ -992,13 +994,19 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
            in->tableBiopsySensitivity(bounds(year,1987.0,2000.0)) /
             in->tableBiopsySensitivity(2000.0)))) { // diagnosed
       scheduleAt(now(), toScreenDiagnosis);
-    } else if (!previousNegativeBiopsy) {
+    } else if (!previousNegativeBiopsy) { // first negative biopsy
       previousNegativeBiopsy = true;
-      // first re-screen after negative biopsy
-      if (R::runif(0.0,1.0) < in->parameter["rescreeningParticipation"])
-	scheduleAt(now() + 1, toBiopsyFollowUpScreen); // schedule one quick PSA retest
-    } else if (R::runif(0.0,1.0) < in->parameter["rescreeningParticipation"]) { // next rescreen after negative biopsy
-      opportunistic_rescreening(psa); // schedule a routine future screen
+
+      // Competing risk for event following a negative biopsy
+      double timeToPSA = R::rlnorm(in->tableNegBiopsyToPSAmeanlog(age),
+                                   in->tableNegBiopsyToPSAsdlog(age));
+      double timeToBiopsy = R::rlnorm(in->tableNegBiopsyToBiopsymeanlog(age),
+                                      in->tableNegBiopsyToBiopsysdlog(age));
+      if (timeToPSA <= timeToBiopsy) { // PSA was the first event
+        scheduleAt(now() + timeToPSA, toScreen);
+      } else { // Biopsy was the first event
+        scheduleAt(now() + timeToBiopsy, toScreenInitiatedBiopsy);
+      }
     }
     in->rngNh->set();
     break;
@@ -1214,6 +1222,10 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   in.hr_locoregional = TableLocoHR(as<DataFrame>(otherParameters["hr_locoregional"]),"age","ext_grade","psa10","hr");
   in.hr_metastatic = TableMetastaticHR(as<DataFrame>(otherParameters["hr_metastatic"]),"age","hr");
   in.tableBiopsySensitivity = TableDD(as<DataFrame>(otherParameters["biopsy_sensitivity"]),"Year","Sensitivity");
+  in.tableNegBiopsyToPSAmeanlog = TableDD(as<DataFrame>(otherParameters["neg_biopsy_to_psa"]), "age", "meanlog");
+  in.tableNegBiopsyToPSAsdlog = TableDD(as<DataFrame>(otherParameters["neg_biopsy_to_psa"]), "age", "sdlog");
+  in.tableNegBiopsyToBiopsymeanlog = TableDD(as<DataFrame>(otherParameters["neg_biopsy_to_biopsy"]), "age", "meanlog");
+  in.tableNegBiopsyToBiopsysdlog = TableDD(as<DataFrame>(otherParameters["neg_biopsy_to_biopsy"]), "age", "sdlog");
   in.tableSecularTrendTreatment2008OR = TableDD(as<DataFrame>(tables["secularTrendTreatment2008OR"]),"year","OR");
   in.tableOpportunisticBiopsyCompliance = TableBiopsyCompliance(as<DataFrame>(tables["biopsyOpportunisticComplianceTable"]),
 						"psa","age","compliance");

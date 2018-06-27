@@ -184,6 +184,15 @@ FhcrcParameters <- list(
                              1.86615343381663, 2.04687048711335)),
               .Names = c("age", "meanlog", "sdlog"),
               row.names = c(NA, -4L), class = "data.frame"),
+    cure_m_CM_to_RP = structure(list(age = c(50, 60, 70, 80),
+                                     pnever = c(0.485026452157334, 0.605786246502961,
+                                                0.922871191840356, 0.999745963308522),
+                                     meanlog = c(1.14257205575071, 1.04021691430639,
+                                                 0.519760988362341, 4.35555555555556),
+                                     sdlog = c(0.758280639791713, 0.875661155361679,
+                                               0.782118228501619, 0.255901426097166)),
+                                .Names = c("age", "pnever", "meanlog", "sdlog"),
+                                row.names = c(NA, -4L), class = "data.frame"),
     currency_rate = 0.747/9.077, # PPP EU19@2017/Swe@2016 https://data.oecd.org/conversion/purchasing-power-parities-ppp.htm
 
     ## Should we add cost and dis-utilities for using test characteristics based on prostate volume 7% from supplement
@@ -504,6 +513,33 @@ pop1 <- data.frame(cohort=2035:1900,
 #'   \item{\code{sdlog}}{double describing the standard deviation of a
 #'   log-normal}
 #' }
+#' \strong{cure_m_CM_to_RP}
+#' @format A data frame with 4 rows and 4 variables. Cure model giving
+#'     the probability of not having a radical prostatectomy following
+#'     assignment to conservative management (active surveillance &
+#'     watchfull waiting). Log-normal distribution of the time to
+#'     radical prostatectomy for those that do have that. A future
+#'     extension would be to model active surveillance and watchfull
+#'     waiting separately:
+#' \describe{
+#' \item{\code{age}}{double with age groups}
+#' \item{\code{pnever}}{double probability of not having a radical
+#' prostatectomy}
+#' \item{\code{meanlog}}{double mean of log-normal time to radical
+#' prostatectomy}
+#' \item{\code{sdlog}}{double standard deviation of log-normal time to
+#' radical prostatectomy}
+#' }
+#' @format A data frame with 4 rows and 3 variables. Describing the
+#'     time to the next biopsy following a negative biopsy. Modelled
+#'     as a competing risk with a PSA test. Informed by the Stockholm
+#'     PSA and Biopsy Register (SPBR).:
+#' \describe{
+#'   \item{\code{age}}{integer with age groups}
+#'   \item{\code{meanlog}}{double describing the mean of a log-normal}
+#'   \item{\code{sdlog}}{double describing the standard deviation of a
+#'   log-normal}
+#' }
 #' \strong{dre}
 #' @format A data frame with 4 rows and 4 variables:
 #' \describe{
@@ -512,7 +548,6 @@ pop1 <- data.frame(cohort=2035:1900,
 #'   \item{\code{sensitivity}}{double COLUMN_DESCRIPTION}
 #'   \item{\code{specificity}}{double COLUMN_DESCRIPTION}
 #'}
-#'
 #' \strong{prob_grade7}
 #' @format A data frame with 51 rows and 2 variables:
 #' \describe{

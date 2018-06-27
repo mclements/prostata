@@ -122,7 +122,7 @@ namespace fhcrc_example {
     TableMetastaticHR hr_metastatic;
     TableDD tableBiopsySensitivity, tableSecularTrendTreatment2008OR,
       tableNegBiopsyToPSAmeanlog, tableNegBiopsyToPSAsdlog, tableNegBiopsyToBiopsymeanlog,
-      tableNegBiopsyToBiopsysdlog;
+      tableNegBiopsyToBiopsysdlog, tableCMtoRPpnever, tableCMtoRPmeanlog, tableCMtoRPsdlog;
     TablePrtx prtxCM, prtxRP;
     TablePradt pradt;
     TableBiopsyCompliance tableOpportunisticBiopsyCompliance, tableFormalBiopsyCompliance;
@@ -788,6 +788,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   case toMetastatic:
     state = Metastatic; ext_state = ext::Metastatic;
     RemoveKind(toClinicalDiagnosis);
+    RemoveKind(toRP);
     scheduleAt(tmc+35.0,toClinicalDiagnosis);
     break;
 
@@ -1124,6 +1125,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     // Scheduling utilities for the first 3-12 months after procedure
     scheduleUtilityChange(now() + in->utility_duration["Prostatectomy part 1"],
 			  "Prostatectomy part 2");
+    // Remove yearly active surveillance if the RP is the secondary Tx
+    RemoveKind(toYearlyActiveSurveillance); // breaks recursive call
     break;
 
   case toRT:
@@ -1139,8 +1142,12 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toCM:
     add_costs("Active surveillance - single MR"); // expand here
-    scheduleAt(now() + 1.0, toYearlyActiveSurveillance);
+    scheduleAt(now(), toYearlyActiveSurveillance);
     scheduleUtilityChange(now(), "Active surveillance");
+    // Modelling for possible subsequent RP
+    if (R::runif(0.0,1.0) > in->tableCMtoRPpnever(age)) {// pnever -> pever
+      scheduleAt(now() + R::rlnorm(in->tableCMtoRPmeanlog(age), in->tableCMtoRPsdlog(age)), toRP);
+    }
     break;
 
   case toYearlyActiveSurveillance:
@@ -1226,6 +1233,9 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   in.tableNegBiopsyToPSAsdlog = TableDD(as<DataFrame>(otherParameters["neg_biopsy_to_psa"]), "age", "sdlog");
   in.tableNegBiopsyToBiopsymeanlog = TableDD(as<DataFrame>(otherParameters["neg_biopsy_to_biopsy"]), "age", "meanlog");
   in.tableNegBiopsyToBiopsysdlog = TableDD(as<DataFrame>(otherParameters["neg_biopsy_to_biopsy"]), "age", "sdlog");
+  in.tableCMtoRPpnever = TableDD(as<DataFrame>(otherParameters["cure_m_CM_to_RP"]), "age", "pnever");
+  in.tableCMtoRPmeanlog = TableDD(as<DataFrame>(otherParameters["cure_m_CM_to_RP"]), "age", "meanlog");
+  in.tableCMtoRPsdlog = TableDD(as<DataFrame>(otherParameters["cure_m_CM_to_RP"]), "age", "sdlog");
   in.tableSecularTrendTreatment2008OR = TableDD(as<DataFrame>(tables["secularTrendTreatment2008OR"]),"year","OR");
   in.tableOpportunisticBiopsyCompliance = TableBiopsyCompliance(as<DataFrame>(tables["biopsyOpportunisticComplianceTable"]),
 						"psa","age","compliance");

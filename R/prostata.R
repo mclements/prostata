@@ -193,6 +193,21 @@ FhcrcParameters <- list(
                                                0.782118228501619, 0.255901426097166)),
                                 .Names = c("age", "pnever", "meanlog", "sdlog"),
                                 row.names = c(NA, -4L), class = "data.frame"),
+    cure_m_CM_to_RT =structure(list(age = c(50, 60, 70, 80),
+                                    pnever = c(0.60082830813107,
+                                               2.71246734638524e-06,
+                                               0.493326620739727,
+                                               0.739523343815296),
+                                    meanlog = c(3.14746283053335,
+                                                4.24925205843398,
+                                                2.0235406338416,
+                                                0.705091563838411),
+                                    sdlog = c(2.0453909799028,
+                                              2.26870437384556,
+                                              2.1703325154377,
+                                              1.81819516420271)),
+                               .Names = c("age", "pnever", "meanlog", "sdlog"),
+                               row.names = c(NA, -4L), class = "data.frame"),
     currency_rate = 0.747/9.077, # PPP EU19@2017/Swe@2016 https://data.oecd.org/conversion/purchasing-power-parities-ppp.htm
 
     ## Should we add cost and dis-utilities for using test characteristics based on prostate volume 7% from supplement
@@ -530,6 +545,23 @@ pop1 <- data.frame(cohort=2035:1900,
 #' \item{\code{sdlog}}{double standard deviation of log-normal time to
 #' radical prostatectomy}
 #' }
+#' \strong{cure_m_CM_to_RT}
+#' @format A data frame with 4 rows and 4 variables. Cure model giving
+#'     the probability of not having a radiation therapy following
+#'     assignment to conservative management (active surveillance &
+#'     watchfull waiting). Log-normal distribution of the time to
+#'     radiation therapy for those that do have that. A future
+#'     extension would be to model active surveillance and watchfull
+#'     waiting separately:
+#' \describe{
+#' \item{\code{age}}{double with age groups}
+#' \item{\code{pnever}}{double probability of not having a radical
+#' prostatectomy}
+#' \item{\code{meanlog}}{double mean of log-normal time to
+#' radiation therapy}
+#' \item{\code{sdlog}}{double standard deviation of log-normal time to
+#' radiation therapy}
+#' }
 #' @format A data frame with 4 rows and 3 variables. Describing the
 #'     time to the next biopsy following a negative biopsy. Modelled
 #'     as a competing risk with a PSA test. Informed by the Stockholm
@@ -778,6 +810,8 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   fhcrcData$biopsy_sensitivity$Year <- as.double(fhcrcData$biopsy_sensitivity$Year)
   fhcrcData$neg_biopsy_to_psa$age <- as.double(fhcrcData$neg_biopsy_to_psa$age)
   fhcrcData$neg_biopsy_to_biopsy$age <- as.double(fhcrcData$neg_biopsy_to_biopsy$age)
+  fhcrcData$cure_m_CM_to_RP$age <- as.double(fhcrcData$cure_m_CM_to_RP$age)
+  fhcrcData$cure_m_CM_to_RT$age <- as.double(fhcrcData$cure_m_CM_to_RT$age)
   fhcrcData$pradt$Age <- as.double(fhcrcData$pradt$Age)
   fhcrcData$pradt$DxY <- as.double(fhcrcData$pradt$DxY)
   ## fhcrcData$biopsyComplianceTable <-

@@ -789,8 +789,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   case toMetastatic:
     state = Metastatic; ext_state = ext::Metastatic;
     RemoveKind(toClinicalDiagnosis);
-    RemoveKind(toRP);
     scheduleAt(tmc+35.0,toClinicalDiagnosis);
+    // Remove possible secondary Tx
+    RemoveKind(toRP);
+    RemoveKind(toRT);
     break;
 
   case toOrganised:
@@ -1140,6 +1142,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     // Scheduling utilities for the first 3-12 months after procedure
     scheduleUtilityChange(now() + in->utility_duration["Radiation therapy part 1"],
 			  "Radiation therapy part 2");
+    RemoveKind(toYearlyActiveSurveillance); // breaks recursive call
     break;
 
   case toCM:

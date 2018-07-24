@@ -1058,7 +1058,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       if (cured) {
 	RemoveKind(toMetastatic);
 	RemoveKind(toT3plus);
-        scheduleUtilityChange(now(), "Postrecovery period");
       } else {
       double u_surv = R::runif(0.0,1.0);
       age_cancer_death = calculate_survival(u_surv,age_c,age_c,calculate_treatment(u_tx,age_c,year+lead_time));
@@ -1128,6 +1127,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     // Scheduling utilities for the first 3-12 months after procedure
     scheduleUtilityChange(now() + in->utility_duration["Prostatectomy part 1"],
 			  "Prostatectomy part 2");
+    scheduleUtilityChange(now() + in->utility_duration["Prostatectomy part 1"] +
+                          in->utility_duration["Prostatectomy part 2"], "Postrecovery period");
     // Remove yearly active surveillance if the RP is the secondary Tx
     RemoveKind(toYearlyActiveSurveillance); // breaks recursive call
     RemoveKind(toRT);
@@ -1142,6 +1143,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     // Scheduling utilities for the first 3-12 months after procedure
     scheduleUtilityChange(now() + in->utility_duration["Radiation therapy part 1"],
 			  "Radiation therapy part 2");
+    scheduleUtilityChange(now() + in->utility_duration["Radiation therapy part 1"] +
+                          in->utility_duration["Radiation therapy part 2"], "Postrecovery period");
     RemoveKind(toYearlyActiveSurveillance); // breaks recursive call
     break;
 

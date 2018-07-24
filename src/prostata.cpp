@@ -1022,7 +1022,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (state == Metastatic) {
       lost_productivity("Metastatic cancer");
       // utilities->clear(); // should this be age-specific??
-      scheduleUtilityChange(now(), in->utility_estimates["Metastatic cancer"]);
     }
     else { // Loco-regional
       tx = calculate_treatment(u_tx,now(),year);
@@ -1055,12 +1054,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       			 calculate_mortality_hr(age_c));
       if (in->debug) Rprintf("hr for lead time=%f\n", calculate_mortality_hr(age_c));
       cured = (R::runif(0.0,1.0) < pcure);
-      if (cured) {
-	RemoveKind(toMetastatic);
-	RemoveKind(toT3plus);
-      } else {
-      double u_surv = R::runif(0.0,1.0);
-      age_cancer_death = calculate_survival(u_surv,age_c,age_c,calculate_treatment(u_tx,age_c,year+lead_time));
+      if (!cured) {
+	double u_surv = R::runif(0.0,1.0);
+        age_cancer_death = calculate_survival(u_surv,age_c,age_c,calculate_treatment(u_tx,age_c,year+lead_time));
       }
     }
     else if (in->parameter["c_benefit_type"]==StageShiftBased) { // [annals paper ref]
@@ -1077,13 +1073,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       // Disutilities prior to a cancer death
       double age_palliative = age_cancer_death - in->utility_duration["Palliative therapy"] - in->utility_duration["Terminal illness"];
       double age_terminal = age_cancer_death - in->utility_duration["Terminal illness"];
-      // Reset utilities for those in with a Metatatic diagnosis
-      if (state == Metastatic) {
-	if (age_palliative > now())
-	  scheduleUtilityChange(age_palliative, in->utility_estimates["Metastatic cancer"]);
-	else
-	  scheduleUtilityChange(now(), in->utility_estimates["Metastatic cancer"]);
-      }
       if (age_palliative>now()) { // cancer death more than 36 months after diagnosis
 	scheduleUtilityChange(age_palliative, age_terminal,
 			      in->utility_estimates["Palliative therapy"]);

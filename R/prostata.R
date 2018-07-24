@@ -286,7 +286,6 @@ FhcrcParameters <- list(
                           "Postrecovery period" = 0.95,
                           "Palliative therapy" = 0.60,
                           "Terminal illness" = 0.40,
-                          "Metastatic cancer" = 0.85, # Pataky 2014
                           "Death" = 0.00),
     ## Utility duration is given in years.
     utility_duration = c("Invitation" = 0.0,

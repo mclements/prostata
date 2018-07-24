@@ -756,7 +756,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   switch(msg->kind) {
 
   case toCancerDeath:
-    add_costs("Cancer death"); // cost for death, should this be zero???
+    add_costs("Cancer death");
     if (id < in->nLifeHistories) {
       out->outParameters.record("age_d",now());
       out->outParameters.revise("pca_death",1.0);
@@ -869,6 +869,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	REprintf("Parameter biomarker_model not matched: %i\n", int(in->parameter("biomarker_model")));
       }
     }
+    // Case: PSA>=10. The man has a positive_test.
     if (in->includePSArecords && !onset_p() && positive_test) {
       out->falsePositives.record("id",id);
       out->falsePositives.record("psa",psa);
@@ -1015,7 +1016,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     in->rngNh->set();
     break;
 
-  case toTreatment: {
+  case toTreatment: { // To diagnoses, treatment & survival
     in->rngTreatment->set();
     double u_tx = R::runif(0.0,1.0);
     double u_adt = R::runif(0.0,1.0);

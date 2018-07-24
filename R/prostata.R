@@ -221,11 +221,11 @@ FhcrcParameters <- list(
                         "Formal PSA" = 349                        # test sampling, primary care
                         + 45                                      # PSA analysis
                         + 0 * 1539,                               # No GP primary care
-                        "Formal panel" = 930,                     # From IHE spreadsheet # TODO should this be updated
+                        "Formal panel" = 930,                     # From IHE spreadsheet # TODO check with Ola
                         "Opportunistic PSA" = 349                 # test sampling, primary care
                         + 45                                      # PSA analysis
                         + 0.2 * 1539,                             # GP primary care
-                        "Opportunistic panel" = 2710,             # From IHE spreadsheet # TODO should this be updated
+                        "Opportunistic panel" = 2710,             # From IHE spreadsheet # TODO check with Ola
                         "Biopsy" = 4733                           # Biopsy cost
                         + 1794,                                   # Urology visit
                         "Prostatectomy" = 80000                   # Surgery
@@ -238,8 +238,8 @@ FhcrcParameters <- list(
                         "Active surveillance - yearly" = 1794     # Urology visit
                         + 45 * 2                                  # PSA analysis
                         + 4733 * 0.5,                             # Biopsy
-                        "Active surveillance - single MR" = 3090, # TODO use once for active surveillance
-                        "Post-Tx follow-up - yearly" = 349        # PSA test sampling # TODO use this!!
+                        "Active surveillance - single MR" = 3090, # Used once for active surveillance
+                        "Post-Tx follow-up - yearly" = 349        # PSA test sampling
                         + 45                                      # PSA analysis,
                         + 474,                                    # Telefollow-up by urologist
                         "Cancer death" = 100160 * 3               # Care for spread disease
@@ -268,7 +268,7 @@ FhcrcParameters <- list(
                              + 2 * 2/24/365.25                 # PSA tests
                              + 0.5 * 2/24/365.25,              # Biopsy
                              "Metastatic cancer"=6/12,
-                             "Terminal illness" = 6/12),
+                             "Terminal illness" = 6/12),       # NOTE: potentially add follow-up Tx production losses
 
     ## Heijnsdijk 2012
     utility_estimates = c("Invitation" = 1,

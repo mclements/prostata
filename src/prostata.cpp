@@ -752,6 +752,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   switch(msg->kind) {
 
   case toCancerDeath:
+    lost_productivity("Terminal illness");
     add_costs("Cancer death");
     if (id < in->nLifeHistories) {
       out->outParameters.record("age_d",now());
@@ -1081,7 +1082,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       }
       else // cancer death within 6 months of diagnosis/treatment
 	scheduleUtilityChange(now(), "Terminal illness");
-        lost_productivity("Terminal illness");
     }
     if (in->includeDiagnoses) {
       out->diagnoses.record("id",id);

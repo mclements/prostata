@@ -298,10 +298,6 @@ namespace fhcrc_example {
     scheduleAt(at + in->utility_duration[category],
 	       new cMessageUtility(toUtilityRemove, utilities->counter));
   }
-  // permanent change!!
-  void FhcrcPerson::scheduleUtilityChange(double at, double utility) {
-    scheduleAt(at, new cMessageUtility(toUtilityChange, utilities->counter++, utility));
-  }
   void FhcrcPerson::scheduleUtilityChange(double from, double to, double utility) {
     utilities->counter++; // increment
     scheduleAt(from, new cMessageUtility(toUtilityChange, utilities->counter, utility));
@@ -687,7 +683,7 @@ void FhcrcPerson::init() {
   scheduleUtilityChange(65.0, 70.0, 0.83);
   scheduleUtilityChange(70.0, 75.0, 0.81);
   scheduleUtilityChange(75.0, 80.0, 0.79);
-  scheduleUtilityChange(80.0, 0.74);
+  scheduleUtilityChange(80.0, 1.0e99, 0.74);
 
   // record some parameters using SimpleReport - too many for a tuple
   if (id < in->nLifeHistories) {

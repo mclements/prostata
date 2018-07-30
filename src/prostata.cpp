@@ -977,6 +977,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   // record additional biopsies for clinical diagnoses
   case toClinicalDiagnosticBiopsy:
     add_costs("Biopsy");
+    add_costs("Assessment");
     lost_productivity("Biopsy");
     lost_productivity("Assessment");
     scheduleUtilityChange(now(), "Biopsy");
@@ -985,6 +986,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   case toScreenInitiatedBiopsy:
     in->rngScreen->set();
     add_costs("Biopsy");
+    add_costs("Assessment");
     lost_productivity("Biopsy");
     lost_productivity("Assessment");
     scheduleUtilityChange(now(), "Biopsy");

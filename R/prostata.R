@@ -226,9 +226,8 @@ FhcrcParameters <- list(
                         + 45                                      # PSA analysis
                         + 0.2 * 1539,                             # GP primary care
                         "Opportunistic panel" = 2710,             # From IHE spreadsheet # TODO check with Ola
-                        "Biopsy" = 4733                           # Biopsy cost
-                        + 1794,                                   # Urology assessment
-                        "Assessment" = 1794,                      # Only urology assessment
+                        "Biopsy" = 4733,                          # Biopsy cost
+                        "Assessment" = 1794,                      # Urology assessment
                         "Prostatectomy" = 80000                   # Surgery
                         + 100000 * 0.25                           # Radiation therapy
                         + 1794 * 2                                # Urology visit

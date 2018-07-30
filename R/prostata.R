@@ -208,7 +208,7 @@ FhcrcParameters <- list(
                                               1.81819516420271)),
                                .Names = c("age", "pnever", "meanlog", "sdlog"),
                                row.names = c(NA, -4L), class = "data.frame"),
-    currency_rate = 0.747/9.077, # PPP EU19@2017/Swe@2016 https://data.oecd.org/conversion/purchasing-power-parities-ppp.htm
+    currency_rate = 0.750/9.077, # PPP EU19@2017/Swe@2016 https://data.oecd.org/conversion/purchasing-power-parities-ppp.htm
 
     ## Should we add cost and dis-utilities for using test characteristics based on prostate volume 7% from supplement
 

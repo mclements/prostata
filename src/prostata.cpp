@@ -947,7 +947,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     scheduleUtilityChange(now(), "Cancer diagnosis");
     dx = ClinicalDiagnosis;
     cancel_events_after_diagnosis();
-    scheduleAt(now(), toClinicalDiagnosticBiopsy); // assumes only one biopsy per clinical diagnosis
+    scheduleAt(now(), toClinicalDiagnosticBiopsy); // assumes two biopsy per clinical diagnosis
+    scheduleAt(now(), toClinicalDiagnosticBiopsy);
     scheduleAt(now(), toTreatment);
     if (id < in->nLifeHistories) {
       out->outParameters.revise("age_pca",now());

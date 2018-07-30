@@ -246,8 +246,8 @@ namespace fhcrc_example {
     void opportunistic_uptake();
     void cancel_events_after_diagnosis();
     void init();
-    void add_costs(string item, cost_t cost_type = Direct);
-    void lost_productivity(string item);
+    void add_costs(string item, cost_t cost_type = Direct, double weight=1.0);
+    void lost_productivity(string item, double weight=1.0);
     virtual void handleMessage(const cMessage* msg);
     void scheduleUtilityChange(double at, std::string category);
     void scheduleUtilityChange(double at, double utility);
@@ -275,15 +275,15 @@ namespace fhcrc_example {
   /**
       Report on costs for a given item
   */
-  void FhcrcPerson::add_costs(string item, cost_t cost_type) {
-    out->costs.add(CostKey((int) cost_type,item),now(),in->cost_parameters[item]);
+  void FhcrcPerson::add_costs(string item, cost_t cost_type, double weight) {
+    out->costs.add(CostKey((int) cost_type,item),now(),in->cost_parameters[item] * weight);
   }
 
   /**
       Report on lost productivity
   */
-  void FhcrcPerson::lost_productivity(string item) {
-    double loss = in->lost_production_years[item] * in->production(now());
+  void FhcrcPerson::lost_productivity(string item, double weight) {
+    double loss = in->lost_production_years[item] * in->production(now()) * weight;
     out->costs.add(CostKey((int) Indirect,item),now(),loss);
   }
 
@@ -989,25 +989,36 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     scheduleUtilityChange(now(), "Biopsy");
 
     if (state == Metastatic ||
-	(state == Localised && ext_state == ext::T3plus) ||
-	(state == Localised && ext_state == ext::T1_T2 &&
-	 (now() > t0 + 35.0 + (t3p - t0) *
-	  (1 - in->parameter["biopsySensitivityTimeProportionT1T2"]) *
-           in->tableBiopsySensitivity(bounds(year,1987.0,2000.0)) /
-            in->tableBiopsySensitivity(2000.0)))) { // diagnosed
+        (state == Localised && ext_state == ext::T3plus) ||
+        (state == Localised && ext_state == ext::T1_T2 &&
+         (now() > t0 + 35.0 + (t3p - t0) *
+          (1 - in->parameter["biopsySensitivityTimeProportionT1T2"]) *
+          in->tableBiopsySensitivity(bounds(year,1987.0,2000.0)) /
+          in->tableBiopsySensitivity(2000.0)))) { // diagnosed
       scheduleAt(now(), toScreenDiagnosis);
-    } else if (!previousNegativeBiopsy) { // first negative biopsy
-      previousNegativeBiopsy = true;
+      if (in->panel && state==Localised && ext_grade == ext::Gleason_le_6) {
+        // fixed costs etc for men who were S3M+/PE-
+        add_costs("Assessment", Direct, 766.0/722.0 - 1.0);
+        lost_productivity("Assessment", 766.0/722.0 - 1.0);
+      }
+    } else { // negative biopsy
+      if (in->panel) { // fixed costs etc for men who were S3M+/PE-
+        add_costs("Assessment", Direct, 1535.0/1381.0 - 1.0);
+        lost_productivity("Assessment", 1535.0/1381.0 - 1.0);
+      }
+      if (!previousNegativeBiopsy) { // first negative biopsy
+        previousNegativeBiopsy=true;
 
-      // Competing risk for event following a negative biopsy
-      double timeToPSA = R::rlnorm(in->tableNegBiopsyToPSAmeanlog(age),
-                                   in->tableNegBiopsyToPSAsdlog(age));
-      double timeToBiopsy = R::rlnorm(in->tableNegBiopsyToBiopsymeanlog(age),
-                                      in->tableNegBiopsyToBiopsysdlog(age));
-      if (timeToPSA <= timeToBiopsy) { // PSA was the first event
-        scheduleAt(now() + timeToPSA, toScreen);
-      } else { // Biopsy was the first event
-        scheduleAt(now() + timeToBiopsy, toScreenInitiatedBiopsy);
+        // Competing risk for event following a negative biopsy
+        double timeToPSA = R::rlnorm(in->tableNegBiopsyToPSAmeanlog(age),
+                                     in->tableNegBiopsyToPSAsdlog(age));
+        double timeToBiopsy = R::rlnorm(in->tableNegBiopsyToBiopsymeanlog(age),
+                                        in->tableNegBiopsyToBiopsysdlog(age));
+        if (timeToPSA <= timeToBiopsy) { // PSA was the first event
+          scheduleAt(now() + timeToPSA, toScreen);
+        } else { // Biopsy was the first event
+          scheduleAt(now() + timeToBiopsy, toScreenInitiatedBiopsy);
+        }
       }
     }
     in->rngNh->set();

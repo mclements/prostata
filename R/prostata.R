@@ -221,11 +221,17 @@ FhcrcParameters <- list(
                         "Formal PSA" = 349                        # test sampling, primary care
                         + 45                                      # PSA analysis
                         + 0 * 1539,                               # No GP primary care
-                        "Formal panel" = 930,                     # From IHE spreadsheet # TODO check with Ola
+                        "Formal panel" =  349                     # test sampling, primary care
+                        + 45                                      # PSA analysis not included in panel price
+                        + 214 * 9.3248                            # From manuscript # TODO check with Ola
+                        + 0 * 1539,                               # No GP for formal
                         "Opportunistic PSA" = 349                 # test sampling, primary care
                         + 45                                      # PSA analysis
                         + 0.2 * 1539,                             # GP primary care
-                        "Opportunistic panel" = 2710,             # From IHE spreadsheet # TODO check with Ola
+                        "Opportunistic panel" =  349              # test sampling, primary care
+                        + 45                                      # PSA analysis not included in panel price
+                        + 214 * 9.3248                            # From manuscript # TODO check with Ola
+                        + 0.2 * 1539,                             # GP primary care
                         "Biopsy" = 4733,                          # Biopsy cost
                         "Assessment" = 1794,                      # Urology assessment
                         "Prostatectomy" = 80000                   # Surgery

@@ -995,6 +995,10 @@ summary.fhcrc <- function(object, ...) {
                            biopsies = with(summary$events,
                                            sum(n[event %in% c("toScreenInitiatedBiopsy",
                                                               "toClinicalDiagnosticBiopsy")])) / n,
+                           biopsies.screen.initiated = with(summary$events,
+                                           sum(n[event %in% c("toScreenInitiatedBiopsy")])) / n,
+                           biopsies.clinical.diagnostic = with(summary$events,
+                                           sum(n[event %in% c("toClinicalDiagnosticBiopsy")])) / n,
                            negative.biopsies = with(summary$events,
                                                    sum(n[event %in% c("toScreenInitiatedBiopsy",
                                                                       "toClinicalDiagnosticBiopsy")])
@@ -1002,6 +1006,8 @@ summary.fhcrc <- function(object, ...) {
                                                                         "toClinicalDiagnosis")])) / n,
                            screen.diagnosis = with(summary$events,
                                                    sum(n[event == "toScreenDiagnosis"])) / n,
+                           clinical.diagnosis = with(summary$events,
+                                                   sum(n[event == "toClinicalDiagnosis"])) / n,
                            over.diagnosis = with(summary$events,
                                                  sum(n[event == "toOverDiagnosis"])) / n,
                            cancer.deaths = with(summary$events,
@@ -1009,7 +1015,18 @@ summary.fhcrc <- function(object, ...) {
                            LE = sum(summary$pt$pt) / n,
                            QALE = sum(summary$ut$ut) / n,
                            healthsector.costs = sum(healthsector.costs$costs) / n,
-                           societal.costs = sum(societal.costs$costs) / n))),
+                           productivity.loss = tapply(societal.costs$costs,
+                                                      societal.costs$type=="Productivity loss",
+                                                      sum)[["TRUE"]] / n,
+                           societal.costs = sum(societal.costs$costs) / n,
+                           healthsector.cost.per.qaly = sum(healthsector.costs$costs) /
+                               sum(summary$ut$ut),
+                           productivity.loss.per.qaly = tapply(societal.costs$costs,
+                                                      societal.costs$type=="Productivity loss",
+                                                      sum)[["TRUE"]] /
+                               sum(summary$ut$ut),
+                           societal.cost.per.qaly = sum(societal.costs$costs) /
+                               sum(summary$ut$ut)))),
                    class="summary.fhcrc"))
 }
 

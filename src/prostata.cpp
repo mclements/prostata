@@ -57,7 +57,7 @@ namespace fhcrc_example {
   enum screen_t {noScreening, randomScreen50to70, twoYearlyScreen50to70, fourYearlyScreen50to70,
 		 screen50, screen60, screen70, screenUptake, stockholm3_goteborg, stockholm3_risk_stratified,
 		 goteborg, risk_stratified, mixed_screening,
-		 regular_screen, single_screen, introduced_screening, stopped_screening};
+		 regular_screen, single_screen, introduced_screening_only, introduced_screening, stopped_screening};
 
   enum treatment_t {no_treatment, CM, RP, RT};
 
@@ -592,6 +592,7 @@ void FhcrcPerson::init() {
       break;
     case mixed_screening:
     case introduced_screening:
+    case introduced_screening_only:
     case stopped_screening:
     case stockholm3_goteborg:
     case stockholm3_risk_stratified:
@@ -618,6 +619,14 @@ void FhcrcPerson::init() {
     opportunistic_uptake(); // 'toOrganised' will remove opportunistic screens
     if ( in->parameter["introduction_year"] - cohort <= in->parameter["start_screening"]) { // under screen age at 2015
         scheduleAt(in->parameter["start_screening"], toOrganised); //screen all in age interval
+    } else if( in->parameter["introduction_year"] - cohort >= in->parameter["start_screening"] && //between screen ages
+	       in->parameter["introduction_year"] - cohort <= in->parameter["stop_screening"]) {
+      scheduleAt(u1 + in->parameter["introduction_year"] - cohort, toOrganised); //in 1 year screen all in age interval
+    }
+    break;
+  case introduced_screening_only: //first screen
+    if ( in->parameter["introduction_year"] - cohort <= in->parameter["start_screening"]) {
+      scheduleAt(in->parameter["start_screening"], toOrganised); //screen all in age interval
     } else if( in->parameter["introduction_year"] - cohort >= in->parameter["start_screening"] && //between screen ages
 	       in->parameter["introduction_year"] - cohort <= in->parameter["stop_screening"]) {
       scheduleAt(u1 + in->parameter["introduction_year"] - cohort, toOrganised); //in 1 year screen all in age interval
@@ -898,6 +907,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	  }
 	  break;
 	case introduced_screening: //rescreen
+        case introduced_screening_only:
 	  if (organised && now() + in->parameter["screening_interval"] <= in->parameter["stop_screening"]) {// within age?
 	    scheduleAt(now() + in->parameter["screening_interval"], toOrganised); //if there are planned opportunistic screens
 	  }

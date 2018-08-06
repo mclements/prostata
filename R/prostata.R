@@ -131,8 +131,8 @@ FhcrcParameters <- list(
     formal_compliance = 0.0,
     start_screening = 50.0, # start of organised screening
     stop_screening = 70.0,  # end of organised screening
-    screening_interval = 2.0, # screening interval for regular_screening and introduced_screening
-    introduction_year = 2015.0, # year to start organised screening for introduced_screening  & cancel the opportunistic testing under stopped_screening
+    screening_interval = 2.0, # screening interval for regular_screening and introduced_screening*
+    introduction_year = 2015.0, # year to start organised screening for introduced_screening*  & cancel the opportunistic testing under stopped_screening
     mu0=c(0.00219, 0.000304, 5.2e-05, 0.000139, 0.000141, 3.6e-05, 7.3e-05,
         0.000129, 3.8e-05, 0.000137, 6e-05, 8.1e-05, 6.1e-05, 0.00012,
         0.000117, 0.000183, 0.000185, 0.000397, 0.000394, 0.000585, 0.000448,
@@ -693,6 +693,7 @@ ageStandards <- data.frame(Age = cut(seq(0, 85, 5),
 #'      \item{\code{mixed_screening}}{risk stratified re-screening 2+4 from age 50 to 70 & opportunistic testing for other ages}
 #'      \item{\code{regular_screen}}{TBA}
 #'      \item{\code{single_screen}}{TBA}
+#'      \item{\code{introduced_screening_only}}{TBA}
 #'      \item{\code{introduced_screening}}{TBA}
 #'      \item{\code{stopped_screening}}{TBA}
 #'    } . Default: 'noScreening'
@@ -745,12 +746,14 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   set.user.Random.seed(seed)
   ## birth cohorts that should give approximately the number of men alive in Stockholm in 2012
   ## check the input arguments
-  screenT <- c("noScreening", "randomScreen50to70", "twoYearlyScreen50to70",
-               "fourYearlyScreen50to70", "screen50", "screen60", "screen70",
-               "screenUptake", "stockholm3_goteborg",
-               "stockholm3_risk_stratified", "goteborg", "risk_stratified",
-               "mixed_screening","regular_screen", "single_screen",
-               "introduced_screening", "stopped_screening")
+  screenT <- c("noScreening", "randomScreen50to70",
+               "twoYearlyScreen50to70", "fourYearlyScreen50to70",
+               "screen50", "screen60", "screen70", "screenUptake",
+               "stockholm3_goteborg", "stockholm3_risk_stratified",
+               "goteborg", "risk_stratified", "mixed_screening",
+               "regular_screen", "single_screen",
+               "introduced_screening_only", "introduced_screening",
+               "stopped_screening")
   screen <- match.arg(screen, screenT)
   stopifnot(is.na(n) || is.integer(as.integer(n)))
   stopifnot(is.integer(as.integer(nLifeHistories)))

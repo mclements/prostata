@@ -838,16 +838,16 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   updateParameters <- parms
   updateParameters$nLifeHistories <- as.integer(nLifeHistories)
   updateParameters$screen <- as.integer(screenIndex)
-  updateParameters$g0 <- FhcrcParameters$g0 / FhcrcParameters$susceptible
-  updateParameters$cost_parameters <- FhcrcParameters$currency_rate * FhcrcParameters$cost_parameters
-  updateParameters$production <- data.frame(ages = FhcrcParameters$production$ages,
-                                            values = FhcrcParameters$currency_rate * FhcrcParameters$production$values)
   parameter <- FhcrcParameters
   for (name in names(updateParameters)){
       if(!(name %in% names(parameter)))
           warning("Name in parms argument not in FhcrcParameters: ",name,".")
       parameter[[name]] <- updateParameters[[name]]
   }
+  parameter$g0 <- parameter$g0 / parameter$susceptible
+  parameter$cost_parameters <- parameter$currency_rate * parameter$cost_parameters
+  parameter$production <- data.frame(ages = parameter$production$ages,
+                                     values = parameter$currency_rate * parameter$production$values)
   pind <- sapply(parameter,class)=="numeric" & sapply(parameter,length)==1
   bInd <- sapply(parameter,class)=="logical" & sapply(parameter,length)==1
   if (parameter$stockholmTreatment)
@@ -1012,6 +1012,9 @@ summary.fhcrc <- function(object, ...) {
                                                    sum(n[event == "toClinicalDiagnosis"])) / n,
                            over.diagnosis = with(summary$events,
                                                  sum(n[event == "toOverDiagnosis"])) / n,
+                           diagnosis = with(summary$events,
+                                            sum(n[event %in% c("toClinicalDiagnosis",
+                                                               "toOverDiagnosis")])) / n,
                            cancer.deaths = with(summary$events,
                                                 sum(n[event == "toCancerDeath"])) / n,
                            LE = sum(summary$pt$pt) / n,

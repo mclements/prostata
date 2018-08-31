@@ -840,12 +840,12 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     }
     if (formal_costs) {
       add_costs("Invitation");
-      lost_productivity(in->panel && psa>=1.0 ? "Formal panel" : "Formal PSA");
-      add_costs(in->panel && psa>=1.0 ? "Formal panel" : "Formal PSA");
+      lost_productivity(in->panel && psa>=in->parameter["panelReflexThreshold"] ? "Formal panel" : "Formal PSA");
+      add_costs(in->panel && psa>=in->parameter["panelReflexThreshold"] ? "Formal panel" : "Formal PSA");
       scheduleUtilityChange(now(), "Formal PSA");
     } else { // opportunistic costs
-      add_costs(in->panel && psa>=1.0 ? "Opportunistic panel" : "Opportunistic PSA");
-      lost_productivity(in->panel && psa>=1.0 ? "Opportunistic panel" : "Opportunistic PSA");
+      add_costs(in->panel && psa>=in->parameter["panelReflexThreshold"] ? "Opportunistic panel" : "Opportunistic PSA");
+      lost_productivity(in->panel && psa>=in->parameter["panelReflexThreshold"] ? "Opportunistic panel" : "Opportunistic PSA");
       scheduleUtilityChange(now(), "Opportunistic PSA");
     }
     compliance = formal_compliance ?

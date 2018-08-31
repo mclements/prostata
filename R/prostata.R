@@ -120,6 +120,7 @@ FhcrcParameters <- list(
     PSA_FP_threshold_nCa=4.19, # reduce FP in no cancers with PSA threshold
     PSA_FP_threshold_GG6=3.51, # reduce FP in GG 6 with PSA threshold
     PSA_FP_threshold_GG7plus=3, # reduce FP in GG >= 7 with PSA threshold
+    panelReflexThreshold = 1.0,
     ## Natural history calibration
     rTPF=1.0,
     rFPF=0.6,

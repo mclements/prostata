@@ -867,7 +867,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       else if (int(in->parameter("biomarker_model"))==psa_informed_correction) { // PSA based model for the biomarker
 	if ((ext_grade == ext::Gleason_le_6 &&
 	     onset_p() && psa < in->parameter["PSA_FP_threshold_GG6"]) // FP GG 6 PSA threshold
-	    ||  (!onset_p() && psa < in->parameter["PSA_FP_threshold_nCa"])) {// FP no cancer PSA threshold
+	    ||  (!onset_p() && psa < in->parameter["PSA_FP_threshold_nCa"]) // FP no cancer PSA threshold
+	    || ((ext_grade == ext::Gleason_7 || ext_grade == ext::Gleason_ge_8) &&
+		onset_p() && psa < in->parameter["PSA_FP_threshold_GG7plus"])) { // FP GG >= 7 PSA threshold
 	  positive_test = false; // assumption relying on PSA being a strong panel component
 	}
       }

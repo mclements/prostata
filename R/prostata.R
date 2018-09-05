@@ -310,7 +310,10 @@ FhcrcParameters <- list(
                          "Active surveillance" = 7,
                          "Postrecovery period" = 9,
                          "Palliative therapy" = 30/12,
-                         "Terminal illness" = 6/12)
+                         "Terminal illness" = 6/12),
+    utility_truncate = TRUE, # should utilities be truncated at zero?
+    utility_scales = c("UtilityAdditive"=0,"UtilityMultiplicative"=1,"UtilityMinimum"=2), # encoding for the utility scales
+    utility_scale = as.double(0) # default scale = UtilityAdditive
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]

@@ -50,7 +50,7 @@ namespace fhcrc_example {
                 toOtherDeath, toScreen, toBiopsyFollowUpScreen,
                 toScreenInitiatedBiopsy, toClinicalDiagnosticBiopsy,
                 toScreenDiagnosis, toOverDiagnosis, toOrganised, toTreatment,
-                toCM, toRP, toRT, toADT, toUtilityChange, toUtilityRemove,
+                toCM, toRP, toRT, toADT,toUtilityChange, toUtilityRemove,
                 toSTHLM3, toOpportunistic, toT3plus, toCancelScreens,
                 toYearlyActiveSurveillance, toYearlyPostTxFollowUp};
 
@@ -170,7 +170,8 @@ namespace fhcrc_example {
     UMap umap;
     int counter;
     utility_scale_t scale;
-    Utilities(utility_scale_t scale = UtilityAdditive) :counter(0), scale(scale) {}
+    bool truncate;
+    Utilities(utility_scale_t scale = UtilityAdditive, bool truncate = true) :counter(0), scale(scale), truncate(truncate) {}
     double utility() {
       // case: no utilities?
       // case: value>1.0?
@@ -184,7 +185,7 @@ namespace fhcrc_example {
 	  if (it->second < value) value = it->second;
 	}
       }
-      if (value < 0.0) value = 0.0;
+      if (truncate && value < 0.0) value = 0.0;
       return value;
     }
     void clear() { umap.clear(); counter = 0; }
@@ -1236,6 +1237,8 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   in.cost_parameters = as<NumericVector>(otherParameters["cost_parameters"]);
   in.utility_estimates = as<NumericVector>(otherParameters["utility_estimates"]);
   in.utility_duration = as<NumericVector>(otherParameters["utility_duration"]);
+  utilities.truncate = as<bool>(in.bparameter["utility_truncate"]);
+  utilities.scale = utility_scale_t(as<int>(in.parameter["utility_scale"]));
 
   in.production = Table<double,double>(as<DataFrame>(otherParameters["production"]), "ages", "values");
   in.lost_production_years = as<NumericVector>(otherParameters["lost_production_years"]);

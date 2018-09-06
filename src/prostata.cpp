@@ -50,7 +50,7 @@ namespace fhcrc_example {
                 toOtherDeath, toScreen, toBiopsyFollowUpScreen,
                 toScreenInitiatedBiopsy, toClinicalDiagnosticBiopsy,
                 toScreenDiagnosis, toOverDiagnosis, toOrganised, toTreatment,
-                toCM, toRP, toRT, toADT,toUtilityChange, toUtilityRemove,
+                toCM, toRP, toRT, toADT, toUtilityChange, toUtilityRemove,
                 toSTHLM3, toOpportunistic, toT3plus, toCancelScreens,
                 toYearlyActiveSurveillance, toYearlyPostTxFollowUp};
 
@@ -171,7 +171,7 @@ namespace fhcrc_example {
     int counter;
     utility_scale_t scale;
     bool truncate;
-    Utilities(utility_scale_t scale = UtilityAdditive, bool truncate = true) :counter(0), scale(scale), truncate(truncate) {}
+    Utilities(utility_scale_t scale = UtilityMultiplicative, bool truncate = true) :counter(0), scale(scale), truncate(truncate) {}
     double utility() {
       // case: no utilities?
       // case: value>1.0?

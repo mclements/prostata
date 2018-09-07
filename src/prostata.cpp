@@ -872,6 +872,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	    || ((ext_grade == ext::Gleason_7 || ext_grade == ext::Gleason_ge_8) &&
 		onset_p() && psa < in->parameter["PSA_FP_threshold_GG7plus"])) { // FP GG >= 7 PSA threshold
 	  positive_test = false; // assumption relying on PSA being a strong panel component
+          if (in->debug) Rprintf("Panel adjusted tests id=%i, psa=%8.6f, ext_grade=%i, future_ext_grade=%i, onset=%d\n", id, psa, ext_grade, future_ext_grade, onset_p());
 	}
       }
       else {

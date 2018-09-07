@@ -1017,7 +1017,7 @@ summary.fhcrc <- function(object, ...) {
                                                  sum(n[event == "toOverDiagnosis"])) / n,
                            diagnosis = with(summary$events,
                                             sum(n[event %in% c("toClinicalDiagnosis",
-                                                               "toOverDiagnosis")])) / n,
+                                                               "toScreenDiagnosis")])) / n,
                            cancer.deaths = with(summary$events,
                                                 sum(n[event == "toCancerDeath"])) / n,
                            LE = sum(summary$pt$pt) / n,

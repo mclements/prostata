@@ -1008,8 +1008,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (state == Metastatic ||
         (state == Localised && ext_state == ext::T3plus) ||
         (state == Localised && ext_state == ext::T1_T2 &&
-         (now() > t0 + 35.0 + (t3p - t0) *
-          (1 - in->parameter["biopsySensitivityTimeProportionT1T2"]) *
+         (now() > t3p + 35.0 - (t3p - t0) *
+          in->parameter["biopsySensitivityTimeProportionT1T2"] *
           in->tableBiopsySensitivity(bounds(year,1987.0,2000.0)) /
           in->tableBiopsySensitivity(2000.0)))) { // diagnosed
       scheduleAt(now(), toScreenDiagnosis);

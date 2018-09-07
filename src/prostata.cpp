@@ -246,6 +246,7 @@ namespace fhcrc_example {
     void opportunistic_rescreening(double psa);
     void opportunistic_uptake();
     void cancel_events_after_diagnosis();
+    void rescreening_schedules(double psa, bool organised, bool mixed_programs);
     void init();
     void add_costs(string item, cost_t cost_type = Direct, double weight=1.0);
     void lost_productivity(string item, double weight=1.0);
@@ -460,6 +461,68 @@ namespace fhcrc_example {
       Rprintf("(cohort=%f,pscreening=%f,uscreening=%f,first_screen=%f)\n",
 	      cohort, pscreening, uscreening, first_screen);
   }
+
+  void FhcrcPerson::rescreening_schedules(double psa, bool organised, bool mixed_programs) {
+    // Check for organised screens - opportunistic screens are described later
+    if (R::runif(0.0,1.0) < in->parameter["rescreeningParticipation"]) {
+      switch (in->screen) {
+      case mixed_screening:
+      case stockholm3_goteborg:
+      case goteborg:
+        {
+          if (organised && now() >= in->parameter["start_screening"] && now() < in->parameter["stop_screening"]) { // age groups
+            if (psa<1.0 && now()+4.0 <= in->parameter["stop_screening"]) // re-screen late for low psa
+              scheduleAt(now() + 4.0, toScreen);
+            else if (psa>=1.0 && now()+2.0 <= in->parameter["stop_screening"]) // re-screen soon for moderate psa
+              scheduleAt(now() + 2.0, toScreen);
+            // else do nothing
+          }
+        }
+        break;
+      case introduced_screening: //rescreen
+      case introduced_screening_only:
+        if (organised && now() + in->parameter["screening_interval"] <= in->parameter["stop_screening"]) {// within age?
+          scheduleAt(now() + in->parameter["screening_interval"], toOrganised); //if there are planned opportunistic screens
+        }
+        break;
+      case stockholm3_risk_stratified:
+      case risk_stratified:
+        if (now() >= in->parameter["start_screening"]) {
+          if (psa<1.0 && now()+8.0 <= in->parameter["stop_screening"])
+            scheduleAt(now() + 8.0, toScreen);
+          if (psa>=1.0 && now()+4.0 <= in->parameter["stop_screening"])
+            scheduleAt(now() + 4.0, toScreen);
+        }
+        break;
+      case regular_screen:
+        if (in->parameter["start_screening"] <= now() &&
+            now() + in->parameter["screening_interval"] <= in->parameter["stop_screening"])
+          scheduleAt(now() + in->parameter["screening_interval"], toScreen);
+        break;
+      case twoYearlyScreen50to70:
+        if (50.0 <= now() && now() < 70.0)
+          scheduleAt(now() + 2.0, toScreen);
+        break;
+      case fourYearlyScreen50to70:
+        if (50.0 <= now() && now() < 70.0)
+          scheduleAt(now() + 4.0, toScreen);
+        break;
+      case screenUptake:
+      case randomScreen50to70:
+      case single_screen:
+      case screen50:
+      case screen60:
+      case screen70:
+      case stopped_screening:
+        break;
+      default:
+        REprintf("Screening not matched: %s\n",in->screen);
+        break;
+      }
+    } // rescreening participation
+    if (in->screen == screenUptake || (mixed_programs && !organised))
+      opportunistic_rescreening(psa); // includes rescreening participation
+  } // rescreening
 
   Double rbinorm(Double mean, Double sd, double rho) {
     double z1 = R::rnorm(0.0,1.0);
@@ -893,67 +956,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (positive_test && R::runif(0.0,1.0) < compliance) {
       scheduleAt(now(), toScreenInitiatedBiopsy); // immediate biopsy
     } // assumes similar biopsy compliance, reasonable? An option to different psa-thresholds would be to use different biopsyCompliance. /AK
-    else { // re-screening schedules
-      // Check for organised screens - opportunistic screens are described later
-      if (R::runif(0.0,1.0) < in->parameter["rescreeningParticipation"]) {
-	switch (in->screen) {
-	case mixed_screening:
-	case stockholm3_goteborg:
-	case goteborg:
-	  {
-	    if (organised && now() >= in->parameter["start_screening"] && now() < in->parameter["stop_screening"]) { // age groups
-	      if (psa<1.0 && now()+4.0 <= in->parameter["stop_screening"]) // re-screen late for low psa
-		scheduleAt(now() + 4.0, toScreen);
-	      else if (psa>=1.0 && now()+2.0 <= in->parameter["stop_screening"]) // re-screen soon for moderate psa
-		scheduleAt(now() + 2.0, toScreen);
-	      // else do nothing
-	    }
-	  }
-	  break;
-	case introduced_screening: //rescreen
-        case introduced_screening_only:
-	  if (organised && now() + in->parameter["screening_interval"] <= in->parameter["stop_screening"]) {// within age?
-	    scheduleAt(now() + in->parameter["screening_interval"], toOrganised); //if there are planned opportunistic screens
-	  }
-	  break;
-	case stockholm3_risk_stratified:
-	case risk_stratified:
-	  if (now() >= in->parameter["start_screening"]) {
-	    if (psa<1.0 && now()+8.0 <= in->parameter["stop_screening"])
-	      scheduleAt(now() + 8.0, toScreen);
-	    if (psa>=1.0 && now()+4.0 <= in->parameter["stop_screening"])
-	      scheduleAt(now() + 4.0, toScreen);
-	  }
-	  break;
-	case regular_screen:
-	  if (in->parameter["start_screening"] <= now() &&
-	      now() + in->parameter["screening_interval"] <= in->parameter["stop_screening"])
-	    scheduleAt(now() + in->parameter["screening_interval"], toScreen);
-	  break;
-	case twoYearlyScreen50to70:
-	  if (50.0 <= now() && now() < 70.0)
-	    scheduleAt(now() + 2.0, toScreen);
-	  break;
-	case fourYearlyScreen50to70:
-	  if (50.0 <= now() && now() < 70.0)
-	    scheduleAt(now() + 4.0, toScreen);
-	  break;
-	case screenUptake:
-	case randomScreen50to70:
-	case single_screen:
-	case screen50:
-	case screen60:
-	case screen70:
-	case stopped_screening:
-	  break;
-	default:
-	  REprintf("Screening not matched: %s\n",in->screen);
-	  break;
-	}
-      } // rescreening participation
-      if (in->screen == screenUptake || (mixed_programs && !organised))
-	opportunistic_rescreening(psa); // includes rescreening participation
-    } // rescreening
+    else
+      rescreening_schedules(psa, organised, mixed_programs);
     in->rngNh->set();
   } break;
 
@@ -1036,6 +1040,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
         } else { // Biopsy was the first event
           scheduleAt(now() + timeToBiopsy, toScreenInitiatedBiopsy);
         }
+      } else {// not a first negative biopsy (reset)
+        rescreening_schedules(psa, organised, mixed_programs);
+        previousNegativeBiopsy = false;
       }
     }
     in->rngNh->set();

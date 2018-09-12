@@ -218,6 +218,8 @@ FhcrcParameters <- list(
     ## https://www.socialstyrelsen.se/SiteCollectionDocuments/2018-2-13-halsoekonomisk-analys.pdf
     ## Based on the Swedish south region 2017:
     ## http://sodrasjukvardsregionen.se/avtal-priser/regionala-priser-och-ersattningar-foregaende-ar/
+    ## S3M cost from Karolinska University Laboratory (KUL):
+    ## https://www.karolinska.se/KUL/Alla-anvisningar/Anvisning/10245
     cost_parameters = c("Invitation" = 7                          # Invitation letter
                         + 7,                                      # Results letter
                         "Formal PSA" = 349                        # test sampling, primary care
@@ -225,7 +227,7 @@ FhcrcParameters <- list(
                         + 0 * 1539,                               # No GP primary care
                         "Formal panel" =  349                     # test sampling, primary care
                         + 45                                      # PSA analysis not included in panel price
-                        + 214 * 9.3248                            # From manuscript # TODO check with Ola
+                        + 2300                                    # From KUL price list
                         + 0 * 1539,                               # No GP for formal
                         "Opportunistic PSA" = 349                 # test sampling, primary care
                         + 45                                      # PSA analysis

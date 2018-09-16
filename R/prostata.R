@@ -234,7 +234,7 @@ FhcrcParameters <- list(
                         + 0.2 * 1539,                             # GP primary care
                         "Opportunistic panel" =  349              # test sampling, primary care
                         + 45                                      # PSA analysis not included in panel price
-                        + 214 * 9.3248                            # From manuscript # TODO check with Ola
+                        + 2300                                    # From KUL price list
                         + 0.2 * 1539,                             # GP primary care
                         "Biopsy" = 4733,                          # Biopsy cost
                         "Assessment" = 1794,                      # Urology assessment

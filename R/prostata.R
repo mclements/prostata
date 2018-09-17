@@ -82,8 +82,8 @@ FhcrcParameters <- list(
     tau2 = 0.0829, # log PSA measurement variance  - normal
     susceptible = 1.0, # portion susceptible
     g0=0.0005, # onset parameter
-    g3p = exp(-6.9353063), # T3+ parameter
-    gm = exp(-6.4824485), # metastatic parameter
+    g3p = exp(-6.73546100), # T3+ parameter
+    gm = exp(-7.46200003), # metastatic parameter
     gc=0.0015, # clinical diagnosis parameter
     thetac=19.1334, # clinical diagnosis parameter after metastatic
     mubeta0=-1.609, # mean of beta0, where beta0 is the log PSA intercept at age 35 years
@@ -95,9 +95,9 @@ FhcrcParameters <- list(
     rev_mubeta2=c(0.051, 0.129, 0.1678), # ext::grade: same as above for extended gleason grade (6-, 7, 8+)
     rev_sebeta2=c(0.064, 0.087, 0.3968), # ext::grade
     alpha7 = log(0.2), # log of the proportion gleason 7 at age 35
-    beta7 = 0.0642775, # slope of log proportion of gleason 7
+    beta7 = 0.06840404, # slope of log proportion of gleason 7
     alpha8 = log(0.002), # log of the proportion of gleason 8+ at age 35
-    beta8 = 0.1864655, # slope of log proportion of gleason 8+
+    beta8 = 0.19894431, # slope of log proportion of gleason 8+
     RR_T3plus=2.0, # prostate cancer mortality rate ratio comparing T3+ with T1-T2, add lit reference
     ## mubeta2.scale=1.0, # cf. 2.1
     ## beta.rho=0.62,
@@ -111,14 +111,14 @@ FhcrcParameters <- list(
     screeningParticipation = 0.75, # probability of actually having the first PSA test
     rescreeningParticipation = 0.95, # probability of actually having the re-screening PSA tests
     biopsyCompliance = 0.856, # Formal biopsy compliance, Schröder ERSPC 2014
-    biopsySensitivityTimeProportionT1T2 = 0.5272495, # time portion when T1-T2 cancers are sensitivity to biopsies (expit from calibration). The remaining part, starting at onset, is not detectable.
+    biopsySensitivityTimeProportionT1T2 = 0.5314886, # time portion when T1-T2 cancers are sensitivity to biopsies (expit from calibration). The remaining part, starting at onset, is not detectable.
     studyParticipation = 50.0/260.0, # observed fraction of population who participated in STHLM3 study
     nLifeHistories = 10L, screen = 0L, ## integers
     psaThreshold = 3.0,
     psaThresholdBiopsyFollowUp = 4.0, # revised PSA threshold for negative follow-up screen
     biomarker_model = 1, # biomarker_model = 0 random, biomarker_model = 1 psa/risk based correction of FP
-    PSA_FP_threshold_nCa=4.18, # reduce FP in no cancers with PSA threshold
-    PSA_FP_threshold_GG6=3.54, # reduce FP in GG 6 with PSA threshold
+    PSA_FP_threshold_nCa=4.2, # reduce FP in no cancers with PSA threshold
+    PSA_FP_threshold_GG6=3.41, # reduce FP in GG 6 with PSA threshold
     PSA_FP_threshold_GG7plus=3, # reduce FP in GG >= 7 with PSA threshold
     panelReflexThreshold = 1.0,
     ## Natural history calibration
@@ -153,17 +153,17 @@ FhcrcParameters <- list(
         0.782609),
     hr_locoregional = transform(expand.grid(age=c(50,60,70), ext_grade=0:2,
                                             psa10=0:1),
-                                hr = c(0.2009515, 0.4671682,
-                                       1.0793264, 2.0419524,
-                                       1.4795704, 1.8301608,
-                                       1.7294489, 1.0701277,
-                                       1.4378105, 0.7065310,
-                                       1.0955767, 1.2093063,
-                                       5.0236260, 3.2827077,
-                                       2.1218456, 1.1981716,
-                                       0.9827433, 0.8948585)),
+                                hr = c(0.2640235, 0.5107137,
+                                       1.0917129, 1.9397446,
+                                       1.6671078, 1.9372717,
+                                       1.7998275, 1.0379953,
+                                       1.7205986, 0.8606931,
+                                       0.8966157, 1.1941040,
+                                       3.6151038, 2.9625742 ,
+                                       2.1622938, 1.0185837,
+                                       0.9337168, 0.8849155)),
     hr_metastatic = data.frame(age = c(50, 60, 70),
-                               hr = c(0.9911762, 0.8275815, 0.7313553)),
+                               hr = c(0.893, 0.779, 0.698)),
     biopsy_sensitivity = data.frame(Year = c(1987, 1988, 1989, 1990, 1991, 1992,
                                              1993, 1994, 1995, 1996, 1997, 1998,
                                              1999, 2000),
@@ -218,6 +218,8 @@ FhcrcParameters <- list(
     ## https://www.socialstyrelsen.se/SiteCollectionDocuments/2018-2-13-halsoekonomisk-analys.pdf
     ## Based on the Swedish south region 2017:
     ## http://sodrasjukvardsregionen.se/avtal-priser/regionala-priser-och-ersattningar-foregaende-ar/
+    ## S3M cost from Karolinska University Laboratory (KUL):
+    ## https://www.karolinska.se/KUL/Alla-anvisningar/Anvisning/10245
     cost_parameters = c("Invitation" = 7                          # Invitation letter
                         + 7,                                      # Results letter
                         "Formal PSA" = 349                        # test sampling, primary care
@@ -225,14 +227,14 @@ FhcrcParameters <- list(
                         + 0 * 1539,                               # No GP primary care
                         "Formal panel" =  349                     # test sampling, primary care
                         + 45                                      # PSA analysis not included in panel price
-                        + 214 * 9.3248                            # From manuscript # TODO check with Ola
+                        + 2300                                    # From KUL price list
                         + 0 * 1539,                               # No GP for formal
                         "Opportunistic PSA" = 349                 # test sampling, primary care
                         + 45                                      # PSA analysis
                         + 0.2 * 1539,                             # GP primary care
                         "Opportunistic panel" =  349              # test sampling, primary care
                         + 45                                      # PSA analysis not included in panel price
-                        + 214 * 9.3248                            # From manuscript # TODO check with Ola
+                        + 2300                                    # From KUL price list
                         + 0.2 * 1539,                             # GP primary care
                         "Biopsy" = 4733,                          # Biopsy cost
                         "Assessment" = 1794,                      # Urology assessment
@@ -313,7 +315,7 @@ FhcrcParameters <- list(
                          "Terminal illness" = 6/12),
     utility_truncate = TRUE, # should utilities be truncated at zero?
     utility_scales = c("UtilityAdditive"=0,"UtilityMultiplicative"=1,"UtilityMinimum"=2), # encoding for the utility scales
-    utility_scale = as.double(1) # default scale = UtilityMultiplicative
+    utility_scale = as.double(0) # default scale = UtilityAdditive
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]

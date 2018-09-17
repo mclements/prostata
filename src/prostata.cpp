@@ -171,7 +171,7 @@ namespace fhcrc_example {
     int counter;
     utility_scale_t scale;
     bool truncate;
-    Utilities(utility_scale_t scale = UtilityMultiplicative, bool truncate = true) :counter(0), scale(scale), truncate(truncate) {}
+    Utilities(utility_scale_t scale = UtilityAdditive, bool truncate = true) :counter(0), scale(scale), truncate(truncate) {}
     double utility() {
       // case: no utilities?
       // case: value>1.0?

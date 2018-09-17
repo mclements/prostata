@@ -847,6 +847,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     state = Localised; ext_state = ext::T1_T2;
     ext_grade = future_ext_grade;
     grade = future_grade;
+    if (now()<tc+35.0-6.0/52.0)
+      scheduleAt(tc+35.0-6.0/52.0,toClinicalDiagnosticBiopsy);
+    if (now()<tc+35.0-3.0/52.0)
+      scheduleAt(tc+35.0-3.0/52.0,toClinicalDiagnosticBiopsy);
     scheduleAt(tc+35.0,toClinicalDiagnosis);
     scheduleAt(tm+35.0,toMetastatic);
     scheduleAt(t3p+35.0,toT3plus);
@@ -859,6 +863,11 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   case toMetastatic:
     state = Metastatic; ext_state = ext::Metastatic;
     RemoveKind(toClinicalDiagnosis);
+    RemoveKind(toClinicalDiagnosticBiopsy);
+    if (now()<tc+35.0-6.0/52.0)
+      scheduleAt(tmc+35.0-6.0/52.0,toClinicalDiagnosticBiopsy);
+    if (now()<tc+35.0-3.0/52.0)
+      scheduleAt(tmc+35.0-3.0/52.0,toClinicalDiagnosticBiopsy);
     scheduleAt(tmc+35.0,toClinicalDiagnosis);
     // Remove possible secondary Tx
     RemoveKind(toRP);
@@ -954,7 +963,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     //   if (R::runif(0.0,1.0) < 1.0-parameter["rTPF"]) positive_test = true;
     // }
     if (positive_test && R::runif(0.0,1.0) < compliance) {
-      scheduleAt(now(), toScreenInitiatedBiopsy); // immediate biopsy
+      scheduleAt(now()+1.0/52.0, toScreenInitiatedBiopsy); // biopsy in one month
     } // assumes similar biopsy compliance, reasonable? An option to different psa-thresholds would be to use different biopsyCompliance. /AK
     else
       rescreening_schedules(psa, organised, mixed_programs);
@@ -965,9 +974,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     scheduleUtilityChange(now(), "Cancer diagnosis");
     dx = ClinicalDiagnosis;
     cancel_events_after_diagnosis();
-    scheduleAt(now(), toClinicalDiagnosticBiopsy); // assumes two biopsy per clinical diagnosis
-    scheduleAt(now(), toClinicalDiagnosticBiopsy);
-    scheduleAt(now(), toTreatment);
+    scheduleAt(now()+1.0/12.0, toTreatment);
     if (id < in->nLifeHistories) {
       out->outParameters.revise("age_pca",now());
     }
@@ -977,7 +984,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     scheduleUtilityChange(now(), "Cancer diagnosis");
     dx = ScreenDiagnosis;
     cancel_events_after_diagnosis();
-    scheduleAt(now(), toTreatment);
+    scheduleAt(now()+1.0/12.0, toTreatment); // treatment one month after the diagnosis
     if (aoc < (35.0 + min(tc,tmc))) {
       scheduleAt(now(), toOverDiagnosis);
     }
@@ -1016,7 +1023,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
           in->parameter["biopsySensitivityTimeProportionT1T2"] *
           in->tableBiopsySensitivity(bounds(year,1987.0,2000.0)) /
           in->tableBiopsySensitivity(2000.0)))) { // diagnosed
-      scheduleAt(now(), toScreenDiagnosis);
+      scheduleAt(now()+3.0/52.0, toScreenDiagnosis); // diagnosis three weeks after biopsy
       if (in->panel && state==Localised && ext_grade == ext::Gleason_le_6) {
         // fixed costs etc for men who were S3M+/PE-
         add_costs("Assessment", Direct, 766.0/722.0 - 1.0);

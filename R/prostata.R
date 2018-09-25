@@ -1272,7 +1272,7 @@ print.fhcrc <- function(x, ...)
 #' @rdname predict.fhcrc
 #' @export
 predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
-                         group = "age", age.breaks = NULL, year.breaks = NULL,
+                         group = "age", group.pt = group, age.breaks = NULL, year.breaks = NULL,
                          cohort.breaks = NULL, age.weights = NULL, ...) {
     if(!inherits(object,"fhcrc")) stop("Expecting object to be an fhcrc object")
     if(!(is.null(scenarios) || all(sapply(scenarios,inherits,"fhcrc")) || inherits(object,"fhcrc")))
@@ -1316,9 +1316,12 @@ predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
     ## Manipulate input, make sure age.breaks exists from age standardisation
     if(!is.null(age.weights)) age.breaks <- interval2break(age.weights[,1])
     ## Manipulate input, make sure time group exists for specified time interval
-    if(!is.null(age.breaks) && !("age" %in% group)) group <- c(group, "age")
-    if(!is.null(year.breaks) && !("year" %in% group)) group <- c(group, "year")
-    if(!is.null(cohort.breaks) && !("cohort" %in% group)) group <- c(group, "cohort")
+    for (scale in c("age", "year", "cohort")) {
+        if(!is.null(eval(parse(text = paste(scale, "breaks",sep="."))))) {
+            if(!(scale %in% group)) group <- c(group, scale)
+            if(!(scale %in% group.pt)) group.pt <- c(group.pt, scale)
+        }
+    }
 
     ## fast operations by group using base-R
     ## http://stackoverflow.com/questions/3685492/r-speeding-up-group-by-operations
@@ -1392,9 +1395,9 @@ predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
     calc_rate <- function(object, event_types, group){
         pt <- with(categorise_time(object$summary$pt, age.breaks, year.breaks,
                                   cohort.breaks),
-                  numeric_time_scale(name_grp(grp_apply(pt,
-                                      lapply(as.list(group), function(x) eval(parse(text = x))),
-                                      sum)), group))
+                   numeric_time_scale(name_grp(grp_apply(pt,
+                                      lapply(as.list(group.pt), function(x) eval(parse(text = x))),
+                                      sum), grp = group.pt), group.pt))
         ## TODO: if subset has no dim replace with zeros, temp fix below:
         if(!any(object$summary$event$event %in% event_types)) {
             stop(paste("The event(s)", paste(event_types, collapse = ", "),
@@ -1407,7 +1410,7 @@ predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
                                                   lapply(as.list(group),
                                                   {function(x) eval(parse(text = x))}),
                                                   sum)), group))
-        within(merge(pt, events, by = group, all = TRUE),{
+        within(merge(pt, events, by = group.pt, all.y = TRUE),{
             rate <- ifelse(is.na(Freq.y) & !is.na(Freq.x), 0, Freq.y/Freq.x) #no events but some pt -> 0
             n <- Freq.y
             pt <- Freq.x

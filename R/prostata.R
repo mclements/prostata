@@ -1295,15 +1295,15 @@ predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
                        several.ok = TRUE)
 
     event_types <- switch(abbr_type,
-                         incidence.rate = c("toClinicalDiagnosis", "toScreenDiagnosis"),
-                         symptomatic.incidence.rate = "toClinicalDiagnosis",
-                         screen.incidence.rate = "toScreenDiagnosis",
-                         overdiagnosis.rate = "toOverDiagnosis",
-                         testing.rate = "toScreen",
-                         biopsy.rate = c("toClinicalDiagnosticBiopsy", "toScreenInitiatedBiopsy"),
-                         metastasis.rate = "toMetastatic",
-                         pc.mortality.rate = "toCancerDeath",
-                         allcause.mortality.rate = c("toCancerDeath", "toOtherDeath"))
+                          incidence.rate = c("toClinicalDiagnosis", "toScreenDiagnosis"),
+                          symptomatic.incidence.rate = "toClinicalDiagnosis",
+                          screen.incidence.rate = "toScreenDiagnosis",
+                          overdiagnosis.rate = "toOverDiagnosis",
+                          testing.rate = "toScreen",
+                          biopsy.rate = c("toClinicalDiagnosticBiopsy", "toScreenInitiatedBiopsy"),
+                          metastasis.rate = "toMetastatic",
+                          pc.mortality.rate = "toCancerDeath",
+                          allcause.mortality.rate = c("toCancerDeath", "toOtherDeath"))
 
     interval2break <- function(interval_vector) {
         as.numeric(unique(unlist(regmatches(interval_vector,
@@ -1358,7 +1358,7 @@ predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
 
     ## For standardising over a time scale e.g. ages
     standardise_time <- function(df, timestr = "age", parstr = "rate",
-                                time.weights = age.weights) {
+                                 time.weights = age.weights) {
         if(is.null(time.weights)) {
             return(df)
         } else {
@@ -1379,7 +1379,6 @@ predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
                                           })
             }
             ## Standardise and rename
-            ## browser()
             return(numeric_time_scale(name_grp(collapse(
                 within(df,
                 {assign(eval(substitute(parstr)), weight(eval(parse(text =timestr)),
@@ -1426,7 +1425,7 @@ predict.fhcrc <- function(object, scenarios=NULL, type = "incidence.rate",
                                                   rm("Freq")})
     }
 
-    ## Calculate prevalences by specified groups
+    ## Calculate life-years by specified groups
     calc_ly <- function(object, group){
         within(with(categorise_time(object$summary$pt, age.breaks,
                                     year.breaks, cohort.breaks),

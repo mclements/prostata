@@ -982,6 +982,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toScreenDiagnosis:
     scheduleUtilityChange(now(), "Cancer diagnosis");
+    // add cost for half a subsequent consultation
+    add_costs("Assessment", Direct, 0.5);
     dx = ScreenDiagnosis;
     cancel_events_after_diagnosis();
     scheduleAt(now()+1.0/12.0, toTreatment); // treatment one month after the diagnosis

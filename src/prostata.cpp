@@ -915,7 +915,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       out->psarecord.record("beta1",beta1);
       out->psarecord.record("beta2",beta2);
       out->psarecord.record("Z",Z);
-      out->psarecord.record("detectable",detectable);
+      out->psarecord.record("onset",double(onset_p()));
+      out->psarecord.record("detectable",double(detectable));
     }
     if (!everPSA) {
       if (id < in->nLifeHistories) {
@@ -952,12 +953,12 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       }
       else if (int(in->parameter("biomarker_model"))==psa_informed_correction) { // PSA based model for the biomarker
 	if ((ext_grade == ext::Gleason_le_6 &&
-	     onset_p() && psa < in->parameter["PSA_FP_threshold_GG6"]) // FP GG 6 PSA threshold
-	    ||  (!onset_p() && psa < in->parameter["PSA_FP_threshold_nCa"]) // FP no cancer PSA threshold
+	     detectable && psa < in->parameter["PSA_FP_threshold_GG6"]) // FP GG 6 PSA threshold
+	    ||  (!detectable && psa < in->parameter["PSA_FP_threshold_nCa"]) // FP no cancer PSA threshold
 	    || ((ext_grade == ext::Gleason_7 || ext_grade == ext::Gleason_ge_8) &&
-		onset_p() && psa < in->parameter["PSA_FP_threshold_GG7plus"])) { // FP GG >= 7 PSA threshold
+		detectable && psa < in->parameter["PSA_FP_threshold_GG7plus"])) { // FP GG >= 7 PSA threshold
 	  positive_test = false; // assumption relying on PSA being a strong panel component
-          if (in->debug) Rprintf("Panel adjusted tests id=%i, psa=%8.6f, ext_grade=%i, future_ext_grade=%i, onset=%d\n", id, psa, ext_grade, future_ext_grade, onset_p());
+          if (in->debug) Rprintf("Panel adjusted tests id=%i, psa=%8.6f, ext_grade=%i, future_ext_grade=%i, onset=%d, detectable=%d\n", id, psa, ext_grade, future_ext_grade, onset_p(), detectable);
 	}
       }
       else {

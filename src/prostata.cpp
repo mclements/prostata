@@ -247,6 +247,7 @@ namespace fhcrc_example {
     void opportunistic_uptake();
     void cancel_events_after_diagnosis();
     void rescreening_schedules(double psa, bool organised, bool mixed_programs);
+    bool detectable(double now, double year);
     void init();
     void add_costs(string item, cost_t cost_type = Direct, double weight=1.0);
     void lost_productivity(string item, double weight=1.0);
@@ -524,6 +525,16 @@ namespace fhcrc_example {
       opportunistic_rescreening(psa); // includes rescreening participation
   } // rescreening
 
+  bool FhcrcPerson::detectable(double now, double year) {
+    return (state == Metastatic ||
+        (state == Localised && ext_state == ext::T3plus) ||
+        (state == Localised && ext_state == ext::T1_T2 &&
+         (now > t3p + 35.0 - (t3p - t0) *
+          in->parameter["biopsySensitivityTimeProportionT1T2"] *
+          in->tableBiopsySensitivity(bounds(year,1987.0,2000.0)) /
+          in->tableBiopsySensitivity(2000.0))));
+  }
+  
   Double rbinorm(Double mean, Double sd, double rho) {
     double z1 = R::rnorm(0.0,1.0);
     double z2 = R::rnorm(0.0,1.0);
@@ -807,6 +818,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   bool formal_costs = in->parameter["formal_costs"]==1.0 && (!mixed_programs || organised);
   bool formal_compliance = in->parameter["formal_compliance"]==1.0 && (!mixed_programs || organised);
   double utility = FhcrcPerson::utility();
+  bool detectable = FhcrcPerson::detectable(now(), year);
 
   // record information
   if (in->parameter["full_report"] == 1.0)
@@ -903,6 +915,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       out->psarecord.record("beta1",beta1);
       out->psarecord.record("beta2",beta2);
       out->psarecord.record("Z",Z);
+      out->psarecord.record("detectable",detectable);
     }
     if (!everPSA) {
       if (id < in->nLifeHistories) {
@@ -1018,13 +1031,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     lost_productivity("Assessment");
     scheduleUtilityChange(now(), "Biopsy");
 
-    if (state == Metastatic ||
-        (state == Localised && ext_state == ext::T3plus) ||
-        (state == Localised && ext_state == ext::T1_T2 &&
-         (now() > t3p + 35.0 - (t3p - t0) *
-          in->parameter["biopsySensitivityTimeProportionT1T2"] *
-          in->tableBiopsySensitivity(bounds(year,1987.0,2000.0)) /
-          in->tableBiopsySensitivity(2000.0)))) { // diagnosed
+    if (detectable) { // diagnosed
       scheduleAt(now()+3.0/52.0, toScreenDiagnosis); // diagnosis three weeks after biopsy
       if (in->panel && state==Localised && ext_grade == ext::Gleason_le_6) {
         // fixed costs etc for men who were S3M+/PE-

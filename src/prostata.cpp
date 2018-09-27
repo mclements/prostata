@@ -171,7 +171,7 @@ namespace fhcrc_example {
     int counter;
     utility_scale_t scale;
     bool truncate;
-    Utilities(utility_scale_t scale = UtilityAdditive, bool truncate = true) :counter(0), scale(scale), truncate(truncate) {}
+    Utilities(utility_scale_t scale = UtilityMultiplicative, bool truncate = true) :counter(0), scale(scale), truncate(truncate) {}
     double utility() {
       // case: no utilities?
       // case: value>1.0?
@@ -534,7 +534,7 @@ namespace fhcrc_example {
           in->tableBiopsySensitivity(bounds(year,1987.0,2000.0)) /
           in->tableBiopsySensitivity(2000.0))));
   }
-  
+
   Double rbinorm(Double mean, Double sd, double rho) {
     double z1 = R::rnorm(0.0,1.0);
     double z2 = R::rnorm(0.0,1.0);

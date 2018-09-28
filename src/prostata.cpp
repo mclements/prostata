@@ -97,7 +97,7 @@ namespace fhcrc_example {
     CostReport<CostKey> costs;
     vector<LifeHistory::Type> lifeHistories;
     SimpleReport<double> outParameters;
-    SimpleReport<double> psarecord, falsePositives;
+    SimpleReport<double> psarecord, bxrecord, falsePositives;
     SimpleReport<double> diagnoses;
     Means tmc_minus_t0;
   };
@@ -143,7 +143,7 @@ namespace fhcrc_example {
     NumericVector cost_parameters, utility_estimates, utility_duration, lost_production_years;
     NumericVector mubeta2, sebeta2; // otherParameters["mubeta2"] rather than as<NumericVector>(otherParameters["mubeta2"])
     int screen, nLifeHistories;
-    bool includePSArecords, panel, includeDiagnoses, debug;
+    bool panel, debug;
     Table<double,double> production;
 
     ~SimInput() {
@@ -230,7 +230,7 @@ namespace fhcrc_example {
     ext::grade_t future_ext_grade, ext_grade;
     treatment_t tx;
     bool adt;
-    double txhaz;
+    double txhaz, psa_last_screen;
     int id;
     double cohort, rescreening_frailty;
     bool everPSA, previousNegativeBiopsy, organised;
@@ -901,7 +901,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   case toScreen:
   case toBiopsyFollowUpScreen: {
     in->rngScreen->set();
-    if (in->includePSArecords) {
+    this->psa_last_screen = psa;
+    if (in->bparameter["includePSArecords"]) {
       out->psarecord.record("id",id);
       out->psarecord.record("state",state);
       out->psarecord.record("ext_grade",ext_grade);
@@ -966,7 +967,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       }
     }
     // Case: PSA>=10. The man has a positive_test.
-    if (in->includePSArecords && !onset_p() && positive_test) {
+    if (in->bparameter["includePSArecords"] && !onset_p() && positive_test) {
       out->falsePositives.record("id",id);
       out->falsePositives.record("psa",psa);
       out->falsePositives.record("age",now());
@@ -1032,6 +1033,25 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     lost_productivity("Assessment");
     scheduleUtilityChange(now(), "Biopsy");
 
+    // output biopsy record
+    if (in->bparameter["includeBxrecords"]) {
+      out->bxrecord.record("id",id);
+      out->bxrecord.record("state",state);
+      out->bxrecord.record("ext_grade",ext_grade);
+      out->bxrecord.record("organised",organised); // only meaningful for mixed_programs
+      out->bxrecord.record("dx",dx);
+      out->bxrecord.record("age",age);
+      out->bxrecord.record("cohort",cohort);
+      out->bxrecord.record("psa",psa_last_screen);
+      out->bxrecord.record("t0",t0);
+      out->bxrecord.record("beta0",beta0);
+      out->bxrecord.record("beta1",beta1);
+      out->bxrecord.record("beta2",beta2);
+      out->bxrecord.record("Z",Z);
+      out->bxrecord.record("onset",double(onset_p()));
+      out->bxrecord.record("detectable",double(detectable));
+    }
+
     if (detectable) { // diagnosed
       scheduleAt(now()+3.0/52.0, toScreenDiagnosis); // diagnosis three weeks after biopsy
       if (in->panel && state==Localised && ext_grade == ext::Gleason_le_6) {
@@ -1058,7 +1078,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
           scheduleAt(now() + timeToBiopsy, toScreenInitiatedBiopsy);
         }
       } else {// not a first negative biopsy (reset)
-        rescreening_schedules(psa, organised, mixed_programs);
+        rescreening_schedules(psa_last_screen, organised, mixed_programs);
         previousNegativeBiopsy = false;
       }
     }
@@ -1135,11 +1155,11 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       else // cancer death within 6 months of diagnosis/treatment
 	scheduleUtilityChange(now(), "Terminal illness");
     }
-    if (in->includeDiagnoses) {
+    if (in->bparameter["includeDiagnoses"]) {
       out->diagnoses.record("id",id);
       out->diagnoses.record("age",age);
       out->diagnoses.record("year",year);
-      out->diagnoses.record("psa",psa);
+      out->diagnoses.record("psa",psa_last_screen);
       out->diagnoses.record("ext_grade",ext_grade);
       out->diagnoses.record("ext_state",ext_state);
       out->diagnoses.record("organised",organised); // only meaningful for mixed_program, keep this?
@@ -1269,8 +1289,6 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   in.lost_production_years = as<NumericVector>(otherParameters["lost_production_years"]);
 
   int n = as<int>(parms["n"]);
-  in.includePSArecords = as<bool>(parms["includePSArecords"]);
-  in.includeDiagnoses = as<bool>(parms["includeDiagnoses"]);
   int firstId = as<int>(parms["firstId"]);
   in.interp_prob_grade7 =
     NumericInterpolate(as<DataFrame>(tables["prob_grade7"]));
@@ -1379,6 +1397,7 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   out.outParameters.clear();
   out.lifeHistories.clear();
   out.psarecord.clear();
+  out.bxrecord.clear();
   out.falsePositives.clear();
   out.diagnoses.clear();
 
@@ -1411,6 +1430,7 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
 		      _("lifeHistories") = wrap(out.lifeHistories), // vector<LifeHistory::Type>
 		      _("parameters") = out.outParameters.wrap(),   // SimpleReport<double>
 		      _("psarecord")=out.psarecord.wrap(),          // SimpleReport<double>
+		      _("bxrecord")=out.bxrecord.wrap(),            // SimpleReport<double>
 		      _("falsePositives")=out.falsePositives.wrap(),// SimpleReport<double>
 		      _("diagnoses")=out.diagnoses.wrap(),          // SimpleReport<double>
 		      _("tmc_minus_t0")=out.tmc_minus_t0.wrap()     // Means

@@ -315,7 +315,10 @@ FhcrcParameters <- list(
                          "Terminal illness" = 6/12),
     utility_truncate = TRUE, # should utilities be truncated at zero?
     utility_scales = c("UtilityAdditive"=0,"UtilityMultiplicative"=1,"UtilityMinimum"=2), # encoding for the utility scales
-    utility_scale = as.double(0) # default scale = UtilityAdditive
+    utility_scale = as.double(0), # default scale = UtilityAdditive
+    includePSArecords = FALSE,
+    includeBxrecords = FALSE,
+    includeDiagnoses = FALSE
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]
@@ -710,10 +713,6 @@ ageStandards <- data.frame(Age = cut(seq(0, 85, 5),
 #' @param seed Integer random number seed, Default: 12345
 #' @param panel Boolean to use the Stockholm3 biomarker panel test
 #'     characteristics, otherwise PSA is used, Default: FALSE
-#' @param includePSArecords Boolean for extra reporting at the time of a
-#'     screening test, Default: FALSE
-#' @param includeDiagnoses Boolean for extra reporting at the time of diagnosis,
-#'     Default: FALSE
 #' @param flatPop Boolean to set all birth cohorts of equal size, Default: FALSE
 #' @param pop Data.frame with two integer columns \code{cohort} with year of the
 #'     birth cohorts and \code{pop} with the size of the corresponding birth
@@ -742,8 +741,7 @@ ageStandards <- data.frame(Age = cut(seq(0, 85, 5),
 #' @export
 #' @importFrom parallel mclapply
 callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
-                      seed=12345, panel=FALSE, includePSArecords=FALSE,
-                      includeDiagnoses=FALSE, flatPop = FALSE, pop = pop1,
+                      seed=12345, panel=FALSE, flatPop = FALSE, pop = pop1,
                       tables = IHE, debug=FALSE, parms = NULL, mc.cores = 1,
                       print.timing = TRUE,...) {
   ## save the random number state for resetting later
@@ -874,9 +872,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                             parameter=unlist(parameter[pind]),
                             bparameter=unlist(parameter[bInd]),
                             otherParameters=parameter[!pind & !bInd],
-                            tables=fhcrcData,
-                            includePSArecords=includePSArecords,
-                            includeDiagnoses=includeDiagnoses),
+                            tables=fhcrcData),
                         PACKAGE="prostata")
                 }, mc.cores = mc.cores))
   ## Apologies: we now need to massage the chunks from C++
@@ -933,6 +929,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   ## parameters <- do.call("rbind",lapply(out,function(obj) data.frame(obj$parameters)))
   lifeHistories <- rbindExtract(out,"lifeHistories")
   psarecord <- rbindExtract(out,"psarecord")
+  bxrecord <- rbindExtract(out,"bxrecord")
   diagnoses <- rbindExtract(out,"diagnoses")
   falsePositives <- rbindExtract(out,"falsePositives")
   parameters <- rbindExtract(out,"parameters")
@@ -966,7 +963,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   out <- list(n=n,screen=screen,enum=enum,lifeHistories=lifeHistories,
               parameters=parameters, summary=summary,
               healthsector.costs=healthsector.costs, societal.costs=societal.costs,
-              psarecord=psarecord, diagnoses=diagnoses,
+              psarecord=psarecord, diagnoses=diagnoses, bxrecord=bxrecord,
               cohort=data.frame(table(cohort)),simulation.parameters=parameter,
               falsePositives=falsePositives,
               natural.history.summary=natural.history.summary)

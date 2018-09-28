@@ -117,8 +117,8 @@ FhcrcParameters <- list(
     psaThreshold = 3.0,
     psaThresholdBiopsyFollowUp = 4.0, # revised PSA threshold for negative follow-up screen
     biomarker_model = 1, # biomarker_model = 0 random, biomarker_model = 1 psa/risk based correction of FP
-    PSA_FP_threshold_nCa=4.2, # reduce FP in no cancers with PSA threshold
-    PSA_FP_threshold_GG6=3.41, # reduce FP in GG 6 with PSA threshold
+    PSA_FP_threshold_nCa=4.18, # reduce FP in no cancers with PSA threshold
+    PSA_FP_threshold_GG6=3.76, # reduce FP in GG 6 with PSA threshold
     PSA_FP_threshold_GG7plus=3, # reduce FP in GG >= 7 with PSA threshold
     panelReflexThreshold = 1.0,
     ## Natural history calibration
@@ -315,7 +315,7 @@ FhcrcParameters <- list(
                          "Terminal illness" = 6/12),
     utility_truncate = TRUE, # should utilities be truncated at zero?
     utility_scales = c("UtilityAdditive"=0,"UtilityMultiplicative"=1,"UtilityMinimum"=2), # encoding for the utility scales
-    utility_scale = as.double(0), # default scale = UtilityAdditive
+    utility_scale = as.double(1), # default scale = UtilityMultiplicative
     includePSArecords = FALSE,
     includeBxrecords = FALSE,
     includeDiagnoses = FALSE

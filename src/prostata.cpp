@@ -910,7 +910,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       out->psarecord.record("dx",dx);
       out->psarecord.record("age",age);
       out->psarecord.record("cohort",cohort);
-      out->psarecord.record("psa",psa);
+      out->psarecord.record("psa",psa_last_screen);
       out->psarecord.record("t0",t0);
       out->psarecord.record("beta0",beta0);
       out->psarecord.record("beta1",beta1);
@@ -1037,6 +1037,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (in->bparameter["includeBxrecords"]) {
       out->bxrecord.record("id",id);
       out->bxrecord.record("state",state);
+      out->bxrecord.record("ext_state",ext_state);
       out->bxrecord.record("ext_grade",ext_grade);
       out->bxrecord.record("organised",organised); // only meaningful for mixed_programs
       out->bxrecord.record("dx",dx);

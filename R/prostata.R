@@ -798,13 +798,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   chunks <- tapply(cohort, sort((0:(n-1)) %% mc.cores), I)
   ## set the initial random numbers
   currentSeed <- user.Random.seed()
-  powerFun <- function(obj,FUN,n,...) {
-    for(i in 1:n)
-      obj <- FUN(obj,...)
-    obj
-  }
-  initialSeeds <- Reduce(function(seed,i) powerFun(seed,parallel::nextRNGStream,10),
-                         1:mc.cores, currentSeed, accumulate=TRUE)[-1]
+  initialSeeds <- if (mc.cores==1) list(currentSeed) else c(list(currentSeed), lapply(floor((1:(mc.cores-1))/mc.cores*n), function(i) advance.substream(currentSeed, i)))
   ns <- cumsum(sapply(chunks,length))
   ns <- c(0,ns[-length(ns)])
   ## Minor changes to fhcrcData

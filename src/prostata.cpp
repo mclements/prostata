@@ -819,6 +819,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   bool formal_compliance = in->parameter["formal_compliance"]==1.0 && (!mixed_programs || organised);
   double utility = FhcrcPerson::utility();
   bool detectable = FhcrcPerson::detectable(now(), year);
+  if (in->parameter["rand_biopsy_sensitivityG6"]<1.0) {
+    detectable = detectable && R::runif(0.0,1.0) < in->parameter["rand_biopsy_sensitivityG6"];
+  }
 
   // record information
   if (in->parameter["full_report"] == 1.0)

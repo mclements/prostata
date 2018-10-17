@@ -749,6 +749,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   ## yes, we use the user-defined RNG
   RNGkind("user")
   set.user.Random.seed(seed)
+  call <- match.call()
   ## birth cohorts that should give approximately the number of men alive in Stockholm in 2012
   ## check the input arguments
   screenT <- c("noScreening", "randomScreen50to70",
@@ -965,7 +966,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
               healthsector.costs=healthsector.costs, societal.costs=societal.costs,
               psarecord=psarecord, diagnoses=diagnoses, bxrecord=bxrecord,
               cohort=data.frame(table(cohort)),simulation.parameters=parameter,
-              falsePositives=falsePositives,
+              falsePositives=falsePositives, panel=panel, call = call,
               natural.history.summary=natural.history.summary)
   class(out) <- "fhcrc"
   out

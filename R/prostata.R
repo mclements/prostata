@@ -796,19 +796,18 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
           cohort <- sample(pop$cohort,n,prob=pop$pop/sum(pop$pop),replace=TRUE)
   }
   cohort <- sort(cohort)
-  ## now separate the data into chunks
-  chunks <- tapply(cohort, sort((0:(n-1)) %% mc.cores), I)
-  ## set the initial random numbers
-  currentSeed <- user.Random.seed()
-  powerFun <- function(obj,FUN,n,...) {
-    for(i in 1:n)
-      obj <- FUN(obj,...)
-    obj
-  }
-  initialSeeds <- Reduce(function(seed,i) powerFun(seed,parallel::nextRNGStream,10),
-                         1:mc.cores, currentSeed, accumulate=TRUE)[-1]
-  ns <- cumsum(sapply(chunks,length))
-  ns <- c(0,ns[-length(ns)])
+  ## now separate the data into chunks and set the initial random numbers
+    currentSeed <- user.Random.seed()
+    if (mc.cores==1) {
+        chunks <- list(cohort)
+        ns <- 0
+        initialSeeds <- list(currentSeed)
+    } else {
+        ns <- floor((0:mc.cores)/mc.cores*n)
+        chunks <- lapply(1:mc.cores, function(i) cohort[(ns[i]+1):ns[i+1]])
+        initialSeeds <- c(list(currentSeed), lapply(ns[-c(1,mc.cores+1)], function(i) advance.substream(currentSeed, i)))
+        ns <- ns[-length(ns)]
+    }
   ## Minor changes to fhcrcData
   fhcrcData$biopsyOpportunisticComplianceTable <- swedenOpportunisticBiopsyCompliance
   fhcrcData$biopsyFormalComplianceTable <- swedenFormalBiopsyCompliance

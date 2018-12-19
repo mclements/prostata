@@ -56,8 +56,8 @@ namespace fhcrc_example {
 
   enum screen_t {noScreening, randomScreen50to70, twoYearlyScreen50to70, fourYearlyScreen50to70,
 		 screen50, screen60, screen70, screenUptake, stockholm3_goteborg, stockholm3_risk_stratified,
-		 goteborg, risk_stratified, mixed_screening,
-		 regular_screen, single_screen, introduced_screening_only, introduced_screening, stopped_screening};
+		 goteborg, risk_stratified, mixed_screening, regular_screen, single_screen,
+                 introduced_screening_only, introduced_screening_preference, introduced_screening, stopped_screening};
 
   enum treatment_t {no_treatment, CM, RP, RT};
 
@@ -245,6 +245,7 @@ namespace fhcrc_example {
     double calculate_transition_time(double u, double t_enter, double gamma);
     void opportunistic_rescreening(double psa);
     void opportunistic_uptake();
+    bool screening_preference();
     void cancel_events_after_diagnosis();
     void rescreening_schedules(double psa, bool organised, bool mixed_programs);
     bool detectable(double now, double year);
@@ -463,6 +464,39 @@ namespace fhcrc_example {
 	      cohort, pscreening, uscreening, first_screen);
   }
 
+  // Same code as above except for the last line
+  // TODO refactor this to call a common function calc_screening_preference(uscreening,pscreening,first_screen)
+  bool FhcrcPerson::screening_preference() {
+    // Assume:
+    // (i)   cohorts aged <35 in 1995 have a llogis(3.8,15) from age 35 (cohort > 1960)
+    // (ii)  cohorts aged 50+ in 1995 have a llogis(2,10) distribution from 1995 (cohort < 1945)
+    // (iii) intermediate cohorts are a weighted mixture of (i) and (ii)
+    double pscreening = double(cohort>=in->parameter["startFullUptake"]) ?
+      double(in->parameter["fullUptakePortion"]) : (double(in->parameter["fullUptakePortion"])
+      - (double(in->parameter["startUptakeMixture"]) - cohort) * double(in->parameter["yearlyUptakeIncrease"]));
+    // decrease for previous year instead of increase for next year
+    double uscreening = R::runif(0.0,1.0);
+    double first_screen;
+    if (cohort > double(in->parameter["endUptakeMixture"])) {
+      first_screen = 35.0 + R::rllogis(in->parameter["shapeA"],
+				       in->parameter["scaleA"]); // (i) age
+    } else if (cohort < double(in->parameter["startUptakeMixture"])) {
+      first_screen = (double(in->parameter["screeningIntroduced"]) - cohort) +
+	R::rllogis(in->parameter["shapeT"],in->parameter["scaleT"]); // (ii) period
+    } else {
+      double age0 = double(in->parameter["screeningIntroduced"]) - cohort;
+      double u = R::runif(0.0,1.0);
+      if ((age0 - 35.0) / (double(in->parameter["endUptakeMixture"]) -
+			   double(in->parameter["startUptakeMixture"])) < u) // (iii) mixture
+	first_screen = age0 + R::rllogis_trunc(in->parameter["shapeA"],
+					       in->parameter["scaleA"],
+					       age0-35.0);
+      else first_screen = age0 + R::rllogis(in->parameter["shapeT"],
+					    in->parameter["scaleT"]);
+    }
+    return (uscreening<pscreening && first_screen<aoc);
+  }
+
   void FhcrcPerson::rescreening_schedules(double psa, bool organised, bool mixed_programs) {
     // Check for organised screens - opportunistic screens are described later
     if (R::runif(0.0,1.0) < in->parameter["rescreeningParticipation"]) {
@@ -481,6 +515,7 @@ namespace fhcrc_example {
         }
         break;
       case introduced_screening: //rescreen
+      case introduced_screening_preference:
       case introduced_screening_only:
         if (organised && now() + in->parameter["screening_interval"] <= in->parameter["stop_screening"]) {// within age?
           scheduleAt(now() + in->parameter["screening_interval"], toOrganised); //if there are planned opportunistic screens
@@ -667,6 +702,7 @@ void FhcrcPerson::init() {
       break;
     case mixed_screening:
     case introduced_screening:
+    case introduced_screening_preference:
     case introduced_screening_only:
     case stopped_screening:
     case stockholm3_goteborg:
@@ -697,6 +733,17 @@ void FhcrcPerson::init() {
     } else if( in->parameter["introduction_year"] - cohort >= in->parameter["start_screening"] && //between screen ages
 	       in->parameter["introduction_year"] - cohort <= in->parameter["stop_screening"]) {
       scheduleAt(u1 + in->parameter["introduction_year"] - cohort, toOrganised); //in 1 year screen all in age interval
+    }
+    break;
+  case introduced_screening_preference: //first screen
+    if (screening_preference()) {
+      opportunistic_uptake(); // 'toOrganised' will remove opportunistic screens
+      if ( in->parameter["introduction_year"] - cohort <= in->parameter["start_screening"]) { // under screen age at 2015
+        scheduleAt(in->parameter["start_screening"], toOrganised); //screen all in age interval
+      } else if( in->parameter["introduction_year"] - cohort >= in->parameter["start_screening"] && //between screen ages
+                 in->parameter["introduction_year"] - cohort <= in->parameter["stop_screening"]) {
+        scheduleAt(u1 + in->parameter["introduction_year"] - cohort, toOrganised); //in 1 year screen all in age interval
+      }
     }
     break;
   case introduced_screening_only: //first screen

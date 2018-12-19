@@ -705,6 +705,7 @@ ageStandards <- data.frame(Age = cut(seq(0, 85, 5),
 #'      \item{\code{regular_screen}}{TBA}
 #'      \item{\code{single_screen}}{TBA}
 #'      \item{\code{introduced_screening_only}}{TBA}
+#'      \item{\code{introduced_screening_preference}}{TBA}
 #'      \item{\code{introduced_screening}}{TBA}
 #'      \item{\code{stopped_screening}}{TBA}
 #'    } . Default: 'noScreening'
@@ -759,8 +760,8 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                "stockholm3_goteborg", "stockholm3_risk_stratified",
                "goteborg", "risk_stratified", "mixed_screening",
                "regular_screen", "single_screen",
-               "introduced_screening_only", "introduced_screening",
-               "stopped_screening")
+               "introduced_screening_only", "introduced_screening_preference",
+               "introduced_screening", "stopped_screening")
   screen <- match.arg(screen, screenT)
   stopifnot(is.na(n) || is.integer(as.integer(n)))
   stopifnot(is.integer(as.integer(nLifeHistories)))

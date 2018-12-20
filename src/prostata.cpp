@@ -736,14 +736,12 @@ void FhcrcPerson::init() {
     }
     break;
   case introduced_screening_preference: //first screen
-    if (screening_preference()) {
-      opportunistic_uptake(); // 'toOrganised' will remove opportunistic screens
-      if ( in->parameter["introduction_year"] - cohort <= in->parameter["start_screening"]) { // under screen age at 2015
-        scheduleAt(in->parameter["start_screening"], toOrganised); //screen all in age interval
-      } else if( in->parameter["introduction_year"] - cohort >= in->parameter["start_screening"] && //between screen ages
-                 in->parameter["introduction_year"] - cohort <= in->parameter["stop_screening"]) {
-        scheduleAt(u1 + in->parameter["introduction_year"] - cohort, toOrganised); //in 1 year screen all in age interval
-      }
+    opportunistic_uptake(); // 'toOrganised' will remove opportunistic screens
+    if ( in->parameter["introduction_year"] - cohort <= in->parameter["start_screening"] && screening_preference()) { // under screen age at 2015
+      scheduleAt(in->parameter["start_screening"], toOrganised); //screen all in age interval
+    } else if( in->parameter["introduction_year"] - cohort >= in->parameter["start_screening"] && //between screen ages
+               in->parameter["introduction_year"] - cohort <= in->parameter["stop_screening"] && screening_preference()) {
+      scheduleAt(u1 + in->parameter["introduction_year"] - cohort, toOrganised); //in 1 year screen all in age interval
     }
     break;
   case introduced_screening_only: //first screen

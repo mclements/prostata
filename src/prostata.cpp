@@ -686,28 +686,28 @@ void FhcrcPerson::init() {
   // schedule screening events that already incorporate screening participation
   switch(in->screen) {
   case mixed_screening:
-    if (screening_preference()) 
+    if (screening_preference())
       opportunistic_uptake_if_ever();
     scheduleAt(in->parameter["start_screening"], toOrganised);
     break;
   case stopped_screening:
-    if (screening_preference()) {
+    if (screening_preference())
       opportunistic_uptake_if_ever();
-      scheduleAt(in->parameter["introduction_year"] - cohort, toCancelScreens);
-    }
+    scheduleAt(in->parameter["introduction_year"] - cohort, toCancelScreens);
     break;
   case introduced_screening: //first screen
-    if (screening_preference()) {
+    // One participation during opportunistic and another during the regular screening
+    if (screening_preference())
       opportunistic_uptake_if_ever(); // 'toOrganised' will remove opportunistic screens
-      if ( in->parameter["introduction_year"] - cohort <= in->parameter["start_screening"]) { // under screen age at 2015
-	scheduleAt(in->parameter["start_screening"], toOrganised); //screen all in age interval
-      } else if( in->parameter["introduction_year"] - cohort >= in->parameter["start_screening"] && //between screen ages
-		 in->parameter["introduction_year"] - cohort <= in->parameter["stop_screening"]) {
-	scheduleAt(u1 + in->parameter["introduction_year"] - cohort, toOrganised); //in 1 year screen all in age interval
-      }
+    if ( in->parameter["introduction_year"] - cohort <= in->parameter["start_screening"]) { // under screen age at 2015
+      scheduleAt(in->parameter["start_screening"], toOrganised); //screen all in age interval
+    } else if( in->parameter["introduction_year"] - cohort >= in->parameter["start_screening"] && //between screen ages
+               in->parameter["introduction_year"] - cohort <= in->parameter["stop_screening"]) {
+      scheduleAt(u1 + in->parameter["introduction_year"] - cohort, toOrganised); //in 1 year screen all in age interval
     }
     break;
   case introduced_screening_preference: //first screen
+    // Only those who would have had a opportunistic screen will have a regular screen
     if (screening_preference()) {
       opportunistic_uptake_if_ever(); // 'toOrganised' will remove opportunistic screens
       if ( in->parameter["introduction_year"] - cohort <= in->parameter["start_screening"]) { // under screen age at 2015

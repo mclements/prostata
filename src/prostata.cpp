@@ -835,7 +835,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   double age = now();
   double year = age + cohort;
   double compliance;
-  bool mixed_programs = (in->screen == mixed_screening) || (in->screen == introduced_screening) || (in->screen == stopped_screening);
+  bool mixed_programs = (in->screen == mixed_screening) ||
+    (in->screen == introduced_screening) ||
+    (in->screen == introduced_screening_preference) ||
+    (in->screen == stopped_screening);
   bool formal_costs = in->parameter["formal_costs"]==1.0 && (!mixed_programs || organised);
   bool formal_compliance = in->parameter["formal_compliance"]==1.0 && (!mixed_programs || organised);
   double utility = FhcrcPerson::utility();

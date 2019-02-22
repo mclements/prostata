@@ -9,7 +9,7 @@ context("callFhcrc")
 test_returned_object_structure <- function(obj = obj) {
     test_that(paste("Check the structure of the returned fhcrc object with scenario:", try(obj$screen)), {
         expect_is(obj, "fhcrc")
-        expect_output(str(obj), "List of 14")
+        expect_output(str(obj), "List of 17")
         expect_output(str(obj), "$ n",                       fixed = TRUE)
         expect_output(str(obj), "$ screen",                  fixed = TRUE)
         expect_output(str(obj), "$ enum",                    fixed = TRUE)
@@ -20,9 +20,12 @@ test_returned_object_structure <- function(obj = obj) {
         expect_output(str(obj), "$ societal.costs",          fixed = TRUE)
         expect_output(str(obj), "$ psarecord",               fixed = TRUE)
         expect_output(str(obj), "$ diagnoses",               fixed = TRUE)
+        expect_output(str(obj), "$ bxrecord",                fixed = TRUE)
         expect_output(str(obj), "$ cohort",                  fixed = TRUE)
         expect_output(str(obj), "$ simulation.parameters",   fixed = TRUE)
         expect_output(str(obj), "$ falsePositives",          fixed = TRUE)
+        expect_output(str(obj), "$ panel",                   fixed = TRUE)
+        expect_output(str(obj), "$ call",                    fixed = TRUE)
         expect_output(str(obj), "$ natural.history.summary", fixed = TRUE)
     })
 }

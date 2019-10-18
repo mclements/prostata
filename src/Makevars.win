@@ -5,4 +5,4 @@ PKG_LIBS= -L"$(PKGB_PATH)$(R_ARCH)" -lmicrosimulation
 PKG_CXXFLAGS = -I.
 PKG_CFLAGS = -I.
 
-OBJECTS = init-prostata.o prostata.o
+OBJECTS = prostata-init.o prostata.o

@@ -4,3 +4,4 @@
 ..Rcheck/*
 .Rhistory
 prostata*.tar.gz
+.Rproj.user/*

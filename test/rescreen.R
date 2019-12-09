@@ -1,3 +1,9 @@
+
+library(prostata)
+summary(callFhcrc(1e4), screen="regular_screen")
+summary(callFhcrc(1e4, screen="regular_screen", parms=list(MRI=TRUE)))
+summary(callFhcrc(1e4, screen="regular_screen", parms=list(MRI=TRUE,MRI_clinical=TRUE)))
+
 refresh
 require(foreign)
 require(rstpm2)

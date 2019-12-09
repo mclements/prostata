@@ -52,7 +52,7 @@ namespace fhcrc_example {
                 toScreenDiagnosis, toOverDiagnosis, toOrganised, toTreatment,
                 toCM, toRP, toRT, toADT, toUtilityChange, toUtilityRemove,
                 toSTHLM3, toOpportunistic, toT3plus, toCancelScreens,
-                toYearlyActiveSurveillance, toYearlyPostTxFollowUp};
+                toYearlyActiveSurveillance, toYearlyPostTxFollowUp, toMRI};
 
   enum screen_t {noScreening, randomScreen50to70, twoYearlyScreen50to70, fourYearlyScreen50to70,
 		 screen50, screen60, screen70, screenUptake, stockholm3_goteborg, stockholm3_risk_stratified,
@@ -413,7 +413,7 @@ namespace fhcrc_example {
   }
 
   void FhcrcPerson::cancel_events_after_diagnosis() {
-    RemoveKind(toLocalised);
+    RemoveKind(toLocalised); // ?
     RemoveKind(toMetastatic);
     RemoveKind(toT3plus);
     RemoveKind(toScreen);
@@ -427,6 +427,7 @@ namespace fhcrc_example {
     RemoveKind(toOverDiagnosis);
     RemoveKind(toClinicalDiagnosis);
     RemoveKind(toClinicalDiagnosticBiopsy);
+    RemoveKind(toMRI);
   }
 
   void FhcrcPerson::opportunistic_uptake_if_ever() {
@@ -1005,7 +1006,11 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     //   if (R::runif(0.0,1.0) < 1.0-parameter["rTPF"]) positive_test = true;
     // }
     if (positive_test && R::runif(0.0,1.0) < compliance) {
-      scheduleAt(now()+1.0/52.0, toScreenInitiatedBiopsy); // biopsy in one month
+      if (in->bparameter["MRI"]) {
+	scheduleAt(now()+1.0/52.0, toMRI); // MRI in one month
+      } else {
+	scheduleAt(now()+1.0/52.0, toScreenInitiatedBiopsy); // biopsy in one month
+      }
     } // assumes similar biopsy compliance, reasonable? An option to different psa-thresholds would be to use different biopsyCompliance. /AK
     else
       rescreening_schedules(psa, organised, mixed_programs);
@@ -1043,8 +1048,28 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   // assumes that biopsies are 100% accurate
 
+  case toMRI: {
+    in->rngScreen->set();
+    add_costs("MRI");
+    lost_productivity("MRI");
+    // scheduleUtilityChange(now(), "MRI");
+    double pMRIpos = (this->ext_grade == ext::Healthy) ? in->parameter["pMRIposG0"] :
+      (this->ext_grade == ext::Gleason_le_6) ? in->parameter["pMRIposG1"] :
+      in->parameter["pMRIposG2"];
+    if (R::runif(0.0,1.0) < pMRIpos) {
+      scheduleAt(now(), toScreenInitiatedBiopsy);
+    } else {
+      rescreening_schedules(psa, organised, mixed_programs);
+    }
+    in->rngNh->set();
+  } break;
+    
   // record additional biopsies for clinical diagnoses
   case toClinicalDiagnosticBiopsy:
+    if (in->bparameter["MRI"] && in->bparameter["MRI_clinical"]) {
+      add_costs("MRI");
+      lost_productivity("MRI");
+    }
     add_costs("Biopsy");
     add_costs("Assessment");
     lost_productivity("Biopsy");

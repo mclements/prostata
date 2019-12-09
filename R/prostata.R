@@ -1,4 +1,4 @@
-#' prostata
+' prostata
 #'
 #' @section Introduction:
 #'
@@ -254,7 +254,8 @@ FhcrcParameters <- list(
                         + 45                                      # PSA analysis,
                         + 474,                                    # Telefollow-up by urologist
                         "Cancer death" = 100160 * 3               # Care for spread disease
-                        + 68000 * 3),                             # Drugs for spread disease
+                        + 68000 * 3,                              # Drugs for spread disease
+                        "MRI" = 3500),                            # MRI test
 
     ## Swedish governmental report on organised PSA testing (p.23):
     ## https://www.socialstyrelsen.se/SiteCollectionDocuments/2018-2-13-halsoekonomisk-analys.pdf
@@ -279,7 +280,8 @@ FhcrcParameters <- list(
                              + 2 * 2/24/365.25                 # PSA tests
                              + 0.5 * 2/24/365.25,              # Biopsy
                              "Metastatic cancer"=6/12,
-                             "Terminal illness" = 6/12),       # NOTE: potentially add follow-up Tx production losses
+                             "Terminal illness" = 6/12,        # NOTE: potentially add follow-up Tx production losses
+                             "MRI" = 2/24/365.25),             # MRI
 
     ## Heijnsdijk 2012
     utility_estimates = c("Invitation" = 1,
@@ -319,7 +321,12 @@ FhcrcParameters <- list(
     utility_scale = as.double(1), # default scale = UtilityMultiplicative
     includePSArecords = FALSE,
     includeBxrecords = FALSE,
-    includeDiagnoses = FALSE
+    includeDiagnoses = FALSE,
+    MRI = FALSE,
+    MRI_clinical = FALSE,
+    pMRIposG0=0.47,               # Pr(MRI+ | ISUP 0)
+    pMRIposG1=0.73,               # Pr(MRI+ | ISUP 1)
+    pMRIposG2=0.93                # Pr(MRI+ | ISUP 2+)
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]
@@ -720,7 +727,7 @@ ageStandards <- data.frame(Age = cut(seq(0, 85, 5),
 #'     birth cohorts and \code{pop} with the size of the corresponding birth
 #'     cohorts, Default: pop1
 #' @param tables List of data.frames to update the tables in fhcrcData, Default:
-#'     IHE
+#'     IHE (NB: fhcrcData$ptrx gets changed below to stockholmTreatment if parameters$stockholmTreatment = TRUE -- which is the default! This implies that IHE is the default when parameters$stockholmTreatment = FALSE)
 #' @param debug Boolean to print debugging, Default: FALSE
 #' @param parms List to update FhcrcParameters, Default: NULL
 #' @param mc.cores Integer with the number of cores to use for the computation,
@@ -775,7 +782,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
             "toScreenDiagnosis", "toOverDiagnosis", "toOrganised","toTreatment",
             "toCM","toRP", "toRT","toADT","toUtilityChange","toUtilityRemove",
             "toSTHLM3", "toOpportunistic","toT3plus", "toCancelScreens",
-            "toYearlyActiveSurveillance", "toYearlyPostTxFollowUp")
+            "toYearlyActiveSurveillance", "toYearlyPostTxFollowUp", "toMRI")
   diagnosisT <- c("NotDiagnosed","ClinicalDiagnosis","ScreenDiagnosis")
   treatmentT <- c("no_treatment","CM","RP","RT")
   psaT <- c("PSA<3","PSA>=3") # not sure where to put this...

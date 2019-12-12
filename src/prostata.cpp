@@ -892,8 +892,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (now()<tc+35.0-3.0/52.0)
       scheduleAt(tc+35.0-3.0/52.0,toClinicalDiagnosticBiopsy);
     scheduleAt(tc+35.0,toClinicalDiagnosis);
-    scheduleAt(tm+35.0,toMetastatic);
     scheduleAt(t3p+35.0,toT3plus);
+    scheduleAt(tm+35.0,toMetastatic);
     break;
 
   case toT3plus:
@@ -904,10 +904,17 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     state = Metastatic; ext_state = ext::Metastatic;
     RemoveKind(toClinicalDiagnosis);
     RemoveKind(toClinicalDiagnosticBiopsy);
-    if (now()<tc+35.0-6.0/52.0)
-      scheduleAt(tmc+35.0-6.0/52.0,toClinicalDiagnosticBiopsy);
-    if (now()<tc+35.0-3.0/52.0)
-      scheduleAt(tmc+35.0-3.0/52.0,toClinicalDiagnosticBiopsy);
+    if (in->bparameter["Andreas"]) {
+      if (now()<tc+35.0-6.0/52.0) // should this be tmc?
+	scheduleAt(tmc+35.0-6.0/52.0,toClinicalDiagnosticBiopsy);
+      if (now()<tc+35.0-3.0/52.0) // should this be tmc?
+	scheduleAt(tmc+35.0-3.0/52.0,toClinicalDiagnosticBiopsy);
+    } else {
+      if (now()<tmc+35.0-6.0/52.0)
+	scheduleAt(tmc+35.0-6.0/52.0,toClinicalDiagnosticBiopsy);
+      if (now()<tmc+35.0-3.0/52.0)
+	scheduleAt(tmc+35.0-3.0/52.0,toClinicalDiagnosticBiopsy);
+    }
     scheduleAt(tmc+35.0,toClinicalDiagnosis);
     // Remove possible secondary Tx
     RemoveKind(toRP);
@@ -1006,7 +1013,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     //   if (R::runif(0.0,1.0) < 1.0-parameter["rTPF"]) positive_test = true;
     // }
     if (positive_test && R::runif(0.0,1.0) < compliance) {
-      if (in->bparameter["MRI"]) {
+      if (in->bparameter["MRI_screen"]) {
 	scheduleAt(now()+1.0/52.0, toMRI); // MRI in one month
       } else {
 	scheduleAt(now()+1.0/52.0, toScreenInitiatedBiopsy); // biopsy in one month
@@ -1050,10 +1057,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toMRI: {
     in->rngScreen->set();
-    add_costs("MRI");
+    add_costs("MRI"); // does this include costs for the consultation?
     lost_productivity("MRI");
     // scheduleUtilityChange(now(), "MRI");
-    double pMRIpos = (this->ext_grade == ext::Healthy) ? in->parameter["pMRIposG0"] :
+    double pMRIpos = (this->ext_grade == ext::Healthy || !detectable) ? in->parameter["pMRIposG0"] :
       (this->ext_grade == ext::Gleason_le_6) ? in->parameter["pMRIposG1"] :
       in->parameter["pMRIposG2"];
     if (R::runif(0.0,1.0) < pMRIpos) {
@@ -1066,22 +1073,31 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     
   // record additional biopsies for clinical diagnoses
   case toClinicalDiagnosticBiopsy:
-    if (in->bparameter["MRI"] && in->bparameter["MRI_clinical"]) {
-      add_costs("MRI");
-      lost_productivity("MRI");
+    if (in->bparameter["MRI_clinical"]) {
+      add_costs("Combined biopsy");
+      lost_productivity("Combined biopsy");
+    } else {
+      add_costs("Biopsy");
+      lost_productivity("Biopsy");
     }
-    add_costs("Biopsy");
+    // common values
     add_costs("Assessment");
-    lost_productivity("Biopsy");
     lost_productivity("Assessment");
     scheduleUtilityChange(now(), "Biopsy");
     break;
 
-  case toScreenInitiatedBiopsy:
+  case toScreenInitiatedBiopsy: {
     in->rngScreen->set();
-    add_costs("Biopsy");
+    // the following block follows the same pattern as toClinicalDiagnosticBiopsy
+    if (in->bparameter["MRI_screen"]) {
+      add_costs("Combined biopsy");
+      lost_productivity("Combined biopsy");
+    } else {
+      add_costs("Biopsy");
+      lost_productivity("Biopsy");
+    }
+    // common values
     add_costs("Assessment");
-    lost_productivity("Biopsy");
     lost_productivity("Assessment");
     scheduleUtilityChange(now(), "Biopsy");
 
@@ -1105,14 +1121,27 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       out->bxrecord.record("detectable",double(detectable));
     }
 
-    if (detectable) { // diagnosed
-      scheduleAt(now()+3.0/52.0, toScreenDiagnosis); // diagnosis three weeks after biopsy
-      if (in->panel && state==Localised && ext_grade == ext::Gleason_le_6) {
-        // fixed costs etc for men who were S3M+/PE-
-        add_costs("Assessment", Direct, 766.0/722.0 - 1.0);
-        lost_productivity("Assessment", 766.0/722.0 - 1.0);
+    bool SBx_missed = false; // allow for randomly missing some "detectable cancers" from SBx (cf TBx/SBx)
+    if (detectable) {
+      if (in->bparameter["MRI_screen"] || in->bparameter["Andreas"]) {
+	scheduleAt(now()+3.0/52.0, toScreenDiagnosis); // diagnosis three weeks after biopsy
+      } else { // SBx compared with MRI
+	if (this->ext_grade == ext::Gleason_le_6) { 
+	  SBx_missed = (R::runif(0.0,1.0) < in->parameter["pSBxG0ifG1"]);
+	}
+	if (this->ext_grade == ext::Gleason_7) { 
+	  SBx_missed = (R::runif(0.0,1.0) < in->parameter["pSBxG0ifG2"]);
+	}
+	if (!SBx_missed)
+	  scheduleAt(now()+3.0/52.0, toScreenDiagnosis); // diagnosis three weeks after biopsy
       }
-    } else { // negative biopsy
+      if (in->panel && state==Localised && ext_grade == ext::Gleason_le_6) {
+	// fixed costs etc for men who were S3M+/PE-
+	add_costs("Assessment", Direct, 766.0/722.0 - 1.0);
+	lost_productivity("Assessment", 766.0/722.0 - 1.0);
+      }
+    }
+    if (!detectable || SBx_missed) { // negative biopsy
       if (in->panel) { // fixed costs etc for men who were S3M+/PE-
         add_costs("Assessment", Direct, 1535.0/1381.0 - 1.0);
         lost_productivity("Assessment", 1535.0/1381.0 - 1.0);
@@ -1136,7 +1165,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       }
     }
     in->rngNh->set();
-    break;
+  } break;
 
   case toTreatment: { // To diagnoses, treatment & survival
     in->rngTreatment->set();

@@ -239,6 +239,7 @@ FhcrcParameters <- list(
                         + 0.2 * 1539,                             # GP primary care
                         "Biopsy" = 4733,                          # Biopsy cost
                         "Assessment" = 1794,                      # Urology assessment
+                        "Combined biopsy" = 4733*1.5,             # TBx/SBx biopsy cost
                         "Prostatectomy" = 80000                   # Surgery
                         + 100000 * 0.25                           # Radiation therapy
                         + 1794 * 2                                # Urology visit
@@ -273,6 +274,7 @@ FhcrcParameters <- list(
                              "Opportunistic panel"=2/24/365.25,
                              "Assessment"=2/24/365.25,         # Urology assessment
                              "Biopsy"=2/24/365.25,
+                             "Combined biopsy"=2/24/365.25,
                              "Prostatectomy"=6/52,
                              "Radiation therapy"=8/52,
                              "Active surveillance - yearly"=
@@ -289,7 +291,9 @@ FhcrcParameters <- list(
                           "Formal panel" = 0.99,
                           "Opportunistic PSA" = 0.99,
                           "Opportunistic panel" = 0.99,
+                          "MRI" = 1,
                           "Biopsy" = 0.90,
+                          "Combined biopsy" = 0.90,
                           "Cancer diagnosis" = 0.80,
                           "Prostatectomy part 1" = 0.67,
                           "Prostatectomy part 2" = 0.77,
@@ -306,7 +310,9 @@ FhcrcParameters <- list(
                          "Formal panel" = 1/52,
                          "Opportunistic PSA" = 1/52,
                          "Opportunistic panel" = 1/52,
+                         "MRI" = 0,
                          "Biopsy" = 3/52,
+                         "Combined biopsy" = 3/52,
                          "Cancer diagnosis" = 1/12,
                          "Prostatectomy part 1" = 2/12,
                          "Prostatectomy part 2" = 10/12,
@@ -322,11 +328,15 @@ FhcrcParameters <- list(
     includePSArecords = FALSE,
     includeBxrecords = FALSE,
     includeDiagnoses = FALSE,
-    MRI = FALSE,
-    MRI_clinical = FALSE,
+    MRI_screen = FALSE,           # defines whether MRI pathway is used for screen-positive patients
+    MRI_clinical = FALSE,         # defines whether MRI is used for clinical (symptomatic) diagnoses
     pMRIposG0=0.47,               # Pr(MRI+ | ISUP 0)
     pMRIposG1=0.73,               # Pr(MRI+ | ISUP 1)
-    pMRIposG2=0.93                # Pr(MRI+ | ISUP 2+)
+    pMRIposG2=0.93,               # Pr(MRI+ | ISUP 2+)
+    pSBxG0ifG1=0.1,               # Pr(SBx gives ISUP 0 | ISUP 1)
+    pSBxG0ifG2=0.1,               # Pr(SBx gives ISUP 0 | ISUP 2)
+    pSBxG1ifG2=0.1,               # Pr(SBx gives ISUP 1 | ISUP 2)
+    Andreas = FALSE               # version for Andreas's CEA paper
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]

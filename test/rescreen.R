@@ -1,8 +1,8 @@
 
 library(prostata)
-summary(callFhcrc(1e4), screen="regular_screen")
-summary(callFhcrc(1e4, screen="regular_screen", parms=list(MRI=TRUE)))
-summary(callFhcrc(1e4, screen="regular_screen", parms=list(MRI=TRUE,MRI_clinical=TRUE)))
+summary(callFhcrc(1e4, screen="noScreening"))
+summary(callFhcrc(1e4, screen="regular_screen", parms=list(start_screening=55)))
+summary(callFhcrc(1e4, screen="regular_screen", parms=list(MRI_screen=TRUE, start_screening=55)))
 
 refresh
 require(foreign)

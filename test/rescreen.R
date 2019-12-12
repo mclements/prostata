@@ -1,8 +1,18 @@
 
 library(prostata)
-summary(callFhcrc(1e4, screen="noScreening"))
-summary(callFhcrc(1e4, screen="regular_screen", parms=list(start_screening=55)))
-summary(callFhcrc(1e4, screen="regular_screen", parms=list(MRI_screen=TRUE, start_screening=55)))
+summary(callFhcrc(1e4, screen="noScreening", mc.cores=2))
+summary(callFhcrc(1e4, screen="regular_screen", parms=list(start_screening=55,screening_interval=4), mc.cores=2))
+summary(callFhcrc(1e4, screen="regular_screen", parms=list(MRI_screen=TRUE, start_screening=55,screening_interval=4), mc.cores=2))
+
+summary(fit1 <- callFhcrc(1e5, screen="noScreening", mc.cores=2))
+summary(fit2 <- callFhcrc(1e5, screen="regular_screen", parms=list(start_screening=55,screening_interval=4), mc.cores=2))
+summary(fit3 <- callFhcrc(1e5, screen="regular_screen", parms=list(MRI_screen=TRUE, start_screening=55,screening_interval=4), mc.cores=2))
+
+summary(fit1); summary(fit2); summary(fit3)
+ICER(fit2,fit1)
+ICER(fit3,fit1)
+ICER(fit3,fit2)
+
 
 refresh
 require(foreign)

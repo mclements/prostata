@@ -330,12 +330,12 @@ FhcrcParameters <- list(
     includeDiagnoses = FALSE,
     MRI_screen = FALSE,           # defines whether MRI pathway is used for screen-positive patients
     MRI_clinical = FALSE,         # defines whether MRI is used for clinical (symptomatic) diagnoses
-    pMRIposG0=0.47,               # Pr(MRI+ | ISUP 0)
-    pMRIposG1=0.73,               # Pr(MRI+ | ISUP 1)
-    pMRIposG2=0.93,               # Pr(MRI+ | ISUP 2+)
-    pSBxG0ifG1=0.1,               # Pr(SBx gives ISUP 0 | ISUP 1)
-    pSBxG0ifG2=0.1,               # Pr(SBx gives ISUP 0 | ISUP 2)
-    pSBxG1ifG2=0.1,               # Pr(SBx gives ISUP 1 | ISUP 2)
+    pMRIposG0=0.47,               # Pr(MRI+ | ISUP 0 || undetectable)
+    pMRIposG1=0.73,               # Pr(MRI+ | ISUP 1 && detectable)
+    pMRIposG2=0.93,               # Pr(MRI+ | ISUP 2+ && detectable)
+    pSBxG0ifG1=0.146,             # Pr(SBx gives ISUP 0 | ISUP 1)
+    pSBxG0ifG2=0.111,             # Pr(SBx gives ISUP 0 | ISUP 2)
+    pSBxG1ifG2=0.119,             # Pr(SBx gives ISUP 1 | ISUP 2) (not used)
     Andreas = FALSE               # version for Andreas's CEA paper
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
@@ -796,7 +796,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   diagnosisT <- c("NotDiagnosed","ClinicalDiagnosis","ScreenDiagnosis")
   treatmentT <- c("no_treatment","CM","RP","RT")
   psaT <- c("PSA<3","PSA>=3") # not sure where to put this...
-  screenIndex <- which(screen == screenT) - 1
+    screenIndex <- which(screen == screenT) - 1
   timingfunction <- if (print.timing) function(x) print(system.time(x)) else function(x) x
   ## NB: sample() calls the random number generator (!)
   if (is.vector(pop)) {
@@ -874,9 +874,13 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   bInd <- sapply(parameter,class)=="logical" & sapply(parameter,length)==1
   if (parameter$stockholmTreatment)
       fhcrcData$prtx <- stockholmTreatment
-  ## check some parameters for sanity
-  if (panel && parameter["rTPF"]>1) stop("Panel: rTPF>1 (not currently implemented)")
-  if (panel && parameter["rFPF"]>1) stop("Panel: rFPF>1 (not currently implemented)")
+    ## check some parameters for sanity
+  if (panel && parameter$rTPF>1) stop("Panel: rTPF>1 (not currently implemented)")
+    if (panel && parameter$rFPF>1) stop("Panel: rFPF>1 (not currently implemented)")
+    if (parameter$Andreas && parameter$MRI_screen)
+        stop("Scenarios for 'Andreas=TRUE' and 'MRI_screen=TRUE' not well defined")
+    if (panel && parameter$MRI_screen)
+        stop("Scenarios for 'panel=TRUE' and 'MRI_screen=TRUE' not well defined")
   ## now run the chunks separately
   timingfunction(out <- parallel::mclapply(1:mc.cores,
                 function(i) {

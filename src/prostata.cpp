@@ -1053,8 +1053,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     // only for recording
     break;
 
-  // assumes that biopsies are 100% accurate
-
   case toMRI: {
     in->rngScreen->set();
     add_costs("MRI"); // does this include costs for the consultation?
@@ -1121,7 +1119,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       out->bxrecord.record("detectable",double(detectable));
     }
 
-    bool SBx_missed = false; // allow for randomly missing some "detectable cancers" from SBx (cf TBx/SBx)
+    bool SBx_missed = false; // allow for randomly missing "detectable cancers" from SBx (cf TBx/SBx)
     if (detectable) {
       if (in->bparameter["MRI_screen"] || in->bparameter["Andreas"]) {
 	scheduleAt(now()+3.0/52.0, toScreenDiagnosis); // diagnosis three weeks after biopsy

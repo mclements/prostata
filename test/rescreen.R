@@ -1,12 +1,18 @@
 
 library(prostata)
-summary(callFhcrc(1e4, screen="noScreening", mc.cores=2))
-summary(callFhcrc(1e4, screen="regular_screen", parms=list(start_screening=55,screening_interval=4), mc.cores=2))
-summary(callFhcrc(1e4, screen="regular_screen", parms=list(MRI_screen=TRUE, start_screening=55,screening_interval=4), mc.cores=2))
+## does the old code work?
+callFhcrc(1e3, mc.cores=2)
+callFhcrc(1e3, screen="screenUptake", mc.cores=2)
+try(callFhcrc(1e3, screen="screenUptake", mc.cores=2, parms=list(MRI_screen=TRUE)))
+n.sim <- 1e3
+summary(fit1 <- callFhcrc(n.sim, screen="noScreening", mc.cores=2, parms=prostata:::ShuangParameters))
+summary(fit2 <- callFhcrc(n.sim, screen="regular_screen",
+                          parms=c(prostata:::ShuangParameters,
+                                  start_screening=55,screening_interval=4), mc.cores=2))
+summary(fit3 <- callFhcrc(n.sim, screen="regular_screen",
+                          parms=c(prostata:::ShuangParameters,MRI_screen=TRUE, start_screening=55,screening_interval=4),
+                          mc.cores=2))
 
-summary(fit1 <- callFhcrc(1e5, screen="noScreening", mc.cores=2))
-summary(fit2 <- callFhcrc(1e5, screen="regular_screen", parms=list(start_screening=55,screening_interval=4), mc.cores=2))
-summary(fit3 <- callFhcrc(1e5, screen="regular_screen", parms=list(MRI_screen=TRUE, start_screening=55,screening_interval=4), mc.cores=2))
 
 summary(fit1); summary(fit2); summary(fit3)
 ICER(fit2,fit1)

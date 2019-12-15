@@ -66,6 +66,7 @@ if(.Platform$OS.type == "unix") {
 
 ## initial values for the FHCRC model
 FhcrcParameters <- list(
+    Andreas = TRUE,               # version for Andreas's CEA paper
     revised_natural_history=TRUE,
     ## panel=FALSE,
     grade.clinical.rate.high=0.3042454700,
@@ -282,8 +283,7 @@ FhcrcParameters <- list(
                              + 2 * 2/24/365.25                 # PSA tests
                              + 0.5 * 2/24/365.25,              # Biopsy
                              "Metastatic cancer"=6/12,
-                             "Terminal illness" = 6/12,        # NOTE: potentially add follow-up Tx production losses
-                             "MRI" = 2/24/365.25),             # MRI
+                             "Terminal illness" = 6/12),        # NOTE: potentially add follow-up Tx production losses
 
     ## Heijnsdijk 2012
     utility_estimates = c("Invitation" = 1,
@@ -291,7 +291,6 @@ FhcrcParameters <- list(
                           "Formal panel" = 0.99,
                           "Opportunistic PSA" = 0.99,
                           "Opportunistic panel" = 0.99,
-                          "MRI" = 1,
                           "Biopsy" = 0.90,
                           "Combined biopsy" = 0.90,
                           "Cancer diagnosis" = 0.80,
@@ -310,7 +309,6 @@ FhcrcParameters <- list(
                          "Formal panel" = 1/52,
                          "Opportunistic PSA" = 1/52,
                          "Opportunistic panel" = 1/52,
-                         "MRI" = 0,
                          "Biopsy" = 3/52,
                          "Combined biopsy" = 3/52,
                          "Cancer diagnosis" = 1/12,
@@ -329,14 +327,7 @@ FhcrcParameters <- list(
     includeBxrecords = FALSE,
     includeDiagnoses = FALSE,
     MRI_screen = FALSE,           # defines whether MRI pathway is used for screen-positive patients
-    MRI_clinical = FALSE,         # defines whether MRI is used for clinical (symptomatic) diagnoses
-    pMRIposG0=0.47,               # Pr(MRI+ | ISUP 0 || undetectable)
-    pMRIposG1=0.73,               # Pr(MRI+ | ISUP 1 && detectable)
-    pMRIposG2=0.93,               # Pr(MRI+ | ISUP 2+ && detectable)
-    pSBxG0ifG1=0.146,             # Pr(SBx gives ISUP 0 | ISUP 1)
-    pSBxG0ifG2=0.111,             # Pr(SBx gives ISUP 0 | ISUP 2)
-    pSBxG1ifG2=0.119,             # Pr(SBx gives ISUP 1 | ISUP 2) (not used)
-    Andreas = FALSE               # version for Andreas's CEA paper
+    MRI_clinical = FALSE         # defines whether MRI is used for clinical (symptomatic) diagnoses
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]
@@ -862,8 +853,6 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   updateParameters$screen <- as.integer(screenIndex)
   parameter <- FhcrcParameters
   for (name in names(updateParameters)){
-      if(!(name %in% names(parameter)))
-          warning("Name in parms argument not in FhcrcParameters: ",name,".")
       parameter[[name]] <- updateParameters[[name]]
   }
   parameter$g0 <- parameter$g0 / parameter$susceptible
@@ -878,9 +867,9 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   if (panel && parameter$rTPF>1) stop("Panel: rTPF>1 (not currently implemented)")
     if (panel && parameter$rFPF>1) stop("Panel: rFPF>1 (not currently implemented)")
     if (parameter$Andreas && parameter$MRI_screen)
-        stop("Scenarios for 'Andreas=TRUE' and 'MRI_screen=TRUE' not well defined")
+        stop("For 'MRI_screen=TRUE', use 'parms=c(prostata:::ShuangParameters, MRI_screen=TRUE)'")
     if (panel && parameter$MRI_screen)
-        stop("Scenarios for 'panel=TRUE' and 'MRI_screen=TRUE' not well defined")
+        stop("Scenarios for 'panel=TRUE' and 'MRI_screen=TRUE' have not been defined")
   ## now run the chunks separately
   timingfunction(out <- parallel::mclapply(1:mc.cores,
                 function(i) {

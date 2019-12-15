@@ -233,7 +233,7 @@ namespace fhcrc_example {
     double txhaz, psa_last_screen;
     int id;
     double cohort, rescreening_frailty;
-    bool everPSA, previousNegativeBiopsy, organised;
+    bool everPSA, previousNegativeBiopsy, organised, previousFollowup;
     FhcrcPerson(SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950) :
       in(in), out(out), utilities(utilities), id(id), cohort(cohort) { };
     double utility() { return utilities->utility(); }
@@ -582,7 +582,7 @@ void FhcrcPerson::init() {
   grade = base::Healthy;
   ext_grade = ext::Healthy;
   dx = NotDiagnosed;
-  everPSA = previousNegativeBiopsy = organised = adt = false;
+  everPSA = previousNegativeBiopsy = organised = adt = previousFollowup = false;
   in->rngNh->set();
   if (R::runif(0.0, 1.0) <= in->parameter["susceptible"]) // portion susceptible
     t0 = sqrt(2*R::rexp(1.0)/in->parameter["g0"]); // is susceptible
@@ -1258,6 +1258,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toRP:
     add_costs("Prostatectomy");
+    this->previousFollowup = false;
     scheduleAt(now() + 1.0, toYearlyPostTxFollowUp);
     lost_productivity("Prostatectomy");
     // Scheduling utilities for the first 2 months after procedure
@@ -1274,6 +1275,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toRT:
     add_costs("Radiation therapy");
+    this->previousFollowup = false;
     scheduleAt(now() + 1.0, toYearlyPostTxFollowUp);
     lost_productivity("Radiation therapy");
     // Scheduling utilities for the first 2 months after procedure
@@ -1287,7 +1289,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     break;
 
   case toCM:
-    add_costs("Active surveillance - single MR"); // expand here
+    if (in->bparameter["Andreas"])
+      add_costs("Active surveillance - single MR"); // expand here
     scheduleAt(now(), toYearlyActiveSurveillance);
     scheduleUtilityChange(now(), "Active surveillance");
     // Modelling for possible subsequent RP and RT. P(RP|RT) ~ P(RP)
@@ -1302,13 +1305,33 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     break;
 
   case toYearlyActiveSurveillance:
-    add_costs("Active surveillance - yearly");
-    lost_productivity("Active surveillance - yearly");
+    if (in->bparameter["Andreas"]) {
+      add_costs("Active surveillance - yearly");
+      lost_productivity("Active surveillance - yearly");
+    }
+    else {
+      if (in->bparameter["MRI_screen"] || in->bparameter["MRI_clinical"]) {
+	add_costs("Active surveillance - yearly - with MRI");
+	lost_productivity("Active surveillance - yearly - with MRI");
+      } else {
+	add_costs("Active surveillance - yearly - w/o MRI");
+	lost_productivity("Active surveillance - yearly - w/o MRI");
+      }
+    }
     scheduleAt(now() + 1.0, toYearlyActiveSurveillance);
     break;
 
   case toYearlyPostTxFollowUp: // not active surveillance
-    add_costs("Post-Tx follow-up - yearly");
+    if (in->bparameter["Andreas"])
+      add_costs("Post-Tx follow-up - yearly");
+    else {
+      lost_productivity("Post-Tx follow-up - yearly");
+      if (this->previousFollowup)
+	add_costs("Post-Tx follow-up - yearly after");
+      else 
+	add_costs("Post-Tx follow-up - yearly first");
+    }
+    previousFollowup = true;
     scheduleAt(now() + 1.0, toYearlyPostTxFollowUp);
     break;
 

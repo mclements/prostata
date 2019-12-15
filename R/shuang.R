@@ -1,4 +1,7 @@
 ShuangParameters <- list(
+
+    Andreas = FALSE, # general flag to use Shuang's parameters
+
     ## Swedish governmental report on organised PSA testing (p.22):
     ## https://www.socialstyrelsen.se/SiteCollectionDocuments/2018-2-13-halsoekonomisk-analys.pdf
     ## Based on the Swedish south region 2017:
@@ -35,7 +38,6 @@ ShuangParameters <- list(
                         + 1683.36*1                               # Oncologist further visit
                         + 400*20                                  # Nurse visit
                         + 20933.05*0.2,                           # Hormone therapy
-                        "Metastatic cancer - yearly" = 22309.44,  # NEW: Chemo and hormone therapy
                         "Active surveillance - yearly - w/o MRI" = 1460    # Urology visit and nurse visit
                         + 355.82*3                                # PSA sampling
                         + 57.4*3                                  # PSA analysis
@@ -47,7 +49,8 @@ ShuangParameters <- list(
                         + 3500*0.33                               # MRI cost
                         + 3010*1.5*0.33                           # Biopsy cost (SBx|TBx)
                         + 4238.25*0.33,                           # Pathology of biopsy
-                        "Post-Tx follow-up - first year" = 1460   # Urologist and nurse consultation
+                        "Metastatic cancer - yearly" = 22309.44,  # NEW: Chemo and hormone therapy
+                        "Post-Tx follow-up - yearly first" = 1460   # Urologist and nurse consultation
                         + 355.82                                  # PSA test sampling
                         + 57.4,                                   # PSA analysis
                         "Post-Tx follow-up - yearly after" = 355.82  # PSA test sampling
@@ -99,7 +102,7 @@ ShuangParameters <- list(
                              + 1 * 2/24/365.25                 # Urologist visit
                              + 0.33 * 2/24/365.25              # MRI
                              + 0.33 * 2/24/365.25,             # Combined biopsy (TBx|SBx)
-                             "Post-Tx follow-up"  = 
+                             "Post-Tx follow-up - yearly"  =
                                2/24/365.25,                    # PSA tests (Same for first year and following years)
                              "Premature mortality" = NA,       # To discuss, depending on the age of death
                              "Long-term sick leave" = 0.0768*67.52/365.25, # 7.68% employed PCa patients (50-64) have long-term sick leave (based on 2016 data)
@@ -142,4 +145,11 @@ ShuangParameters <- list(
                          "Postrecovery period" = 9,
                          "Metastatic cancer" = 2,             # Assumption!!!
                          "Palliative therapy" = 30/12,        # Palliative therapy 
-                         "Terminal illness" = 6/12))
+                         "Terminal illness" = 6/12),
+    pMRIposG0=0.47,               # Pr(MRI+ | ISUP 0 || undetectable)
+    pMRIposG1=0.73,               # Pr(MRI+ | ISUP 1 && detectable)
+    pMRIposG2=0.93,               # Pr(MRI+ | ISUP 2+ && detectable)
+    pSBxG0ifG1=0.146,             # Pr(SBx gives ISUP 0 | ISUP 1)
+    pSBxG0ifG2=0.111,             # Pr(SBx gives ISUP 0 | ISUP 2)
+    pSBxG1ifG2=0.119              # Pr(SBx gives ISUP 1 | ISUP 2) (not used)
+)

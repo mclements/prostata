@@ -115,6 +115,7 @@ ShuangParameters <- list(
                           "Opportunistic PSA" = 0.99,          # Heijnsdijk 2012
                           "Opportunistic panel" = 0.99,        # Heijnsdijk 2012
                           "Biopsy" = 0.90,                     # Heijnsdijk 2012
+                          "Combined biopsy" = 0.90,            # Heijnsdijk 2012
                           "Cancer diagnosis" = 0.80,           # Heijnsdijk 2012
                           "Prostatectomy part 1" = 0.829,      # Hall 2015
                           "Prostatectomy part 2" = 0.893,      # Extended review by SH (Glazener 2011, Korfarge 2005, Hall 2015)
@@ -141,7 +142,7 @@ ShuangParameters <- list(
                          "Radiation therapy part 2" = 10/12,
                          "Active surveillance" = 7,
                          "Postrecovery period" = 9,
-                         "ADT" = 2,                           # Assumption!!!
+                         "ADT" = 1.5,                         # Assumption!!!
                          "Palliative therapy" = 12/12,        # Palliative therapy 
                          "Terminal illness" = 6/12),
     pMRIposG0=0.47,               # Pr(MRI+ | ISUP 0 || undetectable)

@@ -866,8 +866,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   switch(msg->kind) {
 
   case toCancerDeath:
-    lost_productivity("Terminal illness");
-    add_costs("Cancer death");
+    if (in->bparameter["Andreas"]) {
+      lost_productivity("Terminal illness");
+      add_costs("Cancer death");
+    }
     if (id < in->nLifeHistories) {
       out->outParameters.record("age_d",now());
       out->outParameters.revise("pca_death",1.0);
@@ -1170,11 +1172,13 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     in->rngTreatment->set();
     double u_tx = R::runif(0.0,1.0);
     double u_adt = R::runif(0.0,1.0);
-    if (state == Metastatic) {
+    if (state == Metastatic && in->bparameter["Andreas"]) {
       lost_productivity("Metastatic cancer");
       // utilities->clear(); // should this be age-specific??
     }
     else { // Loco-regional
+      if (!in->bparameter["Andreas"] && now() < 65.0)
+	lost_productivity("Long-term sick leave");
       tx = calculate_treatment(u_tx,now(),year);
       if (tx == CM) scheduleAt(now(), toCM);
       if (tx == RP) scheduleAt(now(), toRP);
@@ -1222,19 +1226,58 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (!cured) {
       scheduleAt(age_cancer_death, toCancerDeath);
       // Disutilities prior to a cancer death
-      double age_palliative = age_cancer_death - in->utility_duration["Palliative therapy"] - in->utility_duration["Terminal illness"];
-      double age_terminal = age_cancer_death - in->utility_duration["Terminal illness"];
-      if (age_palliative>now()) { // cancer death more than 36 months after diagnosis
-	scheduleUtilityChange(age_palliative, age_terminal,
-			      in->utility_estimates["Palliative therapy"]);
-	scheduleUtilityChange(age_terminal, "Terminal illness");
+      if (in->bparameter["Andreas"]) {
+	double age_palliative = age_cancer_death - in->utility_duration["Palliative therapy"] - in->utility_duration["Terminal illness"];
+	double age_terminal = age_cancer_death - in->utility_duration["Terminal illness"];
+	if (age_palliative>now()) { // cancer death more than 36 months after diagnosis
+	  scheduleUtilityChange(age_palliative, age_terminal,
+				in->utility_estimates["Palliative therapy"]);
+	  scheduleUtilityChange(age_terminal, "Terminal illness");
+	}
+	else if (age_terminal>now()) { // cancer death between 36 and 6 months of diagnosis
+	  scheduleUtilityChange(now(), age_terminal, in->utility_estimates["Palliative therapy"]);
+	  scheduleUtilityChange(age_terminal,"Terminal illness");
+	}
+	else // cancer death within 6 months of diagnosis/treatment
+	  scheduleUtilityChange(now(), "Terminal illness");
+      } else { // Shuang:
+	double age_adt = age_cancer_death - in->utility_duration["Palliative therapy"] - in->utility_duration["Terminal illness"]
+	   - in->utility_duration["ADT"];
+	double age_palliative = age_cancer_death - in->utility_duration["Palliative therapy"] - in->utility_duration["Terminal illness"];
+	double age_terminal = age_cancer_death - in->utility_duration["Terminal illness"];
+	if (age_adt>now()) { // cancer death more than 36 months after diagnosis
+	  scheduleUtilityChange(age_adt, age_palliative,
+				in->utility_estimates["ADT"]);
+	  scheduleUtilityChange(age_palliative, "Palliative therapy");
+	  scheduleUtilityChange(age_terminal, "Terminal illness");
+	  add_costs("ADT");
+	  add_costs("Palliative therapy - yearly");
+	  add_costs("Terminal illness");
+	  lost_productivity("Terminal illness");
+	}
+	else if (age_palliative>now()) { // cancer death between 36 and 18 months of diagnosis
+	  scheduleUtilityChange(now(), age_palliative,
+				in->utility_estimates["ADT"]);
+	  scheduleUtilityChange(age_palliative, "Palliative therapy");
+	  scheduleUtilityChange(age_terminal, "Terminal illness");
+	  add_costs("ADT", Direct, (age_palliative - now())/in->utility_duration["ADT"]);
+	  add_costs("Palliative therapy - yearly");
+	  add_costs("Terminal illness");
+	  lost_productivity("Terminal illness");
+	}
+	else if (age_terminal>now()) { // cancer death between 18 and 6 months of diagnosis
+	  scheduleUtilityChange(now(), age_terminal, in->utility_estimates["Palliative therapy"]);
+	  scheduleUtilityChange(age_terminal,"Terminal illness");
+	  add_costs("Palliative therapy - yearly", Direct, (age_terminal - now())/in->utility_duration["Palliative therapy"]);
+	  add_costs("Terminal illness");
+	  lost_productivity("Terminal illness");
+	}
+	else { // cancer death within 6 months of diagnosis/treatment
+	  scheduleUtilityChange(now(), "Terminal illness");
+	  add_costs("Terminal illness");
+	  lost_productivity("Terminal illness");
+	}
       }
-      else if (age_terminal>now()) { // cancer death between 36 and 6 months of diagnosis
-	scheduleUtilityChange(now(), age_terminal, in->utility_estimates["Palliative therapy"]);
-	scheduleUtilityChange(age_terminal,"Terminal illness");
-      }
-      else // cancer death within 6 months of diagnosis/treatment
-	scheduleUtilityChange(now(), "Terminal illness");
     }
     if (in->bparameter["includeDiagnoses"]) {
       out->diagnoses.record("id",id);
@@ -1309,8 +1352,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (in->bparameter["Andreas"]) {
       add_costs("Active surveillance - yearly");
       lost_productivity("Active surveillance - yearly");
-    }
-    else {
+    } else {
       if (in->bparameter["MRI_screen"] || in->bparameter["MRI_clinical"]) {
 	add_costs("Active surveillance - yearly - with MRI");
 	lost_productivity("Active surveillance - yearly - with MRI");

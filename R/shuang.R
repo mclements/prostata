@@ -49,16 +49,15 @@ ShuangParameters <- list(
                         + 3500*0.33                               # MRI cost
                         + 3010*1.5*0.33                           # Biopsy cost (SBx|TBx)
                         + 4238.25*0.33,                           # Pathology of biopsy
-                        "Metastatic cancer - yearly" = 22309.44,  # NEW: Chemo and hormone therapy
-                        "Post-Tx follow-up - yearly first" = 1460   # Urologist and nurse consultation
+                        "ADT" = 22309.44*1.5,                     # NEW: Chemo and hormone therapy
+                        "Post-Tx follow-up - yearly first" = 1460 # Urologist and nurse consultation
                         + 355.82                                  # PSA test sampling
                         + 57.4,                                   # PSA analysis
                         "Post-Tx follow-up - yearly after" = 355.82  # PSA test sampling
                         + 57.4                                    # PSA analysis,
                         + 146,                                    # Telefollow-up by urologist
-                        "Palliative therapy - yearly" = 161593.05,  # Palliative care cost
-                        "Cancer death" = 100160 * 3               # Care for spread disease (SH: I think this should be deleted)
-                        + 68000 * 3),                             # Drugs for spread disease (SH: same as above)
+                        "Palliative therapy - yearly" = 161593.05, # Palliative care cost
+                        "Terminal illness" = 161593.05*0.5),      # Terminal illness cost
 
     ## Swedish governmental report on organised PSA testing (p.23):
     ## https://www.socialstyrelsen.se/SiteCollectionDocuments/2018-2-13-halsoekonomisk-analys.pdf
@@ -106,8 +105,7 @@ ShuangParameters <- list(
                                2/24/365.25,                    # PSA tests (Same for first year and following years)
                              "Premature mortality" = 0,       # To discuss, depending on the age of death
                              "Long-term sick leave" = 0.0768*67.52/365.25, # 7.68% employed PCa patients (50-64) have long-term sick leave (based on 2016 data)
-                             "Early retirement" = 0.00203*235.5/365.25, # 0.203% employed PCa patients (50-64) have early retirement (based on 2016 data)
-                             "Metastatic cancer"=6/12,         # Should delete
+                             ## "Early retirement" = 0.00203*235.5/365.25, # 0.203% employed PCa patients (50-64) have early retirement (based on 2016 data)
                              "Terminal illness" = 6/12),       # Should delete, should be reflected from sick leave or disability pension
 
     ## Latest review 2019 based on Heijnsdijk 2012, Magnus 2019 and extended review by Shuang
@@ -124,7 +122,7 @@ ShuangParameters <- list(
                           "Radiation therapy part 2" = 0.828,  # Extended review by SH (Korfarge 2005, Hall 2015)
                           "Active surveillance" = 0.9,         # Loeb 2018
                           "Postrecovery period" = 0.861,       # Extended review by SH (Torvinen 2013, Waston 2016) 
-                          "Metastatic cancer" = 0.719,         # Extended review by SH (Hall 2019, Diels 2015, Loriot 2015, Skaltsa 2014, Wu 2007, Chi 2018)
+                          "ADT" = 0.719,                       # Extended review by SH (Hall 2019, Diels 2015, Loriot 2015, Skaltsa 2014, Wu 2007, Chi 2018)
                           "Palliative therapy" = 0.62,         # Magnus 2019
                           "Terminal illness" = 0.40,           # Heijnsdijk 2012
                           "Death" = 0.00),
@@ -143,8 +141,8 @@ ShuangParameters <- list(
                          "Radiation therapy part 2" = 10/12,
                          "Active surveillance" = 7,
                          "Postrecovery period" = 9,
-                         "Metastatic cancer" = 2,             # Assumption!!!
-                         "Palliative therapy" = 30/12,        # Palliative therapy 
+                         "ADT" = 2,                           # Assumption!!!
+                         "Palliative therapy" = 12/12,        # Palliative therapy 
                          "Terminal illness" = 6/12),
     pMRIposG0=0.47,               # Pr(MRI+ | ISUP 0 || undetectable)
     pMRIposG1=0.73,               # Pr(MRI+ | ISUP 1 && detectable)

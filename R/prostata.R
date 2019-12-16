@@ -942,6 +942,8 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   diagnoses <- rbindExtract(out,"diagnoses")
   falsePositives <- rbindExtract(out,"falsePositives")
   parameters <- rbindExtract(out,"parameters")
+  indiv_costs <- do.call(c, lapply(out, "[[", "indiv_costs"))
+  indiv_utilities <- do.call(c, lapply(out, "[[", "indiv_utilities"))
 
   appendMeans <- function(x) c(x,
                               mean.sum = x[["sum"]] / x[["n"]],
@@ -975,7 +977,9 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
               psarecord=psarecord, diagnoses=diagnoses, bxrecord=bxrecord,
               cohort=data.frame(table(cohort)),simulation.parameters=parameter,
               falsePositives=falsePositives, panel=panel, call = call,
-              natural.history.summary=natural.history.summary)
+              natural.history.summary=natural.history.summary,
+              indiv_costs=indiv_costs,
+              indiv_utilities=indiv_utilities)
   class(out) <- "fhcrc"
   out
 }

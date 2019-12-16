@@ -231,11 +231,11 @@ namespace fhcrc_example {
     treatment_t tx;
     bool adt;
     double txhaz, psa_last_screen;
-    int id;
+    int id, index;
     double cohort, rescreening_frailty;
     bool everPSA, previousNegativeBiopsy, organised, previousFollowup;
-    FhcrcPerson(SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950) :
-      in(in), out(out), utilities(utilities), id(id), cohort(cohort) { };
+    FhcrcPerson(SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950, const int index = 0) :
+      in(in), out(out), utilities(utilities), id(id), index(index), cohort(cohort) { };
     double utility() { return utilities->utility(); }
     double psamean(double age);
     double psameasured(double age);
@@ -280,7 +280,8 @@ namespace fhcrc_example {
       Report on costs for a given item
   */
   void FhcrcPerson::add_costs(string item, cost_t cost_type, double weight) {
-    out->costs.add(CostKey((int) cost_type,item),now(),in->cost_parameters[item] * weight);
+    out->costs.add(CostKey((int) cost_type,item),now(),in->cost_parameters[item] * weight,
+		   index);
   }
 
   /**
@@ -288,7 +289,7 @@ namespace fhcrc_example {
   */
   void FhcrcPerson::lost_productivity(string item, double weight) {
     double loss = in->lost_production_years[item] * in->production(now()) * weight;
-    out->costs.add(CostKey((int) Indirect,item),now(),loss);
+    out->costs.add(CostKey((int) Indirect,item),now(),loss,index);
   }
 
   /**
@@ -850,7 +851,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   // record information
   if (in->parameter["full_report"] == 1.0)
-    out->report.add(FullState::Type(ext_state, ext_grade, dx, psa>=3.0, cohort), msg->kind, previousEventTime, age, utility);
+    out->report.add(FullState::Type(ext_state, ext_grade, dx, psa>=3.0, cohort), msg->kind, previousEventTime, age, utility, index);
   out->shortReport.add(1, msg->kind, previousEventTime, age, utility);
 
   if (id < in->nLifeHistories) { // only record up to the first n individuals
@@ -1506,15 +1507,17 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
 
   out.report.discountRate = in.parameter["discountRate.effectiveness"];
   out.report.setPartition(ages);
+  out.report.resize(n);
   out.shortReport.discountRate = in.parameter["discountRate.effectiveness"];
   out.shortReport.setPartition(ages);
   out.costs.discountRate = in.parameter["discountRate.costs"];
   out.costs.setPartition(ages);
+  out.costs.resize(n);
 
   // main loop
-  FhcrcPerson person(&in, &out, &utilities, 1, 2000);
+  FhcrcPerson person(&in, &out, &utilities, 1, 2000, 0);
   for (int i = 0; i < n; ++i) {
-    person = FhcrcPerson(&in, &out, &utilities, i+firstId, cohort[i]);
+    person = FhcrcPerson(&in, &out, &utilities, i+firstId, cohort[i], i);
     Sim::create_process(&person);
     Sim::run_simulation();
     Sim::clear();
@@ -1536,7 +1539,9 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
 		      _("bxrecord")=out.bxrecord.wrap(),            // SimpleReport<double>
 		      _("falsePositives")=out.falsePositives.wrap(),// SimpleReport<double>
 		      _("diagnoses")=out.diagnoses.wrap(),          // SimpleReport<double>
-		      _("tmc_minus_t0")=out.tmc_minus_t0.wrap()     // Means
+		      _("tmc_minus_t0")=out.tmc_minus_t0.wrap(),    // Means
+		      _("indiv_costs")=out.costs.wrap_indiv(),      // vector<double>
+		      _("indiv_utilities")=out.report.wrap_indiv()  // vector<double>
 		      );
 }
 

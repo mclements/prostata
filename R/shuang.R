@@ -104,7 +104,7 @@ ShuangParameters <- list(
                              + 0.33 * 2/24/365.25,             # Combined biopsy (TBx|SBx)
                              "Post-Tx follow-up - yearly"  =
                                2/24/365.25,                    # PSA tests (Same for first year and following years)
-                             "Premature mortality" = NA,       # To discuss, depending on the age of death
+                             "Premature mortality" = 0,       # To discuss, depending on the age of death
                              "Long-term sick leave" = 0.0768*67.52/365.25, # 7.68% employed PCa patients (50-64) have long-term sick leave (based on 2016 data)
                              "Early retirement" = 0.00203*235.5/365.25, # 0.203% employed PCa patients (50-64) have early retirement (based on 2016 data)
                              "Metastatic cancer"=6/12,         # Should delete
@@ -151,5 +151,6 @@ ShuangParameters <- list(
     pMRIposG2=0.93,               # Pr(MRI+ | ISUP 2+ && detectable)
     pSBxG0ifG1=0.146,             # Pr(SBx gives ISUP 0 | ISUP 1)
     pSBxG0ifG2=0.111,             # Pr(SBx gives ISUP 0 | ISUP 2)
-    pSBxG1ifG2=0.119              # Pr(SBx gives ISUP 1 | ISUP 2) (not used)
+    pSBxG1ifG2=0.119,             # Pr(SBx gives ISUP 1 | ISUP 2) (not used)
+    currency_rate = 1/10.2567     # Riksbanken 2018
 )

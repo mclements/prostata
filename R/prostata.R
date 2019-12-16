@@ -240,7 +240,6 @@ FhcrcParameters <- list(
                         + 0.2 * 1539,                             # GP primary care
                         "Biopsy" = 4733,                          # Biopsy cost
                         "Assessment" = 1794,                      # Urology assessment
-                        "Combined biopsy" = 4733*1.5,             # TBx/SBx biopsy cost
                         "Prostatectomy" = 80000                   # Surgery
                         + 100000 * 0.25                           # Radiation therapy
                         + 1794 * 2                                # Urology visit
@@ -256,8 +255,7 @@ FhcrcParameters <- list(
                         + 45                                      # PSA analysis,
                         + 474,                                    # Telefollow-up by urologist
                         "Cancer death" = 100160 * 3               # Care for spread disease
-                        + 68000 * 3,                              # Drugs for spread disease
-                        "MRI" = 3500),                            # MRI test
+                        + 68000 * 3),                             # Drugs for spread disease
 
     ## Swedish governmental report on organised PSA testing (p.23):
     ## https://www.socialstyrelsen.se/SiteCollectionDocuments/2018-2-13-halsoekonomisk-analys.pdf
@@ -275,7 +273,6 @@ FhcrcParameters <- list(
                              "Opportunistic panel"=2/24/365.25,
                              "Assessment"=2/24/365.25,         # Urology assessment
                              "Biopsy"=2/24/365.25,
-                             "Combined biopsy"=2/24/365.25,
                              "Prostatectomy"=6/52,
                              "Radiation therapy"=8/52,
                              "Active surveillance - yearly"=
@@ -292,7 +289,6 @@ FhcrcParameters <- list(
                           "Opportunistic PSA" = 0.99,
                           "Opportunistic panel" = 0.99,
                           "Biopsy" = 0.90,
-                          "Combined biopsy" = 0.90,
                           "Cancer diagnosis" = 0.80,
                           "Prostatectomy part 1" = 0.67,
                           "Prostatectomy part 2" = 0.77,
@@ -310,7 +306,6 @@ FhcrcParameters <- list(
                          "Opportunistic PSA" = 1/52,
                          "Opportunistic panel" = 1/52,
                          "Biopsy" = 3/52,
-                         "Combined biopsy" = 3/52,
                          "Cancer diagnosis" = 1/12,
                          "Prostatectomy part 1" = 2/12,
                          "Prostatectomy part 2" = 10/12,
@@ -870,6 +865,8 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
         stop("For 'MRI_screen=TRUE', use 'parms=c(prostata:::ShuangParameters, MRI_screen=TRUE)'")
     if (panel && parameter$MRI_screen)
         stop("Scenarios for 'panel=TRUE' and 'MRI_screen=TRUE' have not been defined")
+    if (parameter$MRI_clinical && !parameter$MRI_screen)
+        stop("Scenarios for 'MRI_clinical=TRUE' and 'MRI_screen=FALSE' have not been defined")
   ## now run the chunks separately
   timingfunction(out <- parallel::mclapply(1:mc.cores,
                 function(i) {

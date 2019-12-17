@@ -1,7 +1,7 @@
 ## Shuang's parameters
-## in shell, ssh marcle@vector and (ess-remote) on that buffer
+## in shell, "ssh -X marcle@vector" and (ess-remote) on that buffer
 library(prostata)
-n.sim <- 1e4
+n.sim <- 1e6
 mc.cores <- 10
 summary(fit1 <- callFhcrc(n.sim, screen="noScreening", mc.cores=mc.cores,
                           flatPop=TRUE,pop=1995-55,
@@ -23,8 +23,8 @@ summary(fit3 <- callFhcrc(n.sim, screen="regular_screen",
                                   formal_compliance=1),
                           mc.cores=mc.cores))
 
-xtabs(I(costs/1e6)~item+type,fit1$societal.costs)
-xtabs(I(costs/1e6)~item+type,fit2$societal.costs)
+xtabs(I(costs/1e5)~item+type,fit1$societal.costs)
+xtabs(I(costs/1e5)~item+type,fit2$societal.costs)
 
 prostata:::FhcrcParameters$cost_parameters
 prostata:::ShuangParameters$cost_parameters
@@ -52,6 +52,7 @@ text(d,labels=rownames(d),pos=c(4,2,2))
 ## One-way sensitivity analysis
 Parameters <- prostata:::ShuangParameters
 Parameters$utility_estimates["Active surveillance"] <- 0.97
+Parameters$utility_estimates["Postrecovery period"] <- 0.95
 library(prostata)
 n.sim <- 1e6
 mc.cores <- 10
@@ -91,7 +92,7 @@ t.test(fit2$indiv_utilities-fit1$indiv_utilities)
 ## Check using the old code (log(50000)=10.8)
 library(prostata)
 mc.cores <- 10
-n <- 1e6
+n <- 1e5
 fit1.old <- callFhcrc(n, mc.cores=mc.cores,flatPop=TRUE,pop=1995-55,
                  parms=list(formal_compliance=1))
 fit2.old <- callFhcrc(n, mc.cores=mc.cores,flatPop=TRUE,pop=1995-55,
@@ -102,8 +103,8 @@ fit2.old <- callFhcrc(n, mc.cores=mc.cores,flatPop=TRUE,pop=1995-55,
 summary(fit1.old)
 summary(fit2.old)
 ICER(fit2.old,fit1.old)
-xtabs(I(costs/1e6)~item+type,fit1.old$societal.costs)
-xtabs(I(costs/1e6)~item+type,fit2.old$societal.costs)
+xtabs(I(costs/1e5)~item+type,fit1.old$societal.costs)
+xtabs(I(costs/1e5)~item+type,fit2.old$societal.costs)
 library(boot)
 boot(data.frame(x=fit2$indiv_costs-fit1$indiv_costs,
                 y=fit2$indiv_utilities-fit1$indiv_utilities),
@@ -111,14 +112,14 @@ boot(data.frame(x=fit2$indiv_costs-fit1$indiv_costs,
      R=1000)
 
 
-xtabs(I(costs/1e6)~item+type,fit1.old$societal.costs)
-xtabs(I(costs/1e6)~item+type,fit1$societal.costs)
+xtabs(I(costs/1e5)~item+type,fit1.old$societal.costs)
+xtabs(I(costs/1e5)~item+type,fit1$societal.costs)
 ##
-xtabs(I(costs/1e6)~item+type,fit2.old$societal.costs)
-xtabs(I(costs/1e6)~item+type,fit2$societal.costs)
+xtabs(I(costs/1e5)~item+type,fit2.old$societal.costs)
+xtabs(I(costs/1e5)~item+type,fit2$societal.costs)
 
-xtabs(I(ut/1e6)~dx,fit1.old$summary$ut)
-xtabs(I(ut/1e6)~dx,fit2.old$summary$ut)
+xtabs(I(ut/1e5)~dx,fit1.old$summary$ut)
+xtabs(I(ut/1e5)~dx,fit2.old$summary$ut)
 
 
 ## proportion of deaths that are prostate cancer

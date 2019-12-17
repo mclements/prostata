@@ -1,3 +1,87 @@
+## Shuang's parameters
+library(prostata)
+n.sim <- 1e5
+summary(fit1 <- callFhcrc(n.sim, screen="noScreening", mc.cores=2,
+                          flatPop=TRUE,pop=1995-55,
+                          parms=c(prostata:::ShuangParameters,
+                                  formal_compliance=1)))
+summary(fit2 <- callFhcrc(n.sim, screen="regular_screen",
+                          flatPop=TRUE,pop=1995-55,
+                          parms=c(prostata:::ShuangParameters,
+                                  formal_compliance=1,
+                                  start_screening=55,
+                                  screening_interval=4),
+                          mc.cores=2))
+summary(fit3 <- callFhcrc(n.sim, screen="regular_screen",
+                          flatPop=TRUE,pop=1995-55,
+                          parms=c(prostata:::ShuangParameters,
+                                  MRI_screen=TRUE,
+                                  start_screening=55,
+                                  screening_interval=4,
+                                  formal_compliance=1),
+                          mc.cores=2))
+
+prostata:::FhcrcParameters$cost_parameters
+prostata:::ShuangParameters$cost_parameters
+prostata:::FhcrcParameters$production
+prostata:::ShuangParameters$production
+prostata:::FhcrcParameters$lost_production_years
+prostata:::ShuangParameters$lost_production_years
+prostata:::FhcrcParameters$utility_estimates
+prostata:::ShuangParameters$utility_estimates
+prostata:::FhcrcParameters$utility_duration
+prostata:::ShuangParameters$utility_duration
+
+
+summary(fit1); summary(fit2); summary(fit3)
+ICER(fit2,fit1)
+ICER(fit3,fit1)
+ICER(fit3,fit2)
+d <- rbind("Un-screened"=c(0,0),
+           "PSA+SBx"=unlist(ICER(fit2,fit1)[2:3]),
+           "PSA+MRI+TBx/SBx"=unlist(ICER(fit3,fit1)[2:3]))
+plot(d, xlim=1.05*range(d[,1]), ylim=1.05*range(d[,2]))
+text(d,labels=rownames(d),pos=c(4,2,2))
+
+## Monte Carlo uncertainty in the ICER
+library(boot)
+boot(data.frame(x=fit2$indiv_costs-fit$indiv_costs,
+                y=fit2$indiv_utilities-fit$indiv_utilities),
+     function(d, w) log(mean(d$x[w])/mean(d$y[w])),
+     R=1000)
+local({
+    X <- fit2$indiv_costs-fit$indiv_costs
+    Y <- fit2$indiv_utilities-fit$indiv_utilities
+    muX <- mean(X)
+    muY <- mean(Y)
+    n <- length(X)
+    c(log_ratio=log(muX/muY),
+      sd_log_ratio=sqrt((sd(X)/muX/sqrt(n))^2+(sd(Y)/muY/sqrt(n))^2))
+    })
+plot(density(fit$indiv_utilities-fit2$indiv_utilities))
+plot(density(fit$indiv_costs-fit2$indiv_costs))
+t.test(fit2$indiv_costs-fit$indiv_costs)
+t.test(fit2$indiv_utilities-fit$indiv_utilities)
+
+## Check using the old code (log(50000)=10.8)
+library(prostata)
+fit <- callFhcrc(1e5, mc.cores=2,flatPop=TRUE,pop=1995-55,
+                 parms=list(formal_compliance=1))
+summary(fit)
+summary(fit$indiv_utilities)
+summary(fit$indiv_costs)
+fit2 <- callFhcrc(1e5, mc.cores=2,flatPop=TRUE,pop=1995-55,
+                  parms=list(formal_compliance=1,
+                             start_screening=55,
+                             screening_interval=4),
+                  screen="regular_screen")
+library(boot)
+boot(data.frame(x=fit2$indiv_costs-fit$indiv_costs,
+                y=fit2$indiv_utilities-fit$indiv_utilities),
+     function(d, w) log(mean(d$x[w])/mean(d$y[w])),
+     R=1000)
+ICER(fit2,fit)
+
 refresh
 require(foreign)
 require(rstpm2)

@@ -1,4 +1,4 @@
-#' prostata
+' prostata
 #'
 #' @section Introduction:
 #'
@@ -66,6 +66,7 @@ if(.Platform$OS.type == "unix") {
 
 ## initial values for the FHCRC model
 FhcrcParameters <- list(
+    Andreas = TRUE,               # version for Andreas's CEA paper
     revised_natural_history=TRUE,
     ## panel=FALSE,
     grade.clinical.rate.high=0.3042454700,
@@ -279,7 +280,7 @@ FhcrcParameters <- list(
                              + 2 * 2/24/365.25                 # PSA tests
                              + 0.5 * 2/24/365.25,              # Biopsy
                              "Metastatic cancer"=6/12,
-                             "Terminal illness" = 6/12),       # NOTE: potentially add follow-up Tx production losses
+                             "Terminal illness" = 6/12),        # NOTE: potentially add follow-up Tx production losses
 
     ## Heijnsdijk 2012
     utility_estimates = c("Invitation" = 1,
@@ -319,7 +320,9 @@ FhcrcParameters <- list(
     utility_scale = as.double(1), # default scale = UtilityMultiplicative
     includePSArecords = FALSE,
     includeBxrecords = FALSE,
-    includeDiagnoses = FALSE
+    includeDiagnoses = FALSE,
+    MRI_screen = FALSE,           # defines whether MRI pathway is used for screen-positive patients
+    MRI_clinical = FALSE         # defines whether MRI is used for clinical (symptomatic) diagnoses
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]
@@ -720,7 +723,7 @@ ageStandards <- data.frame(Age = cut(seq(0, 85, 5),
 #'     birth cohorts and \code{pop} with the size of the corresponding birth
 #'     cohorts, Default: pop1
 #' @param tables List of data.frames to update the tables in fhcrcData, Default:
-#'     IHE
+#'     IHE (NB: fhcrcData$ptrx gets changed below to stockholmTreatment if parameters$stockholmTreatment = TRUE -- which is the default! This implies that IHE is the default when parameters$stockholmTreatment = FALSE)
 #' @param debug Boolean to print debugging, Default: FALSE
 #' @param parms List to update FhcrcParameters, Default: NULL
 #' @param mc.cores Integer with the number of cores to use for the computation,
@@ -775,11 +778,11 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
             "toScreenDiagnosis", "toOverDiagnosis", "toOrganised","toTreatment",
             "toCM","toRP", "toRT","toADT","toUtilityChange","toUtilityRemove",
             "toSTHLM3", "toOpportunistic","toT3plus", "toCancelScreens",
-            "toYearlyActiveSurveillance", "toYearlyPostTxFollowUp")
+            "toYearlyActiveSurveillance", "toYearlyPostTxFollowUp", "toMRI")
   diagnosisT <- c("NotDiagnosed","ClinicalDiagnosis","ScreenDiagnosis")
   treatmentT <- c("no_treatment","CM","RP","RT")
   psaT <- c("PSA<3","PSA>=3") # not sure where to put this...
-  screenIndex <- which(screen == screenT) - 1
+    screenIndex <- which(screen == screenT) - 1
   timingfunction <- if (print.timing) function(x) print(system.time(x)) else function(x) x
   ## NB: sample() calls the random number generator (!)
   if (is.vector(pop)) {
@@ -845,8 +848,6 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   updateParameters$screen <- as.integer(screenIndex)
   parameter <- FhcrcParameters
   for (name in names(updateParameters)){
-      if(!(name %in% names(parameter)))
-          warning("Name in parms argument not in FhcrcParameters: ",name,".")
       parameter[[name]] <- updateParameters[[name]]
   }
   parameter$g0 <- parameter$g0 / parameter$susceptible
@@ -857,9 +858,15 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   bInd <- sapply(parameter,class)=="logical" & sapply(parameter,length)==1
   if (parameter$stockholmTreatment)
       fhcrcData$prtx <- stockholmTreatment
-  ## check some parameters for sanity
-  if (panel && parameter["rTPF"]>1) stop("Panel: rTPF>1 (not currently implemented)")
-  if (panel && parameter["rFPF"]>1) stop("Panel: rFPF>1 (not currently implemented)")
+    ## check some parameters for sanity
+  if (panel && parameter$rTPF>1) stop("Panel: rTPF>1 (not currently implemented)")
+    if (panel && parameter$rFPF>1) stop("Panel: rFPF>1 (not currently implemented)")
+    if (parameter$Andreas && parameter$MRI_screen)
+        stop("For 'MRI_screen=TRUE', use 'parms=c(prostata:::ShuangParameters, MRI_screen=TRUE)'")
+    if (panel && parameter$MRI_screen)
+        stop("Scenarios for 'panel=TRUE' and 'MRI_screen=TRUE' have not been defined")
+    if (parameter$MRI_clinical && !parameter$MRI_screen)
+        stop("Scenarios for 'MRI_clinical=TRUE' and 'MRI_screen=FALSE' have not been defined")
   ## now run the chunks separately
   timingfunction(out <- parallel::mclapply(1:mc.cores,
                 function(i) {
@@ -935,6 +942,8 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   diagnoses <- rbindExtract(out,"diagnoses")
   falsePositives <- rbindExtract(out,"falsePositives")
   parameters <- rbindExtract(out,"parameters")
+  indiv_costs <- do.call(c, lapply(out, "[[", "indiv_costs"))
+  indiv_utilities <- do.call(c, lapply(out, "[[", "indiv_utilities"))
 
   appendMeans <- function(x) c(x,
                               mean.sum = x[["sum"]] / x[["n"]],
@@ -968,7 +977,9 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
               psarecord=psarecord, diagnoses=diagnoses, bxrecord=bxrecord,
               cohort=data.frame(table(cohort)),simulation.parameters=parameter,
               falsePositives=falsePositives, panel=panel, call = call,
-              natural.history.summary=natural.history.summary)
+              natural.history.summary=natural.history.summary,
+              indiv_costs=indiv_costs,
+              indiv_utilities=indiv_utilities)
   class(out) <- "fhcrc"
   out
 }

@@ -52,7 +52,7 @@ namespace fhcrc_example {
                 toScreenDiagnosis, toOverDiagnosis, toOrganised, toTreatment,
                 toCM, toRP, toRT, toADT, toUtilityChange, toUtilityRemove,
                 toSTHLM3, toOpportunistic, toT3plus, toCancelScreens,
-                toYearlyActiveSurveillance, toYearlyPostTxFollowUp};
+                toYearlyActiveSurveillance, toYearlyPostTxFollowUp, toMRI};
 
   enum screen_t {noScreening, randomScreen50to70, twoYearlyScreen50to70, fourYearlyScreen50to70,
 		 screen50, screen60, screen70, screenUptake, stockholm3_goteborg, stockholm3_risk_stratified,
@@ -231,11 +231,11 @@ namespace fhcrc_example {
     treatment_t tx;
     bool adt;
     double txhaz, psa_last_screen;
-    int id;
+    int id, index;
     double cohort, rescreening_frailty;
-    bool everPSA, previousNegativeBiopsy, organised;
-    FhcrcPerson(SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950) :
-      in(in), out(out), utilities(utilities), id(id), cohort(cohort) { };
+    bool everPSA, previousNegativeBiopsy, organised, previousFollowup;
+    FhcrcPerson(SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950, const int index = 0) :
+      in(in), out(out), utilities(utilities), id(id), index(index), cohort(cohort) { };
     double utility() { return utilities->utility(); }
     double psamean(double age);
     double psameasured(double age);
@@ -280,7 +280,8 @@ namespace fhcrc_example {
       Report on costs for a given item
   */
   void FhcrcPerson::add_costs(string item, cost_t cost_type, double weight) {
-    out->costs.add(CostKey((int) cost_type,item),now(),in->cost_parameters[item] * weight);
+    out->costs.add(CostKey((int) cost_type,item),now(),in->cost_parameters[item] * weight,
+		   index);
   }
 
   /**
@@ -288,7 +289,7 @@ namespace fhcrc_example {
   */
   void FhcrcPerson::lost_productivity(string item, double weight) {
     double loss = in->lost_production_years[item] * in->production(now()) * weight;
-    out->costs.add(CostKey((int) Indirect,item),now(),loss);
+    out->costs.add(CostKey((int) Indirect,item),now(),loss,index);
   }
 
   /**
@@ -413,7 +414,7 @@ namespace fhcrc_example {
   }
 
   void FhcrcPerson::cancel_events_after_diagnosis() {
-    RemoveKind(toLocalised);
+    RemoveKind(toLocalised); // ?
     RemoveKind(toMetastatic);
     RemoveKind(toT3plus);
     RemoveKind(toScreen);
@@ -427,6 +428,7 @@ namespace fhcrc_example {
     RemoveKind(toOverDiagnosis);
     RemoveKind(toClinicalDiagnosis);
     RemoveKind(toClinicalDiagnosticBiopsy);
+    RemoveKind(toMRI);
   }
 
   void FhcrcPerson::opportunistic_uptake_if_ever() {
@@ -581,7 +583,7 @@ void FhcrcPerson::init() {
   grade = base::Healthy;
   ext_grade = ext::Healthy;
   dx = NotDiagnosed;
-  everPSA = previousNegativeBiopsy = organised = adt = false;
+  everPSA = previousNegativeBiopsy = organised = adt = previousFollowup = false;
   in->rngNh->set();
   if (R::runif(0.0, 1.0) <= in->parameter["susceptible"]) // portion susceptible
     t0 = sqrt(2*R::rexp(1.0)/in->parameter["g0"]); // is susceptible
@@ -849,7 +851,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   // record information
   if (in->parameter["full_report"] == 1.0)
-    out->report.add(FullState::Type(ext_state, ext_grade, dx, psa>=3.0, cohort), msg->kind, previousEventTime, age, utility);
+    out->report.add(FullState::Type(ext_state, ext_grade, dx, psa>=3.0, cohort), msg->kind, previousEventTime, age, utility, index);
   out->shortReport.add(1, msg->kind, previousEventTime, age, utility);
 
   if (id < in->nLifeHistories) { // only record up to the first n individuals
@@ -864,8 +866,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   switch(msg->kind) {
 
   case toCancerDeath:
-    lost_productivity("Terminal illness");
-    add_costs("Cancer death");
+    if (in->bparameter["Andreas"]) {
+      lost_productivity("Terminal illness");
+      add_costs("Cancer death");
+    }
     if (id < in->nLifeHistories) {
       out->outParameters.record("age_d",now());
       out->outParameters.revise("pca_death",1.0);
@@ -891,8 +895,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (now()<tc+35.0-3.0/52.0)
       scheduleAt(tc+35.0-3.0/52.0,toClinicalDiagnosticBiopsy);
     scheduleAt(tc+35.0,toClinicalDiagnosis);
-    scheduleAt(tm+35.0,toMetastatic);
     scheduleAt(t3p+35.0,toT3plus);
+    scheduleAt(tm+35.0,toMetastatic);
     break;
 
   case toT3plus:
@@ -903,10 +907,17 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     state = Metastatic; ext_state = ext::Metastatic;
     RemoveKind(toClinicalDiagnosis);
     RemoveKind(toClinicalDiagnosticBiopsy);
-    if (now()<tc+35.0-6.0/52.0)
-      scheduleAt(tmc+35.0-6.0/52.0,toClinicalDiagnosticBiopsy);
-    if (now()<tc+35.0-3.0/52.0)
-      scheduleAt(tmc+35.0-3.0/52.0,toClinicalDiagnosticBiopsy);
+    if (in->bparameter["Andreas"]) {
+      if (now()<tc+35.0-6.0/52.0) // should this be tmc?
+	scheduleAt(tmc+35.0-6.0/52.0,toClinicalDiagnosticBiopsy);
+      if (now()<tc+35.0-3.0/52.0) // should this be tmc?
+	scheduleAt(tmc+35.0-3.0/52.0,toClinicalDiagnosticBiopsy);
+    } else {
+      if (now()<tmc+35.0-6.0/52.0)
+	scheduleAt(tmc+35.0-6.0/52.0,toClinicalDiagnosticBiopsy);
+      if (now()<tmc+35.0-3.0/52.0)
+	scheduleAt(tmc+35.0-3.0/52.0,toClinicalDiagnosticBiopsy);
+    }
     scheduleAt(tmc+35.0,toClinicalDiagnosis);
     // Remove possible secondary Tx
     RemoveKind(toRP);
@@ -1005,7 +1016,11 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     //   if (R::runif(0.0,1.0) < 1.0-parameter["rTPF"]) positive_test = true;
     // }
     if (positive_test && R::runif(0.0,1.0) < compliance) {
-      scheduleAt(now()+1.0/52.0, toScreenInitiatedBiopsy); // biopsy in one month
+      if (in->bparameter["MRI_screen"]) {
+	scheduleAt(now()+1.0/52.0, toMRI); // MRI in one month
+      } else {
+	scheduleAt(now()+1.0/52.0, toScreenInitiatedBiopsy); // biopsy in one month
+      }
     } // assumes similar biopsy compliance, reasonable? An option to different psa-thresholds would be to use different biopsyCompliance. /AK
     else
       rescreening_schedules(psa, organised, mixed_programs);
@@ -1041,22 +1056,49 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     // only for recording
     break;
 
-  // assumes that biopsies are 100% accurate
-
+  case toMRI: {
+    in->rngScreen->set();
+    add_costs("MRI"); // does this include costs for the consultation?
+    lost_productivity("MRI");
+    // scheduleUtilityChange(now(), "MRI");
+    double pMRIpos = (this->ext_grade == ext::Healthy || !detectable) ? in->parameter["pMRIposG0"] :
+      (this->ext_grade == ext::Gleason_le_6) ? in->parameter["pMRIposG1"] :
+      in->parameter["pMRIposG2"];
+    if (R::runif(0.0,1.0) < pMRIpos) {
+      scheduleAt(now(), toScreenInitiatedBiopsy);
+    } else {
+      rescreening_schedules(psa, organised, mixed_programs);
+    }
+    in->rngNh->set();
+  } break;
+    
   // record additional biopsies for clinical diagnoses
   case toClinicalDiagnosticBiopsy:
-    add_costs("Biopsy");
+    if (in->bparameter["MRI_clinical"]) {
+      add_costs("Combined biopsy");
+      lost_productivity("Combined biopsy");
+    } else {
+      add_costs("Biopsy");
+      lost_productivity("Biopsy");
+    }
+    // common values
     add_costs("Assessment");
-    lost_productivity("Biopsy");
     lost_productivity("Assessment");
     scheduleUtilityChange(now(), "Biopsy");
     break;
 
-  case toScreenInitiatedBiopsy:
+  case toScreenInitiatedBiopsy: {
     in->rngScreen->set();
-    add_costs("Biopsy");
+    // the following block follows the same pattern as toClinicalDiagnosticBiopsy
+    if (in->bparameter["MRI_screen"]) {
+      add_costs("Combined biopsy");
+      lost_productivity("Combined biopsy");
+    } else {
+      add_costs("Biopsy");
+      lost_productivity("Biopsy");
+    }
+    // common values
     add_costs("Assessment");
-    lost_productivity("Biopsy");
     lost_productivity("Assessment");
     scheduleUtilityChange(now(), "Biopsy");
 
@@ -1080,14 +1122,27 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       out->bxrecord.record("detectable",double(detectable));
     }
 
-    if (detectable) { // diagnosed
-      scheduleAt(now()+3.0/52.0, toScreenDiagnosis); // diagnosis three weeks after biopsy
-      if (in->panel && state==Localised && ext_grade == ext::Gleason_le_6) {
-        // fixed costs etc for men who were S3M+/PE-
-        add_costs("Assessment", Direct, 766.0/722.0 - 1.0);
-        lost_productivity("Assessment", 766.0/722.0 - 1.0);
+    bool SBx_missed = false; // allow for randomly missing "detectable cancers" from SBx (cf TBx/SBx)
+    if (detectable) {
+      if (in->bparameter["MRI_screen"] || in->bparameter["Andreas"]) {
+	scheduleAt(now()+3.0/52.0, toScreenDiagnosis); // diagnosis three weeks after biopsy
+      } else { // SBx compared with MRI
+	if (this->ext_grade == ext::Gleason_le_6) { 
+	  SBx_missed = (R::runif(0.0,1.0) < in->parameter["pSBxG0ifG1"]);
+	}
+	if (this->ext_grade == ext::Gleason_7) { 
+	  SBx_missed = (R::runif(0.0,1.0) < in->parameter["pSBxG0ifG2"]);
+	}
+	if (!SBx_missed)
+	  scheduleAt(now()+3.0/52.0, toScreenDiagnosis); // diagnosis three weeks after biopsy
       }
-    } else { // negative biopsy
+      if (in->panel && state==Localised && ext_grade == ext::Gleason_le_6) {
+	// fixed costs etc for men who were S3M+/PE-
+	add_costs("Assessment", Direct, 766.0/722.0 - 1.0);
+	lost_productivity("Assessment", 766.0/722.0 - 1.0);
+      }
+    }
+    if (!detectable || SBx_missed) { // negative biopsy
       if (in->panel) { // fixed costs etc for men who were S3M+/PE-
         add_costs("Assessment", Direct, 1535.0/1381.0 - 1.0);
         lost_productivity("Assessment", 1535.0/1381.0 - 1.0);
@@ -1111,17 +1166,19 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       }
     }
     in->rngNh->set();
-    break;
+  } break;
 
   case toTreatment: { // To diagnoses, treatment & survival
     in->rngTreatment->set();
     double u_tx = R::runif(0.0,1.0);
     double u_adt = R::runif(0.0,1.0);
-    if (state == Metastatic) {
+    if (state == Metastatic && in->bparameter["Andreas"]) {
       lost_productivity("Metastatic cancer");
       // utilities->clear(); // should this be age-specific??
     }
     else { // Loco-regional
+      if (!in->bparameter["Andreas"] && now() < 65.0)
+	lost_productivity("Long-term sick leave");
       tx = calculate_treatment(u_tx,now(),year);
       if (tx == CM) scheduleAt(now(), toCM);
       if (tx == RP) scheduleAt(now(), toRP);
@@ -1169,19 +1226,58 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (!cured) {
       scheduleAt(age_cancer_death, toCancerDeath);
       // Disutilities prior to a cancer death
-      double age_palliative = age_cancer_death - in->utility_duration["Palliative therapy"] - in->utility_duration["Terminal illness"];
-      double age_terminal = age_cancer_death - in->utility_duration["Terminal illness"];
-      if (age_palliative>now()) { // cancer death more than 36 months after diagnosis
-	scheduleUtilityChange(age_palliative, age_terminal,
-			      in->utility_estimates["Palliative therapy"]);
-	scheduleUtilityChange(age_terminal, "Terminal illness");
+      if (in->bparameter["Andreas"]) {
+	double age_palliative = age_cancer_death - in->utility_duration["Palliative therapy"] - in->utility_duration["Terminal illness"];
+	double age_terminal = age_cancer_death - in->utility_duration["Terminal illness"];
+	if (age_palliative>now()) { // cancer death more than 36 months after diagnosis
+	  scheduleUtilityChange(age_palliative, age_terminal,
+				in->utility_estimates["Palliative therapy"]);
+	  scheduleUtilityChange(age_terminal, "Terminal illness");
+	}
+	else if (age_terminal>now()) { // cancer death between 36 and 6 months of diagnosis
+	  scheduleUtilityChange(now(), age_terminal, in->utility_estimates["Palliative therapy"]);
+	  scheduleUtilityChange(age_terminal,"Terminal illness");
+	}
+	else // cancer death within 6 months of diagnosis/treatment
+	  scheduleUtilityChange(now(), "Terminal illness");
+      } else { // Shuang:
+	double age_adt = age_cancer_death - in->utility_duration["Palliative therapy"] - in->utility_duration["Terminal illness"]
+	   - in->utility_duration["ADT"];
+	double age_palliative = age_cancer_death - in->utility_duration["Palliative therapy"] - in->utility_duration["Terminal illness"];
+	double age_terminal = age_cancer_death - in->utility_duration["Terminal illness"];
+	if (age_adt>now()) { // cancer death more than 36 months after diagnosis
+	  scheduleUtilityChange(age_adt, age_palliative,
+				in->utility_estimates["ADT"]);
+	  scheduleUtilityChange(age_palliative, "Palliative therapy");
+	  scheduleUtilityChange(age_terminal, "Terminal illness");
+	  add_costs("ADT");
+	  add_costs("Palliative therapy - yearly");
+	  add_costs("Terminal illness");
+	  lost_productivity("Terminal illness");
+	}
+	else if (age_palliative>now()) { // cancer death between 36 and 18 months of diagnosis
+	  scheduleUtilityChange(now(), age_palliative,
+				in->utility_estimates["ADT"]);
+	  scheduleUtilityChange(age_palliative, "Palliative therapy");
+	  scheduleUtilityChange(age_terminal, "Terminal illness");
+	  add_costs("ADT", Direct, (age_palliative - now())/in->utility_duration["ADT"]);
+	  add_costs("Palliative therapy - yearly");
+	  add_costs("Terminal illness");
+	  lost_productivity("Terminal illness");
+	}
+	else if (age_terminal>now()) { // cancer death between 18 and 6 months of diagnosis
+	  scheduleUtilityChange(now(), age_terminal, in->utility_estimates["Palliative therapy"]);
+	  scheduleUtilityChange(age_terminal,"Terminal illness");
+	  add_costs("Palliative therapy - yearly", Direct, (age_terminal - now())/in->utility_duration["Palliative therapy"]);
+	  add_costs("Terminal illness");
+	  lost_productivity("Terminal illness");
+	}
+	else { // cancer death within 6 months of diagnosis/treatment
+	  scheduleUtilityChange(now(), "Terminal illness");
+	  add_costs("Terminal illness");
+	  lost_productivity("Terminal illness");
+	}
       }
-      else if (age_terminal>now()) { // cancer death between 36 and 6 months of diagnosis
-	scheduleUtilityChange(now(), age_terminal, in->utility_estimates["Palliative therapy"]);
-	scheduleUtilityChange(age_terminal,"Terminal illness");
-      }
-      else // cancer death within 6 months of diagnosis/treatment
-	scheduleUtilityChange(now(), "Terminal illness");
     }
     if (in->bparameter["includeDiagnoses"]) {
       out->diagnoses.record("id",id);
@@ -1206,6 +1302,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toRP:
     add_costs("Prostatectomy");
+    this->previousFollowup = false;
     scheduleAt(now() + 1.0, toYearlyPostTxFollowUp);
     lost_productivity("Prostatectomy");
     // Scheduling utilities for the first 2 months after procedure
@@ -1222,6 +1319,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toRT:
     add_costs("Radiation therapy");
+    this->previousFollowup = false;
     scheduleAt(now() + 1.0, toYearlyPostTxFollowUp);
     lost_productivity("Radiation therapy");
     // Scheduling utilities for the first 2 months after procedure
@@ -1235,7 +1333,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     break;
 
   case toCM:
-    add_costs("Active surveillance - single MR"); // expand here
+    if (in->bparameter["Andreas"])
+      add_costs("Active surveillance - single MR"); // expand here
     scheduleAt(now(), toYearlyActiveSurveillance);
     scheduleUtilityChange(now(), "Active surveillance");
     // Modelling for possible subsequent RP and RT. P(RP|RT) ~ P(RP)
@@ -1250,13 +1349,32 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     break;
 
   case toYearlyActiveSurveillance:
-    add_costs("Active surveillance - yearly");
-    lost_productivity("Active surveillance - yearly");
+    if (in->bparameter["Andreas"]) {
+      add_costs("Active surveillance - yearly");
+      lost_productivity("Active surveillance - yearly");
+    } else {
+      if (in->bparameter["MRI_screen"] || in->bparameter["MRI_clinical"]) {
+	add_costs("Active surveillance - yearly - with MRI");
+	lost_productivity("Active surveillance - yearly - with MRI");
+      } else {
+	add_costs("Active surveillance - yearly - w/o MRI");
+	lost_productivity("Active surveillance - yearly - w/o MRI");
+      }
+    }
     scheduleAt(now() + 1.0, toYearlyActiveSurveillance);
     break;
 
   case toYearlyPostTxFollowUp: // not active surveillance
-    add_costs("Post-Tx follow-up - yearly");
+    if (in->bparameter["Andreas"])
+      add_costs("Post-Tx follow-up - yearly");
+    else {
+      lost_productivity("Post-Tx follow-up - yearly");
+      if (this->previousFollowup)
+	add_costs("Post-Tx follow-up - yearly after");
+      else 
+	add_costs("Post-Tx follow-up - yearly first");
+    }
+    previousFollowup = true;
     scheduleAt(now() + 1.0, toYearlyPostTxFollowUp);
     break;
 
@@ -1431,15 +1549,17 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
 
   out.report.discountRate = in.parameter["discountRate.effectiveness"];
   out.report.setPartition(ages);
+  out.report.resize(n);
   out.shortReport.discountRate = in.parameter["discountRate.effectiveness"];
   out.shortReport.setPartition(ages);
   out.costs.discountRate = in.parameter["discountRate.costs"];
   out.costs.setPartition(ages);
+  out.costs.resize(n);
 
   // main loop
-  FhcrcPerson person(&in, &out, &utilities, 1, 2000);
+  FhcrcPerson person(&in, &out, &utilities, 1, 2000, 0);
   for (int i = 0; i < n; ++i) {
-    person = FhcrcPerson(&in, &out, &utilities, i+firstId, cohort[i]);
+    person = FhcrcPerson(&in, &out, &utilities, i+firstId, cohort[i], i);
     Sim::create_process(&person);
     Sim::run_simulation();
     Sim::clear();
@@ -1461,7 +1581,9 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
 		      _("bxrecord")=out.bxrecord.wrap(),            // SimpleReport<double>
 		      _("falsePositives")=out.falsePositives.wrap(),// SimpleReport<double>
 		      _("diagnoses")=out.diagnoses.wrap(),          // SimpleReport<double>
-		      _("tmc_minus_t0")=out.tmc_minus_t0.wrap()     // Means
+		      _("tmc_minus_t0")=out.tmc_minus_t0.wrap(),    // Means
+		      _("indiv_costs")=out.costs.wrap_indiv(),      // vector<double>
+		      _("indiv_utilities")=out.report.wrap_indiv()  // vector<double>
 		      );
 }
 

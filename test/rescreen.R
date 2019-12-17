@@ -1,7 +1,8 @@
 ## Shuang's parameters
 library(prostata)
-n.sim <- 1e5
-summary(fit1 <- callFhcrc(n.sim, screen="noScreening", mc.cores=2,
+n.sim <- 1e4
+mc.cores <- 1
+summary(fit1 <- callFhcrc(n.sim, screen="noScreening", mc.cores=mc.cores,
                           flatPop=TRUE,pop=1995-55,
                           parms=c(prostata:::ShuangParameters,
                                   formal_compliance=1)))
@@ -11,7 +12,7 @@ summary(fit2 <- callFhcrc(n.sim, screen="regular_screen",
                                   formal_compliance=1,
                                   start_screening=55,
                                   screening_interval=4),
-                          mc.cores=2))
+                          mc.cores=mc.cores))
 summary(fit3 <- callFhcrc(n.sim, screen="regular_screen",
                           flatPop=TRUE,pop=1995-55,
                           parms=c(prostata:::ShuangParameters,
@@ -19,7 +20,7 @@ summary(fit3 <- callFhcrc(n.sim, screen="regular_screen",
                                   start_screening=55,
                                   screening_interval=4,
                                   formal_compliance=1),
-                          mc.cores=2))
+                          mc.cores=mc.cores))
 
 prostata:::FhcrcParameters$cost_parameters
 prostata:::ShuangParameters$cost_parameters

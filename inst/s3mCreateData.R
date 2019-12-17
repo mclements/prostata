@@ -28,13 +28,21 @@ library(parallel)
 ## path <- "../Data"
 path <- "./"
 makeModels <- TRUE
-run_name <- "20181020-bx-staggered"
+run_name <- "20191021-cost_reduction"
 
-cost_parameters <- prostata:::FhcrcParameters$cost_parameters
+new_cost_parameters <- prostata:::FhcrcParameters$cost_parameters
 ## change the values!
 
+new_cost_parameters["Opportunistic PSA"] <- 0 +   # Sampling test (included in the GP-visit)
+                      45 +                 # PSA analysis
+                      0.2*1539           # GP primary care
+new_cost_parameters["Opportunistic panel"] <- 0 + # Sampling test (included in the GP-visit)
+                      45 +               # PSA analysis
+                      2300 +                # From KUL price ist                 
+                      0.2*1539         # GP primary care
+
 makeModel <- function(screen = "introduced_screening_only",
-                      n = 1e7, #1e7 is 3*20min on 2cores CHECK this before running!!!
+                      n = 1e6, #1e7 is 3*20min on 2cores CHECK this before running!!!
                       start_screening=55,
                       stop_screening=70,
                       screening_interval=4,
@@ -45,7 +53,7 @@ makeModel <- function(screen = "introduced_screening_only",
                       formal_compliance=1.0, # ERSPC compliance (not observed in STHLM)
                       formal_costs=0.0, # Include GP cost for taking the test
                       utility_estimates=prostata:::FhcrcParameters$utility_estimates,
-                      cost_parameters=cost_parameters,
+                      cost_parameters=new_cost_parameters,
                       production = prostata:::FhcrcParameters$production,
                       grade.clinical.rate.high = prostata:::FhcrcParameters$grade.clinical.rate.high,
                       utility_scale = prostata:::FhcrcParameters$utility_scale,
@@ -55,15 +63,17 @@ makeModel <- function(screen = "introduced_screening_only",
                       panelReflexThreshold = prostata:::FhcrcParameters$panelReflexThreshold,
                       mc.cores= if (Sys.info()["nodename"] == "vector.meb.ki.se") {
                                     floor(parallel::detectCores() / 4) # share on vector
+                      } else if (Sys.info()["sysname"] == "Windows") {
+                                   1
                                 } else { # greedy for all other systems
                                     parallel::detectCores()
                                 },
-                      panel=FALSE,
+                      panel.default=FALSE,
                       preserve = NULL,
                       includeBxrecords = FALSE,
                       ...) {
 
-    function(screen, parms = NULL, ..., pop=popDefault, panel=panel, pres = preserve) {
+    function(screen, parms = NULL, ..., pop=popDefault, panel=panel.default, pres = preserve) {
         newparms <- list(start_screening = start_screening,
                          stop_screening = stop_screening,
                          screening_interval = screening_interval,
@@ -163,7 +173,10 @@ nm <- list(c("Formal PSA", "Formal panel", "Opportunistic PSA", "Opportunistic p
            "Palliative therapy",
            "Terminal illness")
 
-{models <- list(baseScenarios = modelSet(makeModel()),
+models <- list(baseScenarios = modelSet(makeModel()),baseScenarios_undiscounted = modelSet(makeModel(                     discountRate.costs = 0.0,
+                                                                                                                          discountRate.effectiveness=0.0,)))
+
+if (FALSE) {models <- list(baseScenarios = modelSet(makeModel()),
                 intens2Yearly = modelSet(makeModel(screening_interval = 2)),
                 intens8Yearly = modelSet(makeModel(screening_interval = 8)),
                 discCost0Eff0 = modelSet(makeModel(discountRate.costs = 0.0,
@@ -253,3 +266,23 @@ save(models, file = file.path(path, paste0("one-way-sensitivity-", run_name,".RD
 ## "lowBiomarker_R15", "highBiomarker_R15", "lowBiomarker_R20",
 ## "highBiomarker_R20", "unFavUtilities_m20", "favUtilities_p20",
 ## "lowCosts", "highCosts", "lowBiopsyCost", "highBiopsyCost"), function(name) list(name = name, name=compare(name)))
+
+
+icer0 <- ICER(models$baseScenarios$modelPSA,models$baseScenarios$modelCtrl)
+icer10 <- ICER(models$baseScenarios$modelS3M,models$baseScenarios$modelPSA)
+icer15 <- ICER(models$baseScenarios$modelS3M15,models$baseScenarios$modelPSA)
+icer20 <- ICER(models$baseScenarios$modelS3M20,models$baseScenarios$modelPSA)
+
+plot(range(-icer0$delta.QALE,icer10$delta.QALE,icer15$delta.QALE,icer20$delta.QALE)*c(1,1.2),
+     range(-icer0$delta.costs,icer10$delta.costs,icer15$delta.costs,icer20$delta.costs)*1.1,
+     type="n", xlab="Differential effectiveness (QALY)", ylab="Differential costs (€)")
+pointsAndText = function(x,y,...) {
+  points(x,y,pch=19); text(x,y,...)
+}
+abline(v=0,col="lightgrey")
+abline(h=0,col="lightgrey")
+pointsAndText(0,0,"PSA",pos=3)
+pointsAndText(-icer0$delta.QALE, -icer0$delta.costs,"No screening",pos=4)
+pointsAndText(icer10$delta.QALE, icer10$delta.costs,"S3M (1+)",pos=2)
+pointsAndText(icer15$delta.QALE, icer15$delta.costs,"S3M (1.5+)",pos=2)
+pointsAndText(icer20$delta.QALE, icer20$delta.costs,"S3M (2+)",pos=1)

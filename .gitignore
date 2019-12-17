@@ -5,3 +5,5 @@
 .Rhistory
 prostata*.tar.gz
 .Rproj.user/*
+src/prostata.dll
+prostata.Rproj

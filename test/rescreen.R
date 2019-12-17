@@ -1,7 +1,8 @@
 ## Shuang's parameters
+## in shell, ssh marcle@vector and (ess-remote) on that buffer
 library(prostata)
-n.sim <- 1e4
-mc.cores <- 1
+n.sim <- 1e5
+mc.cores <- 10
 summary(fit1 <- callFhcrc(n.sim, screen="noScreening", mc.cores=mc.cores,
                           flatPop=TRUE,pop=1995-55,
                           parms=c(prostata:::ShuangParameters,
@@ -32,7 +33,6 @@ prostata:::FhcrcParameters$utility_estimates
 prostata:::ShuangParameters$utility_estimates
 prostata:::FhcrcParameters$utility_duration
 prostata:::ShuangParameters$utility_duration
-
 
 summary(fit1); summary(fit2); summary(fit3)
 ICER(fit2,fit1)
@@ -66,16 +66,21 @@ t.test(fit2$indiv_utilities-fit$indiv_utilities)
 
 ## Check using the old code (log(50000)=10.8)
 library(prostata)
-fit <- callFhcrc(1e5, mc.cores=2,flatPop=TRUE,pop=1995-55,
+mc.cores <- 10
+n <- 1e5
+fit <- callFhcrc(n, mc.cores=mc.cores,flatPop=TRUE,pop=1995-55,
                  parms=list(formal_compliance=1))
 summary(fit)
 summary(fit$indiv_utilities)
 summary(fit$indiv_costs)
-fit2 <- callFhcrc(1e5, mc.cores=2,flatPop=TRUE,pop=1995-55,
+fit2 <- callFhcrc(n, mc.cores=mc.cores,flatPop=TRUE,pop=1995-55,
                   parms=list(formal_compliance=1,
                              start_screening=55,
                              screening_interval=4),
                   screen="regular_screen")
+summary(fit)
+summary(fit2)
+ICER(fit2,fit)
 library(boot)
 boot(data.frame(x=fit2$indiv_costs-fit$indiv_costs,
                 y=fit2$indiv_utilities-fit$indiv_utilities),

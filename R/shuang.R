@@ -49,7 +49,7 @@ ShuangParameters <- list(
                         + 3500*0.33                               # MRI cost
                         + 3010*1.5*0.33                           # Biopsy cost (SBx|TBx)
                         + 4238.25*0.33,                           # Pathology of biopsy
-                        "ADT" = 22309.44*1.5,                     # NEW: Chemo and hormone therapy
+                        "ADT+chemo" = 22309.44*1.5,               # NEW: Chemo and hormone therapy
                         "Post-Tx follow-up - yearly first" = 1460 # Urologist and nurse consultation
                         + 355.82                                  # PSA test sampling
                         + 57.4,                                   # PSA analysis
@@ -123,7 +123,7 @@ ShuangParameters <- list(
                           "Radiation therapy part 2" = 0.828,  # Extended review by SH (Korfarge 2005, Hall 2015)
                           "Active surveillance" = 0.9,         # Loeb 2018
                           "Postrecovery period" = 0.861,       # Extended review by SH (Torvinen 2013, Waston 2016) 
-                          "ADT" = 0.719,                       # Extended review by SH (Hall 2019, Diels 2015, Loriot 2015, Skaltsa 2014, Wu 2007, Chi 2018)
+                          "ADT+chemo" = 0.727,                 # Extended review by SH (Hall 2019, Diels 2015, Loriot 2015, Skaltsa 2014, Wu 2007, Chi 2018)
                           "Palliative therapy" = 0.62,         # Magnus 2019
                           "Terminal illness" = 0.40,           # Heijnsdijk 2012
                           "Death" = 0.00),
@@ -142,7 +142,7 @@ ShuangParameters <- list(
                          "Radiation therapy part 2" = 10/12,
                          "Active surveillance" = 7,
                          "Postrecovery period" = 9,
-                         "ADT" = 1.5,                         # Assumption!!!
+                         "ADT+chemo" = 1.5,                   # Assumption!!!
                          "Palliative therapy" = 12/12,        # Palliative therapy 
                          "Terminal illness" = 6/12),
     pMRIposG0=0.47,               # Pr(MRI+ | ISUP 0 || undetectable)

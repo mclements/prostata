@@ -1242,25 +1242,25 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	  scheduleUtilityChange(now(), "Terminal illness");
       } else { // Shuang:
 	double age_adt = age_cancer_death - in->utility_duration["Palliative therapy"] - in->utility_duration["Terminal illness"]
-	   - in->utility_duration["ADT"];
+	   - in->utility_duration["ADT+chemo"];
 	double age_palliative = age_cancer_death - in->utility_duration["Palliative therapy"] - in->utility_duration["Terminal illness"];
 	double age_terminal = age_cancer_death - in->utility_duration["Terminal illness"];
 	if (age_adt>now()) { // cancer death more than 36 months after diagnosis
 	  scheduleUtilityChange(age_adt, age_palliative,
-				in->utility_estimates["ADT"]);
+				in->utility_estimates["ADT+chemo"]);
 	  scheduleUtilityChange(age_palliative, "Palliative therapy");
 	  scheduleUtilityChange(age_terminal, "Terminal illness");
-	  add_costs("ADT");
+	  add_costs("ADT+chemo");
 	  add_costs("Palliative therapy - yearly");
 	  add_costs("Terminal illness");
 	  lost_productivity("Terminal illness");
 	}
 	else if (age_palliative>now()) { // cancer death between 36 and 18 months of diagnosis
 	  scheduleUtilityChange(now(), age_palliative,
-				in->utility_estimates["ADT"]);
+				in->utility_estimates["ADT+chemo"]);
 	  scheduleUtilityChange(age_palliative, "Palliative therapy");
 	  scheduleUtilityChange(age_terminal, "Terminal illness");
-	  add_costs("ADT", Direct, (age_palliative - now())/in->utility_duration["ADT"]);
+	  add_costs("ADT+chemo", Direct, (age_palliative - now())/in->utility_duration["ADT+chemo"]);
 	  add_costs("Palliative therapy - yearly");
 	  add_costs("Terminal illness");
 	  lost_productivity("Terminal illness");

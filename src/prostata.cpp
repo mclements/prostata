@@ -52,7 +52,7 @@ namespace fhcrc_example {
                 toScreenDiagnosis, toOverDiagnosis, toOrganised, toTreatment,
                 toCM, toRP, toRT, toADT, toUtilityChange, toUtilityRemove,
                 toSTHLM3, toOpportunistic, toT3plus, toCancelScreens,
-                toYearlyActiveSurveillance, toYearlyPostTxFollowUp, toMRI};
+                toYearlyActiveSurveillance, toYearlyPostTxFollowUp, toMRI, toPalliative, toTerminal};
 
   enum screen_t {noScreening, randomScreen50to70, twoYearlyScreen50to70, fourYearlyScreen50to70,
 		 screen50, screen60, screen70, screenUptake, stockholm3_goteborg, stockholm3_risk_stratified,
@@ -1183,17 +1183,19 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       if (tx == CM) scheduleAt(now(), toCM);
       if (tx == RP) scheduleAt(now(), toRP);
       if (tx == RT) scheduleAt(now(), toRT);
-      // check for ADT
-      double pADT =
-	in->pradt(tx,
-	      bounds<double>(now(),50,79),
-	      bounds<double>(year,1973,2004),
-	      grade);
-      if (u_adt < pADT)  {
-	adt = true;
-	scheduleAt(now(), toADT);
+      if (in->bparameter["Andreas"]) {
+	// check for ADT
+	double pADT =
+	  in->pradt(tx,
+		    bounds<double>(now(),50,79),
+		    bounds<double>(year,1973,2004),
+		    grade);
+	if (u_adt < pADT)  {
+	  adt = true;
+	  scheduleAt(now(), toADT);
+	}
+	if (in->debug) Rprintf("id=%i, adt=%d, u=%8.6f, pADT=%8.6f\n",id,adt,u_adt,pADT);
       }
-      if (in->debug) Rprintf("id=%i, adt=%d, u=%8.6f, pADT=%8.6f\n",id,adt,u_adt,pADT);
     }
     // reset the random number stream
     in->rngNh->set();
@@ -1245,37 +1247,33 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	   - in->utility_duration["ADT+chemo"];
 	double age_palliative = age_cancer_death - in->utility_duration["Palliative therapy"] - in->utility_duration["Terminal illness"];
 	double age_terminal = age_cancer_death - in->utility_duration["Terminal illness"];
-	if (age_adt>now()) { // cancer death more than 36 months after diagnosis
+	// check age_adt (two cases)
+	if (now() <= age_adt) { 
 	  scheduleUtilityChange(age_adt, age_palliative,
 				in->utility_estimates["ADT+chemo"]);
-	  scheduleUtilityChange(age_palliative, "Palliative therapy");
-	  scheduleUtilityChange(age_terminal, "Terminal illness");
-	  add_costs("ADT+chemo");
-	  add_costs("Palliative therapy - yearly");
-	  add_costs("Terminal illness");
-	  lost_productivity("Terminal illness");
-	}
-	else if (age_palliative>now()) { // cancer death between 36 and 18 months of diagnosis
+	  scheduleAt(age_adt, toADT);
+	} else if (now() < age_palliative) {
 	  scheduleUtilityChange(now(), age_palliative,
 				in->utility_estimates["ADT+chemo"]);
-	  scheduleUtilityChange(age_palliative, "Palliative therapy");
+	  scheduleAt(now(), toADT);
+	}
+	// check age_palliative (two cases)
+	if (now() <= age_palliative) { 
+	  scheduleUtilityChange(age_palliative, age_terminal,
+				in->utility_estimates["Palliative therapy"]);
+	  scheduleAt(age_palliative, toPalliative);
+	} else if (now() < age_palliative) {
+	  scheduleUtilityChange(now(), age_palliative,
+				in->utility_estimates["Palliative therapy"]);
+	  scheduleAt(now(), toPalliative);
+	}
+	// check age_terminal (two cases)
+	if (now() <= age_terminal) { 
 	  scheduleUtilityChange(age_terminal, "Terminal illness");
-	  add_costs("ADT+chemo", Direct, (age_palliative - now())/in->utility_duration["ADT+chemo"]);
-	  add_costs("Palliative therapy - yearly");
-	  add_costs("Terminal illness");
-	  lost_productivity("Terminal illness");
-	}
-	else if (age_terminal>now()) { // cancer death between 18 and 6 months of diagnosis
-	  scheduleUtilityChange(now(), age_terminal, in->utility_estimates["Palliative therapy"]);
-	  scheduleUtilityChange(age_terminal,"Terminal illness");
-	  add_costs("Palliative therapy - yearly", Direct, (age_terminal - now())/in->utility_duration["Palliative therapy"]);
-	  add_costs("Terminal illness");
-	  lost_productivity("Terminal illness");
-	}
-	else { // cancer death within 6 months of diagnosis/treatment
+	  scheduleAt(age_terminal, toTerminal);
+	} else if (now() < age_terminal) {
 	  scheduleUtilityChange(now(), "Terminal illness");
-	  add_costs("Terminal illness");
-	  lost_productivity("Terminal illness");
+	  scheduleAt(now(), toTerminal);
 	}
       }
     }
@@ -1379,7 +1377,22 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     break;
 
   case toADT:
-    // costs & utilities??
+    if (!in->bparameter("Andreas")) {
+      add_costs("ADT+chemo");
+    }
+    break;
+
+  case toPalliative:
+    if (!in->bparameter("Andreas")) {
+      add_costs("Palliative therapy - yearly");
+    }
+    break;
+
+  case toTerminal:
+    if (!in->bparameter("Andreas")) {
+      add_costs("Terminal illness");
+      lost_productivity("Terminal illness");
+    }
     break;
 
   case toUtilityChange:

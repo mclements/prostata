@@ -778,7 +778,8 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
             "toScreenDiagnosis", "toOverDiagnosis", "toOrganised","toTreatment",
             "toCM","toRP", "toRT","toADT","toUtilityChange","toUtilityRemove",
             "toSTHLM3", "toOpportunistic","toT3plus", "toCancelScreens",
-            "toYearlyActiveSurveillance", "toYearlyPostTxFollowUp", "toMRI")
+            "toYearlyActiveSurveillance", "toYearlyPostTxFollowUp", "toMRI",
+            "toPalliative", "toTerminal")
   diagnosisT <- c("NotDiagnosed","ClinicalDiagnosis","ScreenDiagnosis")
   treatmentT <- c("no_treatment","CM","RP","RT")
   psaT <- c("PSA<3","PSA>=3") # not sure where to put this...

@@ -1,7 +1,7 @@
 ## Shuang's parameters
 ## in shell, ssh marcle@vector and (ess-remote) on that buffer
 library(prostata)
-n.sim <- 1e5
+n.sim <- 1e4
 mc.cores <- 10
 summary(fit1 <- callFhcrc(n.sim, screen="noScreening", mc.cores=mc.cores,
                           flatPop=TRUE,pop=1995-55,
@@ -23,6 +23,9 @@ summary(fit3 <- callFhcrc(n.sim, screen="regular_screen",
                                   formal_compliance=1),
                           mc.cores=mc.cores))
 
+xtabs(I(costs/1e6)~item+type,fit1$societal.costs)
+xtabs(I(costs/1e6)~item+type,fit2$societal.costs)
+
 prostata:::FhcrcParameters$cost_parameters
 prostata:::ShuangParameters$cost_parameters
 prostata:::FhcrcParameters$production
@@ -33,6 +36,8 @@ prostata:::FhcrcParameters$utility_estimates
 prostata:::ShuangParameters$utility_estimates
 prostata:::FhcrcParameters$utility_duration
 prostata:::ShuangParameters$utility_duration
+prostata:::FhcrcParameters$currency_rate
+prostata:::ShuangParameters$currency_rate
 
 summary(fit1); summary(fit2); summary(fit3)
 ICER(fit2,fit1)
@@ -44,10 +49,29 @@ d <- rbind("Un-screened"=c(0,0),
 plot(d, xlim=1.05*range(d[,1]), ylim=1.05*range(d[,2]))
 text(d,labels=rownames(d),pos=c(4,2,2))
 
+## One-way sensitivity analysis
+Parameters <- prostata:::ShuangParameters
+Parameters$utility_estimates["Active surveillance"] <- 0.97
+library(prostata)
+n.sim <- 1e6
+mc.cores <- 10
+summary(fit1 <- callFhcrc(n.sim, screen="noScreening", mc.cores=mc.cores,
+                          flatPop=TRUE,pop=1995-55,
+                          parms=c(Parameters,
+                                  formal_compliance=1)))
+summary(fit2 <- callFhcrc(n.sim, screen="regular_screen",
+                          flatPop=TRUE,pop=1995-55,
+                          parms=c(Parameters,
+                                  formal_compliance=1,
+                                  start_screening=55,
+                                  screening_interval=4),
+                          mc.cores=mc.cores))
+ICER(fit2,fit1)
+
 ## Monte Carlo uncertainty in the ICER
 library(boot)
-boot(data.frame(x=fit2$indiv_costs-fit$indiv_costs,
-                y=fit2$indiv_utilities-fit$indiv_utilities),
+boot(data.frame(x=fit2$indiv_costs-fit1$indiv_costs,
+                y=fit2$indiv_utilities-fit1$indiv_utilities),
      function(d, w) log(mean(d$x[w])/mean(d$y[w])),
      R=1000)
 local({
@@ -59,34 +83,51 @@ local({
     c(log_ratio=log(muX/muY),
       sd_log_ratio=sqrt((sd(X)/muX/sqrt(n))^2+(sd(Y)/muY/sqrt(n))^2))
     })
-plot(density(fit$indiv_utilities-fit2$indiv_utilities))
-plot(density(fit$indiv_costs-fit2$indiv_costs))
-t.test(fit2$indiv_costs-fit$indiv_costs)
-t.test(fit2$indiv_utilities-fit$indiv_utilities)
+plot(density(fit1$indiv_utilities-fit2$indiv_utilities))
+plot(density(fit1$indiv_costs-fit2$indiv_costs))
+t.test(fit2$indiv_costs-fit1$indiv_costs)
+t.test(fit2$indiv_utilities-fit1$indiv_utilities)
 
 ## Check using the old code (log(50000)=10.8)
 library(prostata)
 mc.cores <- 10
-n <- 1e5
-fit <- callFhcrc(n, mc.cores=mc.cores,flatPop=TRUE,pop=1995-55,
+n <- 1e6
+fit1.old <- callFhcrc(n, mc.cores=mc.cores,flatPop=TRUE,pop=1995-55,
                  parms=list(formal_compliance=1))
-summary(fit)
-summary(fit$indiv_utilities)
-summary(fit$indiv_costs)
-fit2 <- callFhcrc(n, mc.cores=mc.cores,flatPop=TRUE,pop=1995-55,
+fit2.old <- callFhcrc(n, mc.cores=mc.cores,flatPop=TRUE,pop=1995-55,
                   parms=list(formal_compliance=1,
                              start_screening=55,
                              screening_interval=4),
                   screen="regular_screen")
-summary(fit)
-summary(fit2)
-ICER(fit2,fit)
+summary(fit1.old)
+summary(fit2.old)
+ICER(fit2.old,fit1.old)
+xtabs(I(costs/1e6)~item+type,fit1.old$societal.costs)
+xtabs(I(costs/1e6)~item+type,fit2.old$societal.costs)
 library(boot)
-boot(data.frame(x=fit2$indiv_costs-fit$indiv_costs,
-                y=fit2$indiv_utilities-fit$indiv_utilities),
+boot(data.frame(x=fit2$indiv_costs-fit1$indiv_costs,
+                y=fit2$indiv_utilities-fit1$indiv_utilities),
      function(d, w) log(mean(d$x[w])/mean(d$y[w])),
      R=1000)
-ICER(fit2,fit)
+
+
+xtabs(I(costs/1e6)~item+type,fit1.old$societal.costs)
+xtabs(I(costs/1e6)~item+type,fit1$societal.costs)
+##
+xtabs(I(costs/1e6)~item+type,fit2.old$societal.costs)
+xtabs(I(costs/1e6)~item+type,fit2$societal.costs)
+
+xtabs(I(ut/1e6)~dx,fit1.old$summary$ut)
+xtabs(I(ut/1e6)~dx,fit2.old$summary$ut)
+
+
+## proportion of deaths that are prostate cancer
+other=sum(subset(fit1$summary$events,event=="toOtherDeath")$n)
+pca=sum(subset(fit1$summary$events,event=="toCancerDeath")$n)
+pca/(pca+other)
+other=sum(subset(fit2$summary$events,event=="toOtherDeath")$n)
+pca=sum(subset(fit2$summary$events,event=="toCancerDeath")$n)
+pca/(pca+other)
 
 refresh
 require(foreign)

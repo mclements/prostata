@@ -85,11 +85,11 @@ myreport(fit3,c("toClinicalDiagnosis","toScreenDiagnosis"),
 
 
 # BASE CASE(S2): HSV sets by using PORPUS-U
-ShuangParametersPorpusU <- ShuangParameters
+ShuangParametersPorpusU <- prostata:::ShuangParameters
 
 library(prostata)
 n.sim <- 1e7
-mc.cores <- 1
+mc.cores <- 30
 summary(fit1.S2 <- callFhcrc(n.sim, screen="noScreening", mc.cores=mc.cores,
                              flatPop=TRUE,pop=1995-55,
                              parms=c(ShuangParametersPorpusU,
@@ -233,7 +233,7 @@ ShuangParameters_S0$utility_estimates <-  c("Invitation" = 1,                   
                                             "Death" = 0.00)
 
 n.sim <- 1e7
-mc.cores <- 1
+mc.cores <- 30
 summary(fit1.S0 <- callFhcrc(n.sim, screen="noScreening", mc.cores=mc.cores,
                           flatPop=TRUE,pop=1995-55,
                           parms=c(ShuangParameters_S0,
@@ -384,7 +384,7 @@ ShuangParameters_S1$utility_estimates <-  c("Invitation" = 1,                   
                                             "Death" = 0.00)
 
 n.sim <- 1e7
-mc.cores <- 1
+mc.cores <- 30
 summary(fit1.S1 <- callFhcrc(n.sim, screen="noScreening", mc.cores=mc.cores,
                           flatPop=TRUE,pop=1995-55,
                           parms=c(ShuangParameters_S1,
@@ -505,11 +505,12 @@ sink()
 
 
 ## SENSITIVITY(S3). Changing the price of prostatectomy to 96,438 SEK 
+library(prostata)
 ShuangParameters_S3 <- prostata:::ShuangParameters
 ShuangParameters_S3$cost_parameters["Prostatectomy"] <-  96438+6302.19*20*0.25+1460*1
 
 n.sim <- 1e7
-mc.cores <- 1
+mc.cores <- 30
 summary(fit1.S3 <- callFhcrc(n.sim, screen="noScreening", mc.cores=mc.cores,
                              flatPop=TRUE,pop=1995-55,
                              parms=c(ShuangParameters_S3,
@@ -696,20 +697,31 @@ summary(fit2 <- callFhcrc(n.sim, screen="regular_screen",
 ICER(fit2,fit1)
 
 ## Monte Carlo uncertainty in the ICER
-library(boot)
-boot(data.frame(x=fit2$indiv_costs-fit1$indiv_costs,
-                y=fit2$indiv_utilities-fit1$indiv_utilities),
-     function(d, w) log(mean(d$x[w])/mean(d$y[w])),
-     R=1000)
-local({
-    X <- fit2$indiv_costs-fit1$indiv_costs
-    Y <- fit2$indiv_utilities-fit1$indiv_utilities
-    muX <- mean(X)
-    muY <- mean(Y)
-    n <- length(X)
-    c(log_ratio=log(muX/muY),
-      sd_log_ratio=sqrt((sd(X)/muX/sqrt(n))^2+(sd(Y)/muY/sqrt(n))^2))
+mc.uncertainty <- function(fit1,fit2,R=1000,do.boot=FALSE) {
+    out <- local({
+        X <- fit2$indiv_costs-fit1$indiv_costs
+        Y <- fit2$indiv_utilities-fit1$indiv_utilities
+        muX <- mean(X)
+        muY <- mean(Y)
+        n <- length(X)
+        list(icer=muX/muY,
+             sd_log_ratio=sqrt((sd(X)/muX/sqrt(n-1))^2+(sd(Y)/muY/sqrt(n-1))^2))
     })
+    out$icer.lower = with(out, icer*exp(-1.96*sd_log_ratio))
+    out$icer.upper = with(out, icer*exp(1.96*sd_log_ratio))
+    if (do.boot) {
+        stopifnot(require(boot))
+        d <- data.frame(x=fit2$indiv_costs-fit1$indiv_costs,
+                        y=fit2$indiv_utilities-fit1$indiv_utilities)
+        boot1 <- boot(d,
+                      function(d, w) log(mean(d$x[w])/mean(d$y[w])),
+                      R=R)
+        out <- c(list(boot=boot1),out)
+    }
+    out
+}
+mc.uncertainty(fit1.S2,fit2.S2)
+mc.uncertainty(fit1.S2,fit3.S2)
 plot(density(fit1$indiv_utilities-fit2$indiv_utilities))
 plot(density(fit1$indiv_costs-fit2$indiv_costs))
 t.test(fit2$indiv_costs-fit1$indiv_costs)

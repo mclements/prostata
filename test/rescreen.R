@@ -1,61 +1,687 @@
 ## Shuang's parameters
 ## in shell, "ssh -X marcle@vector" and (ess-remote) on that buffer
+
+## A: Discount funtion
+## B: Events summary
+## BASE CASE (S2): Simulation by HSV set PORPUS-U
+## Sensitivity (S0): Simulation by HSV set EQ-5D
+## Sensitivity (S1): Simulation by HSV set Heijnsdijk 2012
+## Sensitivity (S3): Simulation by chaning RP price according to 2018 price of Karolinska Sjukhuset
+## Backup sensitivity (S4): Simulation by MRI test characteristics updates (NOT USED, NOT RUN YET)
+
+## A. discount function
+plot(0:100,(1/1.03)^(0:100), type="l")
+discounted <- function(object,discountRate) {
+  LE <- local({
+    pt <- xtabs(pt~age,data=object$summary$pt)
+    ages <- as.numeric(names(pt))+0.5 # mid-point approximation
+    sum((1/(1+discountRate))^ages*pt)/object$n
+  })
+  societal.costs <- local({
+    costs <- xtabs(costs~age,data=object$societal.costs)
+    ages <- as.numeric(names(costs))+0.5 # mid-point approximation
+    undiscounted.costs <- costs*(1+object$simulation.parameters$discountRate.costs)^ages
+    sum((1/(1+discountRate))^ages*undiscounted.costs)/object$n
+  })
+  healthsector.costs <- local({
+    costs <- xtabs(costs~age,data=object$healthsector.costs)
+    ages <- as.numeric(names(costs))+0.5 # mid-point approximation
+    undiscounted.costs <- costs*(1+object$simulation.parameters$discountRate.costs)^ages
+    sum((1/(1+discountRate))^ages*undiscounted.costs)/object$n
+  })
+  utilities <- local({
+    utilities <- xtabs(ut~age,data=object$summary$ut)
+    ages <- as.numeric(names(utilities))+0.5 # mid-point approximation
+    undiscounted.utilities <- 
+      utilities*(1+object$simulation.parameters$discountRate.effectiveness)^ages
+    sum((1/(1+discountRate))^ages*undiscounted.utilities)/object$n
+  })
+  list(utilities=utilities,
+       societal.costs=societal.costs,
+       healthsector.costs=healthsector.costs,
+       LE=LE)
+}
+
+#Example
+# discounted(fit1,0)
+# discounted(fit1,0.03)
+# discounted(fit1,0.05)
+# discounted.costs(fit1,0)
+# discounted.costs(fit1,0.05)
+
+
+## B.Events summary 
+## check the event names
+table(fit1$summary$events$event)
+
+## check that we got the names right
+xtabs(n~event,
+      data=subset(fit2$summary$events, 
+                  event %in% c("toClinicalDiagnosticBiopsy","toScreenInitiatedBiopsy")))
+
+myreport <- function(object,names,per=1e4,subset=TRUE) {
+  sum(subset(object$summary$events, event %in% names & subset)$n)/object$n*per
+}
+
+#Example
+myreport(fit1,c("toClinicalDiagnosticBiopsy","toScreenInitiatedBiopsy"))
+myreport(fit2,c("toClinicalDiagnosticBiopsy","toScreenInitiatedBiopsy"))
+myreport(fit3,c("toClinicalDiagnosticBiopsy","toScreenInitiatedBiopsy"))
+
+myreport(fit1,"toMRI")
+myreport(fit2,"toMRI")
+myreport(fit3,"toMRI")
+
+myreport(fit1,c("toClinicalDiagnosis","toScreenDiagnosis"))
+myreport(fit2,c("toClinicalDiagnosis","toScreenDiagnosis"))
+myreport(fit3,c("toClinicalDiagnosis","toScreenDiagnosis"))
+
+myreport(fit1,c("toClinicalDiagnosis","toScreenDiagnosis"),
+         subset=(fit1$summary$event$age>=55 & fit1$summary$event$age<70))
+myreport(fit2,c("toClinicalDiagnosis","toScreenDiagnosis"),
+         subset=(fit2$summary$event$age>=55 & fit2$summary$event$age<70))
+myreport(fit3,c("toClinicalDiagnosis","toScreenDiagnosis"),
+         subset=(fit3$summary$event$age>=55 & fit3$summary$event$age<70))
+
+
+# BASE CASE(S2): HSV sets by using PORPUS-U
+ShuangParametersPorpusU <- ShuangParameters
+
 library(prostata)
-n.sim <- 1e6
-mc.cores <- 10
-summary(fit1 <- callFhcrc(n.sim, screen="noScreening", mc.cores=mc.cores,
+n.sim <- 1e7
+mc.cores <- 1
+summary(fit1.S2 <- callFhcrc(n.sim, screen="noScreening", mc.cores=mc.cores,
+                             flatPop=TRUE,pop=1995-55,
+                             parms=c(ShuangParametersPorpusU,
+                                     formal_compliance=1)))
+summary(fit2.S2 <- callFhcrc(n.sim, screen="regular_screen",
+                             flatPop=TRUE,pop=1995-55,
+                             parms=c(ShuangParametersPorpusU,
+                                     formal_compliance=1,
+                                     start_screening=55,
+                                     screening_interval=4),
+                             mc.cores=mc.cores))
+summary(fit3.S2 <- callFhcrc(n.sim, screen="regular_screen",
+                             flatPop=TRUE,pop=1995-55,
+                             parms=c(ShuangParametersPorpusU,
+                                     MRI_screen=TRUE,
+                                     start_screening=55,
+                                     screening_interval=4,
+                                     formal_compliance=1),
+                             mc.cores=mc.cores))
+
+ICER(fit2.S2,fit1.S2)
+ICER(fit3.S2,fit2.S2)
+ICER(fit3.S2,fit1.S2)
+
+d.S2 <- d2.S2 <- rbind("Un-screened"=unlist(ICER(fit1.S2,fit2.S2)[2:3]),
+                       "PSA+SBx"=c(0,0),
+                       "PSA+MRI+TBx/SBx"=unlist(ICER(fit3.S2,fit2.S2)[2:3]))
+d2.S2[,"delta.QALE"] <- d.S2[,"delta.QALE"]*10000
+plot(d2.S2, xlim=1.05*range(d2.S2[,1]), ylim=1.05*range(d2.S2[,2]),
+     xlab="Incremental QALYs (years) per 10000 men", ylab="Incremental costs (€)")
+text(d2.S2,labels=rownames(d2.S2),pos=c(4,2,2))
+abline(v=0,lty=2)
+abline(h=0, lty=2)
+
+d.S2 <- d2.S2 <- rbind("Un-screened"=unlist(ICER(fit1.S2,fit2.S2)[2:3]),
+                       "PSA+SBx"=c(0,0),
+                       "PSA+MRI+TBx/SBx"=unlist(ICER(fit3.S2,fit2.S2)[2:3]))
+d2.S2[,"delta.QALE"] <- d.S2[,"delta.QALE"]*10000
+plot(d2.S2, xlim=c(-1.6,0.4), ylim=c(-120,60),
+     xlab="Incremental QALYs (years) per 10000 men", ylab="Incremental costs (€)",
+     main="Cost-effectiveness plane")
+text(d2.S2,labels=rownames(d2.S2),pos=c(4,2,4))
+abline(v=0,lty=2)
+abline(h=0, lty=2)
+
+save(fit1.S2, file="fit1.S2_PORPUS-U.RData")
+save(fit2.S2, file="fit2.S2_PORPUS-U.RData")
+save(fit3.S2, file="fit3.S2_PORPUS-U.RData")
+
+## BASE CASE(S2): Save the results (currently the base case)
+sink("output_PORPUSU.txt")
+print(summary(fit1.S2))
+print(summary(fit2.S2))
+print(summary(fit3.S2))
+print(ICER(fit2.S2,fit1.S2))
+print(ICER(fit3.S2,fit2.S2))
+print(ICER(fit3.S2,fit1.S2))
+sink()
+
+## BASE CASE(S2): Discounted LY and costs for S2 - PORPUS-U (currenetly the base case)
+discounted(fit1.S2,0)
+discounted(fit1.S2,0.03)
+discounted(fit1.S2,0.05)
+
+discounted(fit2.S2,0)
+discounted(fit2.S2,0.03)
+discounted(fit2.S2,0.05)
+
+discounted(fit3.S2,0)
+discounted(fit3.S2,0.03)
+discounted(fit3.S2,0.05)
+
+sink("Output_Discounted LY and costs_S2_PORPUS-U_20191219.txt")
+discounted.S2 <- matrix(c(discounted(fit1.S2,0)$LE, discounted(fit2.S2,0)$LE,discounted(fit3.S2,0)$LE,
+                          discounted(fit1.S2,0.03)$LE, discounted(fit2.S2,0.03)$LE, discounted(fit3.S2,0.03)$LE,
+                          discounted(fit1.S2,0.05)$LE, discounted(fit2.S2,0.05)$LE, discounted(fit3.S2,0.05)$LE,
+                          discounted(fit1.S2,0)$utilities, discounted(fit2.S2,0)$utilities,discounted(fit3.S2,0)$utilities,
+                          discounted(fit1.S2,0.03)$utilities, discounted(fit2.S2,0.03)$utilities, discounted(fit3.S2,0.03)$utilities,
+                          discounted(fit1.S2,0.05)$utilities, discounted(fit2.S2,0.05)$utilities, discounted(fit3.S2,0.05)$utilities,
+                          discounted(fit1.S2,0)$healthsector.costs, discounted(fit2.S2,0)$healthsector.costs,discounted(fit3.S2,0)$healthsector.costs,
+                          discounted(fit1.S2,0.03)$healthsector.costs, discounted(fit2.S2,0.03)$healthsector.costs, discounted(fit3.S2,0.03)$healthsector.costs,
+                          discounted(fit1.S2,0.05)$healthsector.costs, discounted(fit2.S2,0.05)$healthsector.costs, discounted(fit3.S2,0.05)$healthsector.costs,
+                          discounted(fit1.S2,0)$societal.costs, discounted(fit2.S2,0)$societal.costs,discounted(fit3.S2,0)$societal.costs,
+                          discounted(fit1.S2,0.03)$societal.costs, discounted(fit2.S2,0.03)$societal.costs, discounted(fit3.S2,0.03)$societal.costs,
+                          discounted(fit1.S2,0.05)$societal.costs, discounted(fit2.S2,0.05)$societal.costs, discounted(fit3.S2,0.05)$societal.costs),
+                        ncol=3, byrow=TRUE)
+colnames(discounted.S2) <- c("No screening", "SBx", "MRI")
+rownames(discounted.S2) <- c("LY, undiscounted", "LY, 3% discounted", "LY, 5% discounted",
+                             "QALYs, undiscounted","QALYs, 3% discounted", "QALYs, 5% discounted",
+                             "Health sector, undiscounted","Health sector, 3% discounted", "Health sector, 5% discounted",
+                             "societal, undiscounted","societal, 3% discounted", "societal, 5% discounted")
+discounted.S2 <- as.table(discounted.S2)
+print(discounted.S2)
+sink()
+
+## BASE CASE(S2): Number of events including No.Biopsy, No.MRI and No.Diagnosis life time (currently the base case)
+sink("Output_myreport_S2_PORPUS-U_20191219.txt")
+myreport.S2 <- matrix(c(myreport(fit1.S2,"toMRI"),
+                        myreport(fit2.S2,"toMRI"),
+                        myreport(fit3.S2,"toMRI"),
+                        myreport(fit1.S2,c("toClinicalDiagnosticBiopsy","toScreenInitiatedBiopsy")),
+                        myreport(fit2.S2,c("toClinicalDiagnosticBiopsy","toScreenInitiatedBiopsy")),
+                        myreport(fit3.S2,c("toClinicalDiagnosticBiopsy","toScreenInitiatedBiopsy")),
+                        myreport(fit1.S2,c("toClinicalDiagnosis","toScreenDiagnosis")),
+                        myreport(fit2.S2,c("toClinicalDiagnosis","toScreenDiagnosis")),
+                        myreport(fit3.S2,c("toClinicalDiagnosis","toScreenDiagnosis")),
+                        myreport(fit1.S2,c("toClinicalDiagnosis","toScreenDiagnosis"),
+                                 subset=(fit1.S2$summary$event$age>=55 & fit1.S2$summary$event$age<70)),
+                        myreport(fit2.S2,c("toClinicalDiagnosis","toScreenDiagnosis"),
+                                 subset=(fit2.S2$summary$event$age>=55 & fit2.S2$summary$event$age<70)),
+                        myreport(fit3.S2,c("toClinicalDiagnosis","toScreenDiagnosis"),
+                                 subset=(fit3.S2$summary$event$age>=55 & fit3.S2$summary$event$age<70))),
+                      ncol=3, byrow=TRUE)
+colnames(myreport.S2) <- c("No screening", "SBx", "MRI")
+rownames(myreport.S2) <- c("MRI", "Biopsy", "Diagnosis","Diagnosis-screening")
+myreport.S2 <- as.table(myreport.S2)
+print(myreport.S2)
+sink()
+
+
+## SENSITIVITY(S0): Simulation by HSV set EQ-5D
+library(prostata)
+ShuangParameters_S0 <- prostata:::ShuangParameters
+ShuangParameters_S0$utility_estimates <-  c("Invitation" = 1,                    # Heijnsdijk 2012
+                                            "Formal PSA" = 0.99,                 # Heijnsdijk 2012
+                                            "Formal panel" = 0.99,               # Heijnsdijk 2012
+                                            "Opportunistic PSA" = 0.99,          # Heijnsdijk 2012
+                                            "Opportunistic panel" = 0.99,        # Heijnsdijk 2012
+                                            "Biopsy" = 0.90,                     # Heijnsdijk 2012
+                                            "Combined biopsy" = 0.90,            # Heijnsdijk 2012
+                                            "Cancer diagnosis" = 0.80,           # Heijnsdijk 2012
+                                            "Prostatectomy part 1" = 0.829,      # Hall 2015
+                                            "Prostatectomy part 2" = 0.893,      # Extended review by SH (Glazener 2011, Korfarge 2005, Hall 2015)
+                                            "Radiation therapy part 1" = 0.818,  # Hall 2015
+                                            "Radiation therapy part 2" = 0.828,  # Extended review by SH (Korfarge 2005, Hall 2015)
+                                            "Active surveillance" = 0.9,         # Loeb 2018
+                                            "Postrecovery period" = 0.861,       # Extended review by SH (Torvinen 2013, Waston 2016) 
+                                            "ADT+chemo" = 0.727,                 # Extended review by SH (Hall 2019, Diels 2015, Loriot 2015, Skaltsa 2014, Wu 2007, Chi 2018)
+                                            "Palliative therapy" = 0.62,         # Magnus 2019
+                                            "Terminal illness" = 0.40,           # Heijnsdijk 2012
+                                            "Death" = 0.00)
+
+n.sim <- 1e7
+mc.cores <- 1
+summary(fit1.S0 <- callFhcrc(n.sim, screen="noScreening", mc.cores=mc.cores,
                           flatPop=TRUE,pop=1995-55,
-                          parms=c(prostata:::ShuangParameters,
+                          parms=c(ShuangParameters_S0,
                                   formal_compliance=1)))
-summary(fit2 <- callFhcrc(n.sim, screen="regular_screen",
+summary(fit2.S0 <- callFhcrc(n.sim, screen="regular_screen",
                           flatPop=TRUE,pop=1995-55,
-                          parms=c(prostata:::ShuangParameters,
+                          parms=c(ShuangParameters_S0,
                                   formal_compliance=1,
                                   start_screening=55,
                                   screening_interval=4),
                           mc.cores=mc.cores))
-summary(fit3 <- callFhcrc(n.sim, screen="regular_screen",
+summary(fit3.S0 <- callFhcrc(n.sim, screen="regular_screen",
                           flatPop=TRUE,pop=1995-55,
-                          parms=c(prostata:::ShuangParameters,
+                          parms=c(ShuangParameters_S0,
                                   MRI_screen=TRUE,
                                   start_screening=55,
                                   screening_interval=4,
                                   formal_compliance=1),
                           mc.cores=mc.cores))
 
-xtabs(I(costs/1e5)~item+type,fit1$societal.costs)
-xtabs(I(costs/1e5)~item+type,fit2$societal.costs)
+# xtabs(I(costs/1e7)~item+type,fit1$societal.costs)
+# xtabs(I(costs/1e7)~item+type,fit2$societal.costs)
+# xtabs(I(costs/1e7)~item+type,fit3$societal.costs)
 
-prostata:::FhcrcParameters$cost_parameters
-prostata:::ShuangParameters$cost_parameters
-prostata:::FhcrcParameters$production
-prostata:::ShuangParameters$production
-prostata:::FhcrcParameters$lost_production_years
-prostata:::ShuangParameters$lost_production_years
-prostata:::FhcrcParameters$utility_estimates
-prostata:::ShuangParameters$utility_estimates
-prostata:::FhcrcParameters$utility_duration
-prostata:::ShuangParameters$utility_duration
-prostata:::FhcrcParameters$currency_rate
-prostata:::ShuangParameters$currency_rate
+# prostata:::FhcrcParameters$cost_parameters
+# prostata:::ShuangParameters$cost_parameters
+# prostata:::FhcrcParameters$production
+# prostata:::ShuangParameters$production
+# prostata:::FhcrcParameters$lost_production_years
+# prostata:::ShuangParameters$lost_production_years
+# prostata:::FhcrcParameters$utility_estimates
+# prostata:::ShuangParameters$utility_estimates
+# prostata:::FhcrcParameters$utility_duration
+# prostata:::ShuangParameters$utility_duration
+# prostata:::FhcrcParameters$currency_rate
+# prostata:::ShuangParameters$currency_rate
 
-summary(fit1); summary(fit2); summary(fit3)
-ICER(fit2,fit1)
-ICER(fit3,fit1)
-ICER(fit3,fit2)
-d <- rbind("Un-screened"=c(0,0),
-           "PSA+SBx"=unlist(ICER(fit2,fit1)[2:3]),
-           "PSA+MRI+TBx/SBx"=unlist(ICER(fit3,fit1)[2:3]))
-plot(d, xlim=1.05*range(d[,1]), ylim=1.05*range(d[,2]))
-text(d,labels=rownames(d),pos=c(4,2,2))
+ICER(fit2.S0,fit1.S0)
+ICER(fit3.S0,fit2.S0)
+ICER(fit3.S0,fit1.S0)
 
-## One-way sensitivity analysis
-Parameters <- prostata:::ShuangParameters
-Parameters$utility_estimates["Active surveillance"] <- 0.97
-Parameters$utility_estimates["Postrecovery period"] <- 0.95
+d.S0 <- d2.S0 <- rbind("Un-screened"=unlist(ICER(fit1.S0,fit2.S0)[2:3]),
+           "PSA+SBx"=c(0,0),
+           "PSA+MRI+TBx/SBx"=unlist(ICER(fit3.S0,fit2.S0)[2:3]))
+d2.S0[,"delta.QALE"] <- d.S0[,"delta.QALE"]*10000
+plot(d2.S0, xlim=1.05*range(d2.S0[,1]), ylim=1.05*range(d2.S0[,2]),
+     xlab="Incremental QALYs (years) per 10000 men", ylab="Incremental costs (€)")
+text(d2.S0,labels=rownames(d2.S0),pos=c(4,2,2))
+abline(v=0,lty=2)
+abline(h=0, lty=2)
+
+save(fit1.S0, file="fit1.S0_EQ-5D.RData")
+save(fit2.S0, file="fit2.S0_EQ-5D.RData")
+save(fit3.S0, file="fit3.S0_EQ-5D.RData")
+
+sink("Output_EQ-5D.txt")
+print(summary(fit1.S0))
+print(summary(fit2.S0))
+print(summary(fit3.S0))
+print(ICER(fit2.S0,fit1.S0))
+print(ICER(fit3.S0,fit2.S0))
+print(ICER(fit3.S0,fit1.S0))
+sink()
+
+# plot(c(0,10),c(0,10),type="n")
+# segments(1:2,1:2,3:4,5:6)
+# points(c(1:2,3:4),c(1:2,5:6))
+
+## SENSITIVITY(S0): Discounted LY and costs for S0 - EQ-5D
+discounted(fit1.S0,0)
+discounted(fit1.S0,0.03)
+discounted(fit1.S0,0.05)
+
+discounted(fit2.S0,0)
+discounted(fit2.S0,0.03)
+discounted(fit2.S0,0.05)
+
+discounted(fit3.S0,0)
+discounted(fit3.S0,0.03)
+discounted(fit3.S0,0.05)
+
+sink("Output_Discounted LY and costs_S0_EQ-5D.txt")
+discounted.S0 <- matrix(c(discounted(fit1.S0,0)$LE, discounted(fit2.S0,0)$LE,discounted(fit3.S0,0)$LE,
+                          discounted(fit1.S0,0.03)$LE, discounted(fit2.S0,0.03)$LE, discounted(fit3.S0,0.03)$LE,
+                          discounted(fit1.S0,0.05)$LE, discounted(fit2.S0,0.05)$LE, discounted(fit3.S0,0.05)$LE,
+                          discounted(fit1.S0,0)$utilities, discounted(fit2.S0,0)$utilities,discounted(fit3.S0,0)$utilities,
+                          discounted(fit1.S0,0.03)$utilities, discounted(fit2.S0,0.03)$utilities, discounted(fit3.S0,0.03)$utilities,
+                          discounted(fit1.S0,0.05)$utilities, discounted(fit2.S0,0.05)$utilities, discounted(fit3.S0,0.05)$utilities,
+                          discounted(fit1.S0,0)$healthsector.costs, discounted(fit2.S0,0)$healthsector.costs,discounted(fit3.S0,0)$healthsector.costs,
+                          discounted(fit1.S0,0.03)$healthsector.costs, discounted(fit2.S0,0.03)$healthsector.costs, discounted(fit3.S0,0.03)$healthsector.costs,
+                          discounted(fit1.S0,0.05)$healthsector.costs, discounted(fit2.S0,0.05)$healthsector.costs, discounted(fit3.S0,0.05)$healthsector.costs,
+                          discounted(fit1.S0,0)$societal.costs, discounted(fit2.S0,0)$societal.costs,discounted(fit3.S0,0)$societal.costs,
+                          discounted(fit1.S0,0.03)$societal.costs, discounted(fit2.S0,0.03)$societal.costs, discounted(fit3.S0,0.03)$societal.costs,
+                          discounted(fit1.S0,0.05)$societal.costs, discounted(fit2.S0,0.05)$societal.costs, discounted(fit3.S0,0.05)$societal.costs),
+                        ncol=3, byrow=TRUE)
+colnames(discounted.S0) <- c("No screening", "SBx", "MRI")
+rownames(discounted.S0) <- c("LY, undiscounted", "LY, 3% discounted", "LY, 5% discounted",
+                             "QALYs, undiscounted","QALYs, 3% discounted", "QALYs, 5% discounted",
+                             "Health sector, undiscounted","Health sector, 3% discounted", "Health sector, 5% discounted",
+                             "societal, undiscounted","societal, 3% discounted", "societal, 5% discounted")
+discounted.S0 <- as.table(discounted.S0)
+print(discounted.S0)
+sink()
+
+## SENSITIVITY(S0): Number of events including No.Biopsy, No.MRI and No.Diagnosis life time - EQ-5D
+sink("Output_myreport_S0_EQ-5D.txt")
+myreport.S0 <- matrix(c(myreport(fit1.S0,"toMRI"),
+                        myreport(fit2.S0,"toMRI"),
+                        myreport(fit3.S0,"toMRI"),
+                        myreport(fit1.S0,c("toClinicalDiagnosticBiopsy","toScreenInitiatedBiopsy")),
+                        myreport(fit2.S0,c("toClinicalDiagnosticBiopsy","toScreenInitiatedBiopsy")),
+                        myreport(fit3.S0,c("toClinicalDiagnosticBiopsy","toScreenInitiatedBiopsy")),
+                        myreport(fit1.S0,c("toClinicalDiagnosis","toScreenDiagnosis")),
+                        myreport(fit2.S0,c("toClinicalDiagnosis","toScreenDiagnosis")),
+                        myreport(fit3.S0,c("toClinicalDiagnosis","toScreenDiagnosis")),
+                        myreport(fit1.S0,c("toClinicalDiagnosis","toScreenDiagnosis"),
+                                 subset=(fit1.S0$summary$event$age>=55 & fit1.S0$summary$event$age<70)),
+                        myreport(fit2.S0,c("toClinicalDiagnosis","toScreenDiagnosis"),
+                                 subset=(fit2.S0$summary$event$age>=55 & fit2.S0$summary$event$age<70)),
+                        myreport(fit3.S0,c("toClinicalDiagnosis","toScreenDiagnosis"),
+                                 subset=(fit3.S0$summary$event$age>=55 & fit3.S0$summary$event$age<70))),
+                      ncol=3, byrow=TRUE)
+colnames(myreport.S0) <- c("No screening", "SBx", "MRI")
+rownames(myreport.S0) <- c("MRI", "Biopsy", "Diagnosis","Diagnosis-screening")
+myreport.S0 <- as.table(myreport.S0)
+print(myreport.S0)
+sink()
+
+
+## SENSITIVITY(S1). Changing HSV set by using Heijnsdijk 2012 
+ShuangParameters_S1 <- prostata:::ShuangParameters
+ShuangParameters_S1$utility_estimates <-  c("Invitation" = 1,                    # Heijnsdijk 2012
+                                            "Formal PSA" = 0.99,                 # Heijnsdijk 2012
+                                            "Formal panel" = 0.99,               # Heijnsdijk 2012
+                                            "Opportunistic PSA" = 0.99,          # Heijnsdijk 2012
+                                            "Opportunistic panel" = 0.99,        # Heijnsdijk 2012
+                                            "Biopsy" = 0.90,                     # Heijnsdijk 2012
+                                            "Cancer diagnosis" = 0.80,           # Heijnsdijk 2012
+                                            "Prostatectomy part 1" = 0.67,       # Heijnsdijk 2012
+                                            "Prostatectomy part 2" = 0.77,       # Heijnsdijk 2012
+                                            "Radiation therapy part 1" = 0.73,   # Heijnsdijk 2012
+                                            "Radiation therapy part 2" = 0.78,   # Heijnsdijk 2012
+                                            "Active surveillance" = 0.97,        # Heijnsdijk 2012
+                                            "Postrecovery period" = 0.95,        # Heijnsdijk 2012 
+                                            "ADT+chemo" = 0.727,                 # Review by Shuang
+                                            "Palliative therapy" = 0.60,         # Heijnsdijk 2012
+                                            "Terminal illness" = 0.40,           # Heijnsdijk 2012
+                                            "Death" = 0.00)
+
+n.sim <- 1e7
+mc.cores <- 1
+summary(fit1.S1 <- callFhcrc(n.sim, screen="noScreening", mc.cores=mc.cores,
+                          flatPop=TRUE,pop=1995-55,
+                          parms=c(ShuangParameters_S1,
+                                  formal_compliance=1)))
+summary(fit2.S1 <- callFhcrc(n.sim, screen="regular_screen",
+                          flatPop=TRUE,pop=1995-55,
+                          parms=c(ShuangParameters_S1,
+                                  formal_compliance=1,
+                                  start_screening=55,
+                                  screening_interval=4),
+                          mc.cores=mc.cores))
+summary(fit3.S1 <- callFhcrc(n.sim, screen="regular_screen",
+                          flatPop=TRUE,pop=1995-55,
+                          parms=c(ShuangParameters_S1,
+                                  MRI_screen=TRUE,
+                                  start_screening=55,
+                                  screening_interval=4,
+                                  formal_compliance=1),
+                          mc.cores=mc.cores))
+
+ICER(fit2.S1,fit1.S1)
+ICER(fit3.S1,fit2.S1)
+ICER(fit3.S1,fit1.S1)
+
+d.S1 <- d2.S1 <- rbind("Un-screened"=unlist(ICER(fit1.S1,fit2.S1)[2:3]),
+                 "PSA+SBx"=c(0,0),
+                 "PSA+MRI+TBx/SBx"=unlist(ICER(fit3.S1,fit2.S1)[2:3]))
+d2.S1[,"delta.QALE"] <- d.S1[,"delta.QALE"]*10000
+plot(d2.S1, xlim=1.05*range(d2.S1[,1]), ylim=1.05*range(d2.S1[,2]),
+     xlab="Incremental QALYs (years) per 10000 men", ylab="Incremental costs (€)")
+text(d2.S1,labels=rownames(d2.S1),pos=c(4,2,2))
+abline(v=0,lty=2)
+abline(h=0, lty=2)
+
+# d.S1 <- d2.S1 <- rbind("PSA+SBx"=unlist(ICER(fit2.S1,fit1.S1)[2:3]),
+#                        "Un-screened"=c(0,0), #unscreened as reference
+#                        "PSA+MRI+TBx/SBx"=unlist(ICER(fit3.S1,fit1.S1)[2:3]))
+# d2.S1[,"delta.QALE"] <- d.S1[,"delta.QALE"]*10000
+# plot(d2.S1, xlim=1.05*range(d2.S1[,1]), ylim=1.05*range(d2.S1[,2]),
+#      xlab="Incremental QALYs (years) per 10000 men", ylab="Incremental costs (€)")
+# text(d2.S1T,labels=rownames(d2.S1T),pos=c(4,2,2))
+# abline(v=0,lty=2)
+# abline(h=0, lty=2)
+
+save(fit1.S1, file="fit1.S1_Heijnsdijk 2012.RData")
+save(fit2.S1, file="fit2.S1_Heijnsdijk 2012.RData")
+save(fit3.S1, file="fit3.S1_Heijnsdijk 2012.RData")
+
+## SENSITIVITY(S1): Save the results - Heijnsdijk 2012
+sink("Output_Heijnsdijk 2012 HSV.txt")
+print(summary(fit1.S1))
+print(summary(fit2.S1))
+print(summary(fit3.S1))
+print(ICER(fit2.S1,fit1.S1))
+print(ICER(fit3.S1,fit2.S1))
+print(ICER(fit3.S1,fit1.S1))
+sink()
+
+## SENSITIVITY(S1): Discounted LY and costs for S1 - Heijnsdijk 2012
+discounted(fit1.S1,0)
+discounted(fit1.S1,0.03)
+discounted(fit1.S1,0.05)
+
+discounted(fit2.S1,0)
+discounted(fit2.S1,0.03)
+discounted(fit2.S1,0.05)
+
+discounted(fit3.S1,0)
+discounted(fit3.S1,0.03)
+discounted(fit3.S1,0.05)
+
+sink("Output_Discounted LY and costs_S1_Heijnsdijk 2012 HSV.txt")
+discounted.S1 <- matrix(c(discounted(fit1.S1,0)$LE, discounted(fit2.S1,0)$LE,discounted(fit3.S1,0)$LE,
+                          discounted(fit1.S1,0.03)$LE, discounted(fit2.S1,0.03)$LE, discounted(fit3.S1,0.03)$LE,
+                          discounted(fit1.S1,0.05)$LE, discounted(fit2.S1,0.05)$LE, discounted(fit3.S1,0.05)$LE,
+                          discounted(fit1.S1,0)$utilities, discounted(fit2.S1,0)$utilities,discounted(fit3.S1,0)$utilities,
+                          discounted(fit1.S1,0.03)$utilities, discounted(fit2.S1,0.03)$utilities, discounted(fit3.S1,0.03)$utilities,
+                          discounted(fit1.S1,0.05)$utilities, discounted(fit2.S1,0.05)$utilities, discounted(fit3.S1,0.05)$utilities,
+                          discounted(fit1.S1,0)$healthsector.costs, discounted(fit2.S1,0)$healthsector.costs,discounted(fit3.S1,0)$healthsector.costs,
+                          discounted(fit1.S1,0.03)$healthsector.costs, discounted(fit2.S1,0.03)$healthsector.costs, discounted(fit3.S1,0.03)$healthsector.costs,
+                          discounted(fit1.S1,0.05)$healthsector.costs, discounted(fit2.S1,0.05)$healthsector.costs, discounted(fit3.S1,0.05)$healthsector.costs,
+                          discounted(fit1.S1,0)$societal.costs, discounted(fit2.S1,0)$societal.costs,discounted(fit3.S1,0)$societal.costs,
+                          discounted(fit1.S1,0.03)$societal.costs, discounted(fit2.S1,0.03)$societal.costs, discounted(fit3.S1,0.03)$societal.costs,
+                          discounted(fit1.S1,0.05)$societal.costs, discounted(fit2.S1,0.05)$societal.costs, discounted(fit3.S1,0.05)$societal.costs),
+                        ncol=3, byrow=TRUE)
+colnames(discounted.S1) <- c("No screening", "SBx", "MRI")
+rownames(discounted.S1) <- c("LY, undiscounted", "LY, 3% discounted", "LY, 5% discounted",
+                             "QALYs, undiscounted","QALYs, 3% discounted", "QALYs, 5% discounted",
+                             "Health sector, undiscounted","Health sector, 3% discounted", "Health sector, 5% discounted",
+                             "societal, undiscounted","societal, 3% discounted", "societal, 5% discounted")
+discounted.S1 <- as.table(discounted.S1)
+print(discounted.S1)
+sink()
+
+## SENSITIVITY(S1): Number of events including No.Biopsy, No.MRI and No.Diagnosis life time - Heijnsdijk 2012
+sink("Output_myreport_S1_Heijnsdijk 2012 HSV_20191219.txt")
+myreport.S1 <- matrix(c(myreport(fit1.S1,"toMRI"),
+                        myreport(fit2.S1,"toMRI"),
+                        myreport(fit3.S1,"toMRI"),
+                        myreport(fit1.S1,c("toClinicalDiagnosticBiopsy","toScreenInitiatedBiopsy")),
+                        myreport(fit2.S1,c("toClinicalDiagnosticBiopsy","toScreenInitiatedBiopsy")),
+                        myreport(fit3.S1,c("toClinicalDiagnosticBiopsy","toScreenInitiatedBiopsy")),
+                        myreport(fit1.S1,c("toClinicalDiagnosis","toScreenDiagnosis")),
+                        myreport(fit2.S1,c("toClinicalDiagnosis","toScreenDiagnosis")),
+                        myreport(fit3.S1,c("toClinicalDiagnosis","toScreenDiagnosis")),
+                        myreport(fit1.S1,c("toClinicalDiagnosis","toScreenDiagnosis"),
+                                 subset=(fit1.S1$summary$event$age>=55 & fit1.S1$summary$event$age<70)),
+                        myreport(fit2.S1,c("toClinicalDiagnosis","toScreenDiagnosis"),
+                                 subset=(fit2.S1$summary$event$age>=55 & fit2.S1$summary$event$age<70)),
+                        myreport(fit3.S1,c("toClinicalDiagnosis","toScreenDiagnosis"),
+                                 subset=(fit3.S1$summary$event$age>=55 & fit3.S1$summary$event$age<70))),
+                      ncol=3, byrow=TRUE)
+colnames(myreport.S1) <- c("No screening", "SBx", "MRI")
+rownames(myreport.S1) <- c("MRI", "Biopsy", "Diagnosis","Diagnosis-screening")
+myreport.S1 <- as.table(myreport.S1)
+print(myreport.S1)
+sink()
+
+
+## SENSITIVITY(S3). Changing the price of prostatectomy to 96,438 SEK 
+ShuangParameters_S3 <- prostata:::ShuangParameters
+ShuangParameters_S3$cost_parameters["Prostatectomy"] <-  96438+6302.19*20*0.25+1460*1
+
+n.sim <- 1e7
+mc.cores <- 1
+summary(fit1.S3 <- callFhcrc(n.sim, screen="noScreening", mc.cores=mc.cores,
+                             flatPop=TRUE,pop=1995-55,
+                             parms=c(ShuangParameters_S3,
+                                     formal_compliance=1)))
+summary(fit2.S3 <- callFhcrc(n.sim, screen="regular_screen",
+                             flatPop=TRUE,pop=1995-55,
+                             parms=c(ShuangParameters_S3,
+                                     formal_compliance=1,
+                                     start_screening=55,
+                                     screening_interval=4),
+                             mc.cores=mc.cores))
+summary(fit3.S3 <- callFhcrc(n.sim, screen="regular_screen",
+                             flatPop=TRUE,pop=1995-55,
+                             parms=c(ShuangParameters_S3,
+                                     MRI_screen=TRUE,
+                                     start_screening=55,
+                                     screening_interval=4,
+                                     formal_compliance=1),
+                             mc.cores=mc.cores))
+
+ICER(fit2.S3,fit1.S3)
+ICER(fit3.S3,fit2.S3)
+ICER(fit3.S3,fit1.S3)
+
+d.S3 <- d2.S3 <- rbind("Un-screened"=unlist(ICER(fit1.S3,fit2.S3)[2:3]),
+                       "PSA+SBx"=c(0,0),
+                       "PSA+MRI+TBx/SBx"=unlist(ICER(fit3.S3,fit2.S3)[2:3]))
+d2.S3[,"delta.QALE"] <- d.S3[,"delta.QALE"]*10000
+plot(d2.S3, xlim=1.05*range(d2.S3[,1]), ylim=1.05*range(d2.S3[,2]),
+     xlab="Incremental QALYs (years) per 10000 men", ylab="Incremental costs (€)")
+text(d2.S3,labels=rownames(d2.S3),pos=c(4,2,2))
+abline(v=0,lty=2)
+abline(h=0, lty=2)
+
+save(fit1.S3, file="fit1.S3_RP price update.RData")
+save(fit2.S3, file="fit2.S3_RP price update.RData")
+save(fit3.S3, file="fit3.S3_RP price update.RData")
+
+## SENSITIVITY(S3): Save the results - RP price updated
+sink("Output_RP price update.txt")
+print(summary(fit1.S3))
+print(summary(fit2.S3))
+print(summary(fit3.S3))
+print(ICER(fit2.S3,fit1.S3))
+print(ICER(fit3.S3,fit2.S3))
+print(ICER(fit3.S3,fit1.S3))
+sink()
+
+## SENSITIVITY(S3): Discounted LY and costs for S3 - RP price updated
+discounted(fit1.S3,0)
+discounted(fit1.S3,0.03)
+discounted(fit1.S3,0.05)
+
+discounted(fit2.S3,0)
+discounted(fit2.S3,0.03)
+discounted(fit2.S3,0.05)
+
+discounted(fit3.S3,0)
+discounted(fit3.S3,0.03)
+discounted(fit3.S3,0.05)
+
+sink("Output_Discounted LY and costs_S3_RP price update.txt")
+discounted.S3 <- matrix(c(discounted(fit1.S3,0)$LE, discounted(fit2.S3,0)$LE,discounted(fit3.S3,0)$LE,
+                          discounted(fit1.S3,0.03)$LE, discounted(fit2.S3,0.03)$LE, discounted(fit3.S3,0.03)$LE,
+                          discounted(fit1.S3,0.05)$LE, discounted(fit2.S3,0.05)$LE, discounted(fit3.S3,0.05)$LE,
+                          discounted(fit1.S3,0)$utilities, discounted(fit2.S3,0)$utilities,discounted(fit3.S3,0)$utilities,
+                          discounted(fit1.S3,0.03)$utilities, discounted(fit2.S3,0.03)$utilities, discounted(fit3.S3,0.03)$utilities,
+                          discounted(fit1.S3,0.05)$utilities, discounted(fit2.S3,0.05)$utilities, discounted(fit3.S3,0.05)$utilities,
+                          discounted(fit1.S3,0)$healthsector.costs, discounted(fit2.S3,0)$healthsector.costs,discounted(fit3.S3,0)$healthsector.costs,
+                          discounted(fit1.S3,0.03)$healthsector.costs, discounted(fit2.S3,0.03)$healthsector.costs, discounted(fit3.S3,0.03)$healthsector.costs,
+                          discounted(fit1.S3,0.05)$healthsector.costs, discounted(fit2.S3,0.05)$healthsector.costs, discounted(fit3.S3,0.05)$healthsector.costs,
+                          discounted(fit1.S3,0)$societal.costs, discounted(fit2.S3,0)$societal.costs,discounted(fit3.S3,0)$societal.costs,
+                          discounted(fit1.S3,0.03)$societal.costs, discounted(fit2.S3,0.03)$societal.costs, discounted(fit3.S3,0.03)$societal.costs,
+                          discounted(fit1.S3,0.05)$societal.costs, discounted(fit2.S3,0.05)$societal.costs, discounted(fit3.S3,0.05)$societal.costs),
+                        ncol=3, byrow=TRUE)
+colnames(discounted.S3) <- c("No screening", "SBx", "MRI")
+rownames(discounted.S3) <- c("LY, undiscounted", "LY, 3% discounted", "LY, 5% discounted",
+                             "QALYs, undiscounted","QALYs, 3% discounted", "QALYs, 5% discounted",
+                             "Health sector, undiscounted","Health sector, 3% discounted", "Health sector, 5% discounted",
+                             "societal, undiscounted","societal, 3% discounted", "societal, 5% discounted")
+discounted.S3 <- as.table(discounted.S3)
+print(discounted.S3)
+sink()
+
+## SENSITIVITY(S3): Number of events including No.Biopsy, No.MRI and No.Diagnosis life time - RP price update
+sink("Output_myreport_S3_RP price update.txt")
+myreport.S3 <- matrix(c(myreport(fit1.S3,"toMRI"),
+                        myreport(fit2.S3,"toMRI"),
+                        myreport(fit3.S3,"toMRI"),
+                        myreport(fit1.S3,c("toClinicalDiagnosticBiopsy","toScreenInitiatedBiopsy")),
+                        myreport(fit2.S3,c("toClinicalDiagnosticBiopsy","toScreenInitiatedBiopsy")),
+                        myreport(fit3.S3,c("toClinicalDiagnosticBiopsy","toScreenInitiatedBiopsy")),
+                        myreport(fit1.S3,c("toClinicalDiagnosis","toScreenDiagnosis")),
+                        myreport(fit2.S3,c("toClinicalDiagnosis","toScreenDiagnosis")),
+                        myreport(fit3.S3,c("toClinicalDiagnosis","toScreenDiagnosis")),
+                        myreport(fit1.S3,c("toClinicalDiagnosis","toScreenDiagnosis"),
+                                 subset=(fit1.S3$summary$event$age>=55 & fit1.S3$summary$event$age<70)),
+                        myreport(fit2.S3,c("toClinicalDiagnosis","toScreenDiagnosis"),
+                                 subset=(fit2.S3$summary$event$age>=55 & fit2.S3$summary$event$age<70)),
+                        myreport(fit3.S3,c("toClinicalDiagnosis","toScreenDiagnosis"),
+                                 subset=(fit3.S3$summary$event$age>=55 & fit3.S3$summary$event$age<70))),
+                      ncol=3, byrow=TRUE)
+colnames(myreport.S3) <- c("No screening", "SBx", "MRI")
+rownames(myreport.S3) <- c("MRI", "Biopsy", "Diagnosis","Diagnosis-screening")
+myreport.S3 <- as.table(myreport.S3)
+print(myreport.S3)
+sink()
+
+
+
+# BACKUP SENSITIVITY (S4). Changing MRI related test characteristics
+ShuangParameters_S4 <- prostata:::ShuangParameters
+ShuangParameters_S4$pMRIposG0=0.457               # Pr(MRI+ | ISUP 0 || undetectable)
+ShuangParameters_S4$pMRIposG1=0.669               # Pr(MRI+ | ISUP 1 && detectable)
+ShuangParameters_S4$pMRIposG2=0.939               # Pr(MRI+ | ISUP 2+ && detectable)
+ShuangParameters_S4$pSBxG0ifG1=0.108              # Pr(SBx gives ISUP 0 | ISUP 1)
+ShuangParameters_S4$pSBxG0ifG2=0.096              # Pr(SBx gives ISUP 0 | ISUP 2)
+
+n.sim <- 1e7
+mc.cores <- 1
+summary(fit1.S4 <- callFhcrc(n.sim, screen="noScreening", mc.cores=mc.cores,
+                             flatPop=TRUE,pop=1995-55,
+                             parms=c(ShuangParameters_S4,
+                                     formal_compliance=1)))
+summary(fit2.S4 <- callFhcrc(n.sim, screen="regular_screen",
+                             flatPop=TRUE,pop=1995-55,
+                             parms=c(ShuangParameters_S4,
+                                     formal_compliance=1,
+                                     start_screening=55,
+                                     screening_interval=4),
+                             mc.cores=mc.cores))
+summary(fit3.S4 <- callFhcrc(n.sim, screen="regular_screen",
+                             flatPop=TRUE,pop=1995-55,
+                             parms=c(ShuangParameters_S4,
+                                     MRI_screen=TRUE,
+                                     start_screening=55,
+                                     screening_interval=4,
+                                     formal_compliance=1),
+                             mc.cores=mc.cores))
+
+ICER(fit2.S4,fit1.S4)
+ICER(fit3.S4,fit2.S4)
+ICER(fit3.S4,fit1.S4)
+
+d.S4 <- d2.S4 <- rbind("Un-screened"=unlist(ICER(fit1.S4,fit2.S4)[2:3]),
+                       "PSA+SBx"=c(0,0),
+                       "PSA+MRI+TBx/SBx"=unlist(ICER(fit3.S3,fit2.S4)[2:3]))
+d2.S4[,"delta.QALE"] <- d.S4[,"delta.QALE"]*1000
+plot(d2.S4, xlim=1.05*range(d2.S4[,1]), ylim=1.05*range(d2.S4[,2]),
+     xlab="Incremental QALYs (years) per 1000 men", ylab="Incremental costs (€)")
+text(d2.S4,labels=rownames(d2.S4),pos=c(4,2,2))
+abline(v=0,lty=2)
+abline(h=0, lty=2)
+
+save(fit1.S4, file="fit1.S4_MRI test characteristics") #NOT RUN YET, NOT SAVED
+save(fit2.S4, file="fit2.S4_MRI test characteristics") #NOT RUN YET, NOT SAVED
+save(fit3.S4, file="fit3.S4_MRI test characteristics") #NOT RUN YET, NOT SAVED
+
+sink("output_MRI test characteristics.txt")
+print(summary(fit1.S4))
+print(summary(fit2.S4))
+print(summary(fit3.S4))
+print(ICER(fit1.S4,fit2.S4))
+print(ICER(fit3.S4,fit2.S4))
+print(ICER(fit3.S4,fit1.S4))
+sink()
+
+
+# 
 library(prostata)
-n.sim <- 1e6
-mc.cores <- 10
+n.sim <- 1e5
+mc.cores <- 1
 summary(fit1 <- callFhcrc(n.sim, screen="noScreening", mc.cores=mc.cores,
                           flatPop=TRUE,pop=1995-55,
                           parms=c(Parameters,
@@ -76,8 +702,8 @@ boot(data.frame(x=fit2$indiv_costs-fit1$indiv_costs,
      function(d, w) log(mean(d$x[w])/mean(d$y[w])),
      R=1000)
 local({
-    X <- fit2$indiv_costs-fit$indiv_costs
-    Y <- fit2$indiv_utilities-fit$indiv_utilities
+    X <- fit2$indiv_costs-fit1$indiv_costs
+    Y <- fit2$indiv_utilities-fit1$indiv_utilities
     muX <- mean(X)
     muY <- mean(Y)
     n <- length(X)
@@ -88,6 +714,8 @@ plot(density(fit1$indiv_utilities-fit2$indiv_utilities))
 plot(density(fit1$indiv_costs-fit2$indiv_costs))
 t.test(fit2$indiv_costs-fit1$indiv_costs)
 t.test(fit2$indiv_utilities-fit1$indiv_utilities)
+
+xtabs(pt~age,data=fit1$summary$pt)
 
 ## Check using the old code (log(50000)=10.8)
 library(prostata)

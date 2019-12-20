@@ -78,10 +78,10 @@ ShuangParameters <- list(
                             values=apply(
                                 rbind(0.891, 0.781, 0.169, 0), # employment portion, full time
                                 1,
-                                function(empl) empl
-                                * 30.7/40                      # average working hours
-                                * 34600*12                     # average salary
-                                * 1.3713)),                    # including non-optional social fees
+                                function(empl) empl*
+                                30.7/40*                       # average working hours
+                                34600*12*                      # average salary
+                                1.3713)),                      # including non-optional social fees
     lost_production_years= c("Formal PSA"=2/24/365.25,
                              "Formal panel"=2/24/365.25,
                              "Opportunistic PSA"=2/24/365.25,
@@ -108,23 +108,22 @@ ShuangParameters <- list(
                              ## "Early retirement" = 0.00203*235.5/365.25, # 0.203% employed PCa patients (50-64) have early retirement (based on 2016 data)
                              "Terminal illness" = 6/12),       # Should delete, should be reflected from sick leave or disability pension
 
-    ## Latest review 2019 based on Heijnsdijk 2012, Magnus 2019 and extended review by Shuang
+    ## Latest review 2019 based on Heijnsdijk 2012, Magnus 2019 and extended review by Shuang - PORPUS-U
     utility_estimates = c("Invitation" = 1,                    # Heijnsdijk 2012
                           "Formal PSA" = 0.99,                 # Heijnsdijk 2012
                           "Formal panel" = 0.99,               # Heijnsdijk 2012
                           "Opportunistic PSA" = 0.99,          # Heijnsdijk 2012
                           "Opportunistic panel" = 0.99,        # Heijnsdijk 2012
                           "Biopsy" = 0.90,                     # Heijnsdijk 2012
-                          "Combined biopsy" = 0.90,            # Heijnsdijk 2012
                           "Cancer diagnosis" = 0.80,           # Heijnsdijk 2012
-                          "Prostatectomy part 1" = 0.829,      # Hall 2015
-                          "Prostatectomy part 2" = 0.893,      # Extended review by SH (Glazener 2011, Korfarge 2005, Hall 2015)
-                          "Radiation therapy part 1" = 0.818,  # Hall 2015
-                          "Radiation therapy part 2" = 0.828,  # Extended review by SH (Korfarge 2005, Hall 2015)
-                          "Active surveillance" = 0.9,         # Loeb 2018
-                          "Postrecovery period" = 0.861,       # Extended review by SH (Torvinen 2013, Waston 2016) 
-                          "ADT+chemo" = 0.727,                 # Extended review by SH (Hall 2019, Diels 2015, Loriot 2015, Skaltsa 2014, Wu 2007, Chi 2018)
-                          "Palliative therapy" = 0.62,         # Magnus 2019
+                          "Prostatectomy part 1" = 0.860,      # Magnus 2019 (Krahn 2009, Ku 2009)
+                          "Prostatectomy part 2" = 0.900,      # Magnus 2019 (Krahn 2009, Ku 2009)
+                          "Radiation therapy part 1" = 0.890,  # Krahn 2009
+                          "Radiation therapy part 2" = 0.920,  # Krahn 2009
+                          "Active surveillance" = 0.980,       # Loeb 2018
+                          "Postrecovery period" = 0.930,       # Magnus 2019 (Avila 2014, Bremner 2014, Krahn 2013, Ku 2009) 
+                          "ADT+chemo" = 0.803,                 # Krahn 2003
+                          "Palliative therapy" = 0.680,        # *15D value; Magnus 2019 (Farrkila 2014, Torvinen 2013)
                           "Terminal illness" = 0.40,           # Heijnsdijk 2012
                           "Death" = 0.00),
     ## Utility duration is given in years.

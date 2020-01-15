@@ -1122,28 +1122,34 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       out->bxrecord.record("detectable",double(detectable));
     }
 
-    bool SBx_missed = false; // allow for randomly missing "detectable cancers" from SBx (cf TBx/SBx)
+    bool Bx_missed = false; // allow for randomly missing "detectable cancers" from Bx
     if (detectable) {
-      if (in->bparameter["MRI_screen"] || in->bparameter["Andreas"]) { // if MRI, assumes biopsy sensitivity/specificity=100%
-	scheduleAt(now()+3.0/52.0, toScreenDiagnosis); // diagnosis three weeks after biopsy
+      if (in->bparameter["Andreas"]) {
+	// pass
+      } else if (in->bparameter["MRI_screen"]) {
+	if (this->ext_grade == ext::Gleason_le_6) {
+	  Bx_missed = (R::runif(0.0,1.0) < in->parameter["pBxG0ifG1_MRIpos"]);
+	}
+	if (this->ext_grade == ext::Gleason_7) {
+	  Bx_missed = (R::runif(0.0,1.0) < in->parameter["pBxG0ifG2_MRIpos"]);
+	}
       } else { // SBx compared with MRI
-	if (this->ext_grade == ext::Gleason_le_6) { 
-	  SBx_missed = (R::runif(0.0,1.0) < in->parameter["pSBxG0ifG1"]);
+	if (this->ext_grade == ext::Gleason_le_6) {
+	  Bx_missed = (R::runif(0.0,1.0) < in->parameter["pSBxG0ifG1"]);
 	}
-	if (this->ext_grade == ext::Gleason_7) { 
-	  SBx_missed = (R::runif(0.0,1.0) < in->parameter["pSBxG0ifG2"]);
+	if (this->ext_grade == ext::Gleason_7) {
+	  Bx_missed = (R::runif(0.0,1.0) < in->parameter["pSBxG0ifG2"]);
 	}
-	// assumes Gleason 8+ are 100% sensitive under SBx
-	if (!SBx_missed)
-	  scheduleAt(now()+3.0/52.0, toScreenDiagnosis); // diagnosis three weeks after biopsy
       }
+      if (!Bx_missed)
+	scheduleAt(now()+3.0/52.0, toScreenDiagnosis); // diagnosis three weeks after biopsy
       if (in->panel && state==Localised && ext_grade == ext::Gleason_le_6) {
 	// fixed costs etc for men who were S3M+/PE-
 	add_costs("Assessment", Direct, 766.0/722.0 - 1.0);
 	lost_productivity("Assessment", 766.0/722.0 - 1.0);
       }
     }
-    if (!detectable || SBx_missed) { // negative biopsy
+    if (!detectable || Bx_missed) { // negative biopsy
       if (in->panel) { // fixed costs etc for men who were S3M+/PE-
         add_costs("Assessment", Direct, 1535.0/1381.0 - 1.0);
         lost_productivity("Assessment", 1535.0/1381.0 - 1.0);

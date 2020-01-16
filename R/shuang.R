@@ -151,7 +151,7 @@ ShuangParameters <- list(
     pSBxG0ifG2=0.111,             # Pr(SBx gives ISUP 0 | ISUP 2)
     pSBxG1ifG2=0.119,             # Pr(SBx gives ISUP 1 | ISUP 2) (not used)
     pBxG0ifG1_MRIpos=0,           # Pr(Bx gives ISUP 0 | ISUP 1, MRI+)
-    pBxG0ifG2_MRIpos=0,           # Pr(SBx gives ISUP 0 | ISUP 2, MRI+)
-    pBxG1ifG2_MRIpos=0,           # Pr(SBx gives ISUP 1 | ISUP 2, MRI+) (not used)
+    pBxG0ifG2_MRIpos=0,           # Pr(Bx gives ISUP 0 | ISUP 2, MRI+)
+    pBxG1ifG2_MRIpos=0,           # Pr(Bx gives ISUP 1 | ISUP 2, MRI+) (not used)
     currency_rate = 1/10.2567     # Riksbanken 2018
 )

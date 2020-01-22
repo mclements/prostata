@@ -1546,7 +1546,7 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   if (in.debug) Rprintf("screen=%i\n",in.screen);
   in.panel = as<bool>(parms["panel"]);
   NumericVector cohort = as<NumericVector>(parms["cohort"]); // at present, this is the only chuck-specific data
-  int indiv_reports = as<bool>(in.bparameter["indiv_reports"]) ? 1 : 0;
+  bool indiv_reports = as<bool>(in.bparameter["indiv_reports"]);
 
 
   // set up the parameters
@@ -1570,17 +1570,17 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
 
   out.report.discountRate = in.parameter["discountRate.effectiveness"];
   out.report.setPartition(ages);
-  out.report.resize(n);
+  out.report.resize(indiv_reports ? n : 1);
   out.shortReport.discountRate = in.parameter["discountRate.effectiveness"];
   out.shortReport.setPartition(ages);
   out.costs.discountRate = in.parameter["discountRate.costs"];
   out.costs.setPartition(ages);
-  out.costs.resize(n);
+  out.costs.resize(indiv_reports ? n : 1);
 
   // main loop
   FhcrcPerson person(&in, &out, &utilities, 1, 2000, 0);
   for (int i = 0; i < n; ++i) {
-    person = FhcrcPerson(&in, &out, &utilities, i+firstId, cohort[i], i*indiv_reports);
+    person = FhcrcPerson(&in, &out, &utilities, i+firstId, cohort[i], indiv_reports ? i : 0);
     Sim::create_process(&person);
     Sim::run_simulation();
     Sim::clear();

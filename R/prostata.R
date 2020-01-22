@@ -322,7 +322,8 @@ FhcrcParameters <- list(
     includeBxrecords = FALSE,
     includeDiagnoses = FALSE,
     MRI_screen = FALSE,           # defines whether MRI pathway is used for screen-positive patients
-    MRI_clinical = FALSE         # defines whether MRI is used for clinical (symptomatic) diagnoses
+    MRI_clinical = FALSE,         # defines whether MRI is used for clinical (symptomatic) diagnoses
+    indiv_reports = FALSE         # should the cost and standard reports include individual values?
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]

@@ -37,7 +37,7 @@ ShuangParameters <- list(
                         + 3903.27*1                               # Oncologist new visit
                         + 1683.36*1                               # Oncologist further visit
                         + 400*20                                  # Nurse visit
-                        + 20933.05*0.2,                           # Hormone therapy
+                        + 67490.20*0.2,                           # Hormone therapy
                         "Active surveillance - yearly - w/o MRI" = 1460    # Urology visit and nurse visit
                         + 355.82*3                                # PSA sampling
                         + 57.4*3                                  # PSA analysis
@@ -49,7 +49,7 @@ ShuangParameters <- list(
                         + 3500*0.33                               # MRI cost
                         + 3010*1.5*0.33                           # Biopsy cost (SBx|TBx)
                         + 4238.25*0.33,                           # Pathology of biopsy
-                        "ADT+chemo" = 22309.44*1.5,               # NEW: Chemo and hormone therapy
+                        "ADT+chemo" = 71579.64*1.5,               # NEW: Chemo and hormone therapy
                         "Post-Tx follow-up - yearly first" = 1460 # Urologist and nurse consultation
                         + 355.82                                  # PSA test sampling
                         + 57.4,                                   # PSA analysis

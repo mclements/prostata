@@ -233,7 +233,7 @@ namespace fhcrc_example {
     double txhaz, psa_last_screen;
     int id, index;
     double cohort, rescreening_frailty;
-    bool everPSA, previousNegativeBiopsy, organised, previousFollowup;
+    bool everPSA, previousNegativeBiopsy, organised, previousFollowup, MRIpos;
     FhcrcPerson(SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950, const int index = 0) :
       in(in), out(out), utilities(utilities), id(id), index(index), cohort(cohort) { };
     double utility() { return utilities->utility(); }
@@ -583,7 +583,7 @@ void FhcrcPerson::init() {
   grade = base::Healthy;
   ext_grade = ext::Healthy;
   dx = NotDiagnosed;
-  everPSA = previousNegativeBiopsy = organised = adt = previousFollowup = false;
+  everPSA = previousNegativeBiopsy = organised = adt = previousFollowup = MRIpos = false;
   in->rngNh->set();
   if (R::runif(0.0, 1.0) <= in->parameter["susceptible"]) // portion susceptible
     t0 = sqrt(2*R::rexp(1.0)/in->parameter["g0"]); // is susceptible
@@ -1064,7 +1064,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     double pMRIpos = (this->ext_grade == ext::Healthy || !detectable) ? in->parameter["pMRIposG0"] :
       (this->ext_grade == ext::Gleason_le_6) ? in->parameter["pMRIposG1"] :
       in->parameter["pMRIposG2"];
-    if (R::runif(0.0,1.0) < pMRIpos) {
+    this->MRIpos = (R::runif(0.0,1.0) < pMRIpos); // we need to know if they are MRI+ at toScreenInitiatedBiopsy
+    if (this->MRIpos || in->bparameter("MRInegSBx")) {
       scheduleAt(now(), toScreenInitiatedBiopsy);
     } else {
       rescreening_schedules(psa, organised, mixed_programs);
@@ -1090,7 +1091,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   case toScreenInitiatedBiopsy: {
     in->rngScreen->set();
     // the following block follows the same pattern as toClinicalDiagnosticBiopsy
-    if (in->bparameter["MRI_screen"]) {
+    if (in->bparameter["MRI_screen"] && this->MRIpos) {
       add_costs("Combined biopsy");
       lost_productivity("Combined biopsy");
     } else {
@@ -1128,10 +1129,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	// pass
       } else if (in->bparameter["MRI_screen"]) {
 	if (this->ext_grade == ext::Gleason_le_6) {
-	  Bx_missed = (R::runif(0.0,1.0) < in->parameter["pBxG0ifG1_MRIpos"]);
+	  Bx_missed = (R::runif(0.0,1.0) < in->parameter["pTBxG0ifG1_MRIpos"]);
 	}
 	if (this->ext_grade == ext::Gleason_7) {
-	  Bx_missed = (R::runif(0.0,1.0) < in->parameter["pBxG0ifG2_MRIpos"]);
+	  Bx_missed = (R::runif(0.0,1.0) < in->parameter["pTBxG0ifG2_MRIpos"]);
 	}
       } else { // SBx compared with MRI
 	if (this->ext_grade == ext::Gleason_le_6) {

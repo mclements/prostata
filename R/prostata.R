@@ -322,6 +322,7 @@ FhcrcParameters <- list(
     includeBxrecords = FALSE,
     includeDiagnoses = FALSE,
     MRI_screen = FALSE,           # defines whether MRI pathway is used for screen-positive patients
+    MRInegSBx=FALSE,              # No SBx for MRI- (by default)
     MRI_clinical = FALSE,         # defines whether MRI is used for clinical (symptomatic) diagnoses
     indiv_reports = FALSE         # should the cost and standard reports include individual values?
 )

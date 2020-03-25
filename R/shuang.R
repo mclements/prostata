@@ -144,14 +144,14 @@ ShuangParameters <- list(
                          "ADT+chemo" = 1.5,                   # Assumption!!!
                          "Palliative therapy" = 12/12,        # Palliative therapy 
                          "Terminal illness" = 6/12),
-    pMRIposG0=0.47,               # Pr(MRI+ | ISUP 0 || undetectable)
-    pMRIposG1=0.73,               # Pr(MRI+ | ISUP 1 && detectable)
-    pMRIposG2=0.93,               # Pr(MRI+ | ISUP 2+ && detectable)
-    pSBxG0ifG1=0.146,             # Pr(SBx gives ISUP 0 | ISUP 1)
-    pSBxG0ifG2=0.111,             # Pr(SBx gives ISUP 0 | ISUP 2)
+    pMRIposG0=0.4515496,          # Pr(MRI+ | ISUP 0 || undetectable) 2020-03-23
+    pMRIposG1=0.7145305,          # Pr(MRI+ | ISUP 1 && detectable) 2020-03-23
+    pMRIposG2=0.9305352,          # Pr(MRI+ | ISUP 2+ && detectable) 2020-03-23
+    pSBxG0ifG1=0.1402583,         # Pr(SBx gives ISUP 0 | ISUP 1) 2020-03-23
+    pSBxG0ifG2=0.1032593,         # Pr(SBx gives ISUP 0 | ISUP 2) 2020-03-23
     pSBxG1ifG2=0.119,             # Pr(SBx gives ISUP 1 | ISUP 2) (not used)
-    pBxG0ifG1_MRIpos=0,           # Pr(Bx gives ISUP 0 | ISUP 1, MRI+)
-    pBxG0ifG2_MRIpos=0,           # Pr(Bx gives ISUP 0 | ISUP 2, MRI+)
-    pBxG1ifG2_MRIpos=0,           # Pr(Bx gives ISUP 1 | ISUP 2, MRI+) (not used)
+    pTBxG0ifG1_MRIpos=0,           # Pr(TBx gives ISUP 0 | ISUP 1, MRI+) #Updated 2020-03-24 from Bx -> TBx
+    pTBxG0ifG2_MRIpos=0,           # Pr(TBx gives ISUP 0 | ISUP 2, MRI+) #Updated 2020-03-24 from Bx -> TBx
+    pTBxG1ifG2_MRIpos=0,           # Pr(TBx gives ISUP 1 | ISUP 2, MRI+) (not used) #Updated 2020-03-24 from Bx -> TBx
     currency_rate = 1/10.2567     # Riksbanken 2018
 )

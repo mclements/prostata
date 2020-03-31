@@ -322,6 +322,7 @@ FhcrcParameters <- list(
     includeBxrecords = FALSE,
     includeDiagnoses = FALSE,
     MRI_screen = FALSE,           # defines whether MRI pathway is used for screen-positive patients
+    MRI_clinical = FALSE,         # defines whether MRI pathway is used for clinically detected cancers
     MRInegSBx=FALSE,              # No SBx for MRI- (by default)
     MRInegSBx=FALSE,              # No SBx for MRI- (by default)
     rescreenDoubleNeg = FALSE,    # defines whether MRI-/Bx- men should move to rescreening (cf. repeat PSA and Bx within ~12 months)

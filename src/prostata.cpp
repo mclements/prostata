@@ -1155,9 +1155,11 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
         add_costs("Assessment", Direct, 1535.0/1381.0 - 1.0);
         lost_productivity("Assessment", 1535.0/1381.0 - 1.0);
       }
-      if (!previousNegativeBiopsy) { // first negative biopsy
+      if (previousNegativeBiopsy || (in->bparameter("MRI_screen") && !this->MRIpos && in->bparameter["rescreenDoubleNeg"])) { // first negative biopsy and not MRI-
+        rescreening_schedules(psa_last_screen, organised, mixed_programs);
+        previousNegativeBiopsy = false; // if going to rescreening, should their previous negative Bx be forgotten? (Currently only used here)
+      } else {
         previousNegativeBiopsy=true;
-
         // Competing risk for event following a negative biopsy
         double timeToPSA = R::rlnorm(in->tableNegBiopsyToPSAmeanlog(age),
                                      in->tableNegBiopsyToPSAsdlog(age));
@@ -1168,9 +1170,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
         } else { // Biopsy was the first event
           scheduleAt(now() + timeToBiopsy, toScreenInitiatedBiopsy);
         }
-      } else {// not a first negative biopsy (reset)
-        rescreening_schedules(psa_last_screen, organised, mixed_programs);
-        previousNegativeBiopsy = false;
       }
     }
     in->rngNh->set();

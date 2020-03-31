@@ -323,7 +323,8 @@ FhcrcParameters <- list(
     includeDiagnoses = FALSE,
     MRI_screen = FALSE,           # defines whether MRI pathway is used for screen-positive patients
     MRInegSBx=FALSE,              # No SBx for MRI- (by default)
-    MRI_clinical = FALSE,         # defines whether MRI is used for clinical (symptomatic) diagnoses
+    MRInegSBx=FALSE,              # No SBx for MRI- (by default)
+    rescreenDoubleNeg = FALSE,    # defines whether MRI-/Bx- men should move to rescreening (cf. repeat PSA and Bx within ~12 months)
     indiv_reports = FALSE         # should the cost and standard reports include individual values?
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods

@@ -1127,7 +1127,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (detectable) {
       if (in->bparameter["Andreas"]) {
 	// pass
-      } else if (in->bparameter["MRI_screen"]) {
+      } else if (in->bparameter["MRI_screen"] && this->MRIpos) {
 	if (this->ext_grade == ext::Gleason_le_6) {
 	  Bx_missed = (R::runif(0.0,1.0) < in->parameter["pTBxG0ifG1_MRIpos"]);
 	}
@@ -1168,6 +1168,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
         if (timeToPSA <= timeToBiopsy) { // PSA was the first event
           scheduleAt(now() + timeToPSA, toScreen);
         } else { // Biopsy was the first event
+	  this->MRIpos = false; // HACK!!! This ensures that they do SBx only.
           scheduleAt(now() + timeToBiopsy, toScreenInitiatedBiopsy);
         }
       }

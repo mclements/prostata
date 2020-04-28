@@ -994,6 +994,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
 #' @title Summarise simulation results
 #' @description FUNCTION_DESCRIPTION
 #' @param object PARAM_DESCRIPTION
+#' @param from Age from which to report
 #' @param ... PARAM_DESCRIPTION
 #' @return OUTPUT_DESCRIPTION
 #' @details DETAILS
@@ -1005,11 +1006,33 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
 #' }
 #' @rdname summary.fhcrc
 #' @export
-summary.fhcrc <- function(object, ...) {
+summary.fhcrc <- function(object, from=0, ...) {
+    if (from<0) {
+        warning("from argument should be non-negative - changed to 0")
+        from <- 0
+    }
+    if (from != round(from)) {
+        warning("from argument should be integer - changed to round(from)")
+        from <- round(from)
+    }
+    if (from>0) {
+        adjust.costs <- (1+object$simulation.parameters$discountRate.costs)^from
+        adjust.effectiveness <- (1+object$simulation.parameters$discountRate.effectiveness)^from
+        object$n <- sum(subset(object$summary$prev,age==from)$count)
+        object$summary$ut <- subset(object$summary$ut, age>=from)
+        object$summary$pt <- subset(object$summary$pt, age>=from)
+        object$summary$prev <- subset(object$summary$prev, age>=from)
+        object$summary$events <- subset(object$summary$events, age>=from)
+        object$societal.costs <- subset(object$societal.costs, age>=from)
+        object$healthsector.costs <- subset(object$healthsector.costs, age>=from)
+    } else {
+        adjust.costs <- adjust.effectiveness <- 1
+    }
     newobj <- object[c("n","screen")]
     with(object,
          structure(.Data=c(newobj,
                        with(object, list(
+                           from=from,
                            discountRate.costs = simulation.parameters$discountRate.costs,
                            discountRate.effectiveness = simulation.parameters$discountRate.effectiveness,
                            screening.tests = with(summary$events,
@@ -1038,12 +1061,12 @@ summary.fhcrc <- function(object, ...) {
                            cancer.deaths = with(summary$events,
                                                 sum(n[event == "toCancerDeath"])) / n,
                            LE = sum(summary$pt$pt) / n,
-                           QALE = sum(summary$ut$ut) / n,
-                           healthsector.costs = sum(healthsector.costs$costs) / n,
+                           QALE = sum(summary$ut$ut) / n * adjust.effectiveness,
+                           healthsector.costs = sum(healthsector.costs$costs) / n * adjust.costs,
                            productivity.loss = tapply(societal.costs$costs,
                                                       societal.costs$type=="Productivity loss",
-                                                      sum)[["TRUE"]] / n,
-                           societal.costs = sum(societal.costs$costs) / n,
+                                                      sum)[["TRUE"]] / n * adjust.costs,
+                           societal.costs = sum(societal.costs$costs) / n * adjust.costs,
                            healthsector.cost.per.qaly = sum(healthsector.costs$costs) /
                                sum(summary$ut$ut),
                            productivity.loss.per.qaly = tapply(societal.costs$costs,
@@ -1081,6 +1104,8 @@ summary.fhcrc <- function(object, ...) {
 #' @rdname summary.fhcrc
 #' @export
 '-.summary.fhcrc' <- function(object1, object2) {
+    if(object1$from != object2$from)
+        stop("The two scenarios have different 'from' arguments.")
     if(object1$discountRate.costs != object2$discountRate.costs)
         stop("The two scenarios have different discount rates for the costs.")
     if(object1$discountRate.effectiveness != object2$discountRate.effectiveness)
@@ -1222,18 +1247,19 @@ obj$discountRate.costs))
 #' @export
 ICER.fhcrc <- function(object1, object2,
                        perspective = c("societal.costs",
-                                       "healthsector.costs"), ...) {
+                                       "healthsector.costs"), from=0, ...) {
     perspective <- match.arg(perspective)
     p1 <- object1$simulation.parameters
     p2 <- object2$simulation.parameters
     stopifnot(p1$discountRate.costs == p2$discountRate.costs)
     stopifnot(p1$discountRate.effectiveness == p2$discountRate.effectiveness)
-    summary1 <- summary(object1, ...)
-    summary2 <- summary(object2, ...)
+    summary1 <- summary(object1, from=from, ...)
+    summary2 <- summary(object2, from=from, ...)
     out <- list(ICER.QALE=(summary1[[perspective]] - summary2[[perspective]]) /
                     (summary1$QALE - summary2$QALE),
                 delta.QALE=summary1$QALE - summary2$QALE,
-                delta.costs=summary1[[perspective]] - summary2[[perspective]])
+                delta.costs=summary1[[perspective]] - summary2[[perspective]],
+                from=from, perspective=perspective)
     if (p1$discountRate.costs == 0 && p2$discountRate.costs == 0 &&
         p1$discountRate.effectiveness == 0 && p2$discountRate.effectiveness == 0) {
         out <- c(out,

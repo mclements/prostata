@@ -2,6 +2,43 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
+## Issue with small differences
+library(prostata)
+library(dplyr)
+test1 = callFhcrc(1e4, nLifeHistories=1e4, mc.cores=2)
+test2 = callFhcrc(1e4, screen="regular_screen",nLifeHistories=1e4, mc.cores=2,
+                  parms=list(screening_interval=4))
+summary(test1)
+summary(test1,from=55)
+ICER(test1, test2)
+unlist(ICER(test1,test2))[2:3]*1000
+summary(test1)
+## approximate QALYs, costs and LE
+QALE <- function(sim, discountRate=0)
+    with(sim, summary$ut %>% mutate(ut=ut*((1+simulation.parameters$discountRate.effectiveness)/(1+discountRate))^(age+0.5)) %>% summarise(ut=sum(ut)/n))
+costs <- function(sim, discountRate=0)
+    with(sim, societal.costs %>% mutate(costs=costs*((1+simulation.parameters$discountRate.costs)/(1+discountRate))^(age+0.5)) %>% summarise(costs=sum(costs)/n))
+LE <- function(sim, discountRate = 0)
+    with(sim, summary$pt %>% mutate(pt=pt/(1+discountRate)^(age+0.5)) %>% summarise(pt=sum(pt)/n))
+## differences in measures with and without discounting
+(QALE(test1)-QALE(test2))*1000
+(QALE(test1,0.03)-QALE(test2,0.03))*1000
+(costs(test1)-costs(test2))*1000
+(costs(test1,0.03)-costs(test2,0.03))*1000
+(LE(test1)-LE(test2))*1000
+(LE(test1,0.03)-LE(test2,0.03))*1000
+
+QALE <- function(sim, discountRate=0, centre=0, minage=0)
+    with(sim, filter(summary$ut, age>=minage) %>% mutate(ut=ut*(1+simulation.parameters$discountRate.effectiveness)^(age+0.5)/(1+discountRate)^((age-centre)+0.5)) %>% summarise(ut=sum(ut)/n))
+(QALE(test1)-QALE(test2))*1000
+(QALE(test1,0.03)-QALE(test2,0.03))*1000
+(QALE(test1,0.03,55)-QALE(test2,0.03,55))*1000
+(QALE(test1,minage=50)-QALE(test2,minage=50))*1000
+(QALE(test1,0.03)-QALE(test2,0.03))*1000
+(QALE(test1,0.03,55)-QALE(test2,0.03,55))*1000
+
+
+
 ## ERSPC replication
 ## Simple: compare no screening with four-yearly screening 60--69 years, with follow-up for fourteen years
 library(prostata)

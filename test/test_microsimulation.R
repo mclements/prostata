@@ -2,6 +2,19 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
+## Testing for using background utilities
+library(prostata)
+test1 = callFhcrc(1e3)
+summary(test1)
+## Screening scenario:            noScreening
+## Life expectancy:                79.735905
+## Discounted QALE:                28.019726
+## Discounted health sector costs: 249.729055
+## Discounted societal costs:      259.084014
+## Discounted rate (effect.):      0.030000
+## Discounted rate (costs):        0.030000
+
+
 ## Issue with small differences
 library(prostata)
 library(dplyr)

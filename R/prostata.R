@@ -501,6 +501,31 @@ pop1 <- data.frame(cohort=2035:1900,
                        6691, 6511, 6857, 7304, 7308, 7859, 7277, 8323, 8561, 7173,
                        6942, 7128, 6819, 5037, 6798, rep(6567,46)))
 
+#' @title background_utilities
+#' @description Swedish background utilities from Burström and Rehnberg (2006)
+#' @format A data frame with 14 rows and 3 variables:
+#' \describe{
+#'   \item{\code{lower}}{double lower age}
+#'   \item{\code{lower}}{double upper age}
+#'   \item{\code{utility}}{double background utility value}
+#'}
+#' @details http://libris.kb.se/bib/10708053?vw=short
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  background_utilities
+#'  }
+#' }
+#' @rdname FUNCTION_NAME
+#' @export
+"background_utilities"
+background_utilities <-
+    data.frame(lower=c(0, 18, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80),
+               upper=c(18, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 1.0e55),
+               utility=c(1, 0.89, 0.89, 0.88, 0.87, 0.84, 0.84, 0.83, 0.83, 0.82, 0.83, 0.81,
+                         0.79, 0.74))
+
+
 #' @title List tables for the simulation
 #' @description DATASET_DESCRIPTION
 #' \strong{all_cause_mortality}
@@ -661,6 +686,7 @@ fhcrcData$biopsyOpportunisticComplianceTable <- swedenOpportunisticBiopsyComplia
 fhcrcData$biopsyFormalComplianceTable <- swedenFormalBiopsyCompliance
 fhcrcData$secularTrendTreatment2008OR <- secularTrendTreatment2008OR
 ## https://www.socialstyrelsen.se/Lists/Artikelkatalog/Attachments/20008/2015-12-26.pdf
+fhcrcData$background_utilities <- background_utilities
 
 #' @title DATASET_TITLE
 #' @description DATASET_DESCRIPTION

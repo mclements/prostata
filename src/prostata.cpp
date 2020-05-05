@@ -145,6 +145,7 @@ namespace fhcrc_example {
     int screen, nLifeHistories;
     bool panel, debug;
     Table<double,double> production;
+    DataFrame background_utilities;
 
     ~SimInput() {
       if (rngNh != NULL) delete rngNh;
@@ -747,50 +748,12 @@ void FhcrcPerson::init() {
 
   in->rngNh->set();
 
-  // utilities
-  // | LowerAge | UpperAge | Males | Females |
-  // |----------+----------+-------+---------|
-  // |        0 |       17 |  1.00 |    1.00 |
-  // |       18 |       24 |  0.89 |    0.83 |
-  // |       25 |       29 |  0.89 |    0.84 |
-  // |       30 |       34 |  0.88 |    0.85 |
-  // |       35 |       39 |  0.87 |    0.83 |
-  // |       40 |       44 |  0.84 |    0.81 |
-  // |       45 |       49 |  0.84 |    0.80 |
-  // |       50 |       54 |  0.83 |    0.78 |
-  // |       55 |       59 |  0.83 |    0.77 |
-  // |       60 |       64 |  0.82 |    0.77 |
-  // |       65 |       69 |  0.83 |    0.79 |
-  // |       70 |       74 |  0.81 |    0.75 |
-  // |       75 |       79 |  0.79 |    0.73 |
-  // |       80 |       84 |  0.74 |    0.69 |
-  // Schedule changes in the baseline utility by age
-  // Burström and Rehnberg (2006)
-  // This one?
-  // http://libris.kb.se/bib/10708053?vw=short
-  // or this (has the plot but not the table):
-  // https://link.springer.com/content/pdf/10.1007%2Fs11136-007-9243-z.pdf
-  // (require 'cl)
-  // (let ((utilities
-  // 	 (list 1 0.89 0.89 0.88 0.87 0.84 0.84 0.83 0.83 0.82 0.83 0.81 0.79 0.74))
-  // 	(ages
-  // 	 (append (list 0 18) (loop for i from 25 to 80 by 5 collect i))))
-  //  (loop for utility in utilities for age in ages
-  //   do (message (format "scheduleUtilityChange(%g.0, 5.0, %g);" age utility))))
-  scheduleUtilityChange(0.0, 18.0, 1.00);
-  scheduleUtilityChange(18.0, 25.0, 0.89);
-  scheduleUtilityChange(25.0, 30.0, 0.89);
-  scheduleUtilityChange(30.0, 35.0, 0.88);
-  scheduleUtilityChange(35.0, 40.0, 0.87);
-  scheduleUtilityChange(40.0, 45.0, 0.84);
-  scheduleUtilityChange(45.0, 50.0, 0.84);
-  scheduleUtilityChange(50.0, 55.0, 0.83);
-  scheduleUtilityChange(55.0, 60.0, 0.83);
-  scheduleUtilityChange(60.0, 65.0, 0.82);
-  scheduleUtilityChange(65.0, 70.0, 0.83);
-  scheduleUtilityChange(70.0, 75.0, 0.81);
-  scheduleUtilityChange(75.0, 80.0, 0.79);
-  scheduleUtilityChange(80.0, 1.0e99, 0.74);
+  // background utilities
+  NumericVector bg_lower = in->background_utilities["lower"];
+  NumericVector bg_upper = in->background_utilities["upper"];
+  NumericVector bg_utility = in->background_utilities["utility"];
+  for (int i=0; i<bg_utility.size(); i++)
+	 scheduleUtilityChange(bg_lower[i], bg_upper[i], bg_utility[i]);
 
   // record some parameters using SimpleReport - too many for a tuple
   if (id < in->nLifeHistories) {
@@ -1457,6 +1420,8 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
 
   int n = as<int>(parms["n"]);
   int firstId = as<int>(parms["firstId"]);
+  in.background_utilities =
+    as<DataFrame>(tables["background_utilities"]);
   in.interp_prob_grade7 =
     NumericInterpolate(as<DataFrame>(tables["prob_grade7"]));
   in.prtxCM = TablePrtx(as<DataFrame>(tables["prtx"]),
@@ -1548,7 +1513,6 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   in.panel = as<bool>(parms["panel"]);
   NumericVector cohort = as<NumericVector>(parms["cohort"]); // at present, this is the only chuck-specific data
   bool indiv_reports = as<bool>(in.bparameter["indiv_reports"]);
-
 
   // set up the parameters
   double ages0[106];

@@ -133,7 +133,7 @@ namespace fhcrc_example {
     H_local_t H_local;
     set<double,greater<double> > H_local_age_set;
 
-    Rng * rngNh, * rngOther, * rngScreen, * rngTreatment;
+    Rng * rngNh, * rngOther, * rngScreen, * rngTreatment, * rngSurv;
     Rpexp rmu0;
 
     NumericVector parameter;
@@ -152,6 +152,7 @@ namespace fhcrc_example {
       if (rngOther != NULL) delete rngOther;
       if (rngScreen != NULL) delete rngScreen;
       if (rngTreatment != NULL) delete rngTreatment;
+      if (rngSurv != NULL) delete rngSurv;
     }
   };
   // SimInput in; // callFhcrc
@@ -1169,7 +1170,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       }
     }
     // reset the random number stream
-    in->rngNh->set();
+    in->rngSurv->set();
     // check for cure
     bool cured = false;
     double age_c = (state == Localised) ? tc + 35.0 : tmc + 35.0;
@@ -1267,6 +1268,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       out->diagnoses.record("weight", weight);
       out->diagnoses.record("lead_time", lead_time);
     }
+    in->rngNh->set();
   } break;
 
   case toRP:
@@ -1302,6 +1304,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     break;
 
   case toCM:
+    in->rngTreatment->set();
     if (in->bparameter["Andreas"])
       add_costs("Active surveillance - single MR"); // expand here
     scheduleAt(now(), toYearlyActiveSurveillance);
@@ -1315,6 +1318,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (R::runif(0.0,1.0) > in->tableCMtoRTpnever(age)) {// pnever -> pever
       scheduleAt(now() + R::rlnorm(in->tableCMtoRTmeanlog(age), in->tableCMtoRTsdlog(age)), toRT);
     }
+    in->rngNh->set();
     break;
 
   case toYearlyActiveSurveillance:
@@ -1391,6 +1395,7 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   in.rngOther = new Rng();
   in.rngScreen = new Rng();
   in.rngTreatment = new Rng();
+  in.rngSurv = new Rng();
   in.rngNh->set();
   Utilities utilities;
 
@@ -1553,6 +1558,7 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
     in.rngOther->nextSubstream();
     in.rngScreen->nextSubstream();
     in.rngTreatment->nextSubstream();
+    in.rngSurv->nextSubstream();
     R_CheckUserInterrupt();  /* be polite -- did the user hit ctrl-C? */
   }
 

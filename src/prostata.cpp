@@ -133,7 +133,7 @@ namespace fhcrc_example {
     H_local_t H_local;
     set<double,greater<double> > H_local_age_set;
 
-    Rng * rngNh, * rngOther, * rngScreen, * rngTreatment, * rngSurv;
+    Rng * rngNh, * rngOther, * rngScreen, * rngTreatment, * rngSurv, * rngBx, * rngPrelude;
     Rpexp rmu0;
 
     NumericVector parameter;
@@ -145,7 +145,8 @@ namespace fhcrc_example {
     int screen, nLifeHistories;
     bool panel, debug;
     Table<double,double> production;
-    DataFrame background_utilities;
+    // DataFrame background_utilities;
+    NumericVector bg_lower, bg_upper, bg_utility;
 
     ~SimInput() {
       if (rngNh != NULL) delete rngNh;
@@ -153,6 +154,8 @@ namespace fhcrc_example {
       if (rngScreen != NULL) delete rngScreen;
       if (rngTreatment != NULL) delete rngTreatment;
       if (rngSurv != NULL) delete rngSurv;
+      if (rngBx != NULL) delete rngBx;
+      if (rngPrelude != NULL) delete rngPrelude;
     }
   };
   // SimInput in; // callFhcrc
@@ -579,6 +582,13 @@ void FhcrcPerson::init() {
   // utilities
   utilities->clear();
 
+  // background utilities
+  // NumericVector bg_lower = in->background_utilities["lower"];
+  // NumericVector bg_upper = in->background_utilities["upper"];
+  // NumericVector bg_utility = in->background_utilities["utility"];
+  for (int i=0; i < in->bg_utility.size(); i++)
+	 scheduleUtilityChange(in->bg_lower[i], in->bg_upper[i], in->bg_utility[i]);
+
   // change state variables
   state = Healthy;
   ext_state = ext::Healthy_state;
@@ -749,13 +759,6 @@ void FhcrcPerson::init() {
 
   in->rngNh->set();
 
-  // background utilities
-  NumericVector bg_lower = in->background_utilities["lower"];
-  NumericVector bg_upper = in->background_utilities["upper"];
-  NumericVector bg_utility = in->background_utilities["utility"];
-  for (int i=0; i<bg_utility.size(); i++)
-	 scheduleUtilityChange(bg_lower[i], bg_upper[i], bg_utility[i]);
-
   // record some parameters using SimpleReport - too many for a tuple
   if (id < in->nLifeHistories) {
     out->outParameters.record("id",double(id));
@@ -763,6 +766,7 @@ void FhcrcPerson::init() {
     out->outParameters.record("beta1",beta1);
     out->outParameters.record("beta2",beta2);
     out->outParameters.record("t0",t0);
+    out->outParameters.record("t3p",t0);
     out->outParameters.record("tm",tm);
     out->outParameters.record("tc",tc);
     out->outParameters.record("tmc",tmc);
@@ -795,7 +799,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   in->rngNh->set();
 
   // declarations
+  in->rngOther->set();
   double psa = psameasured(now()); // includes measurement error
+  in->rngNh->set();
   // double test = panel ? biomarker : psa;
   double Z = psamean(now());
   double age = now();
@@ -808,10 +814,12 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   bool formal_costs = in->parameter["formal_costs"]==1.0 && (!mixed_programs || organised);
   bool formal_compliance = in->parameter["formal_compliance"]==1.0 && (!mixed_programs || organised);
   double utility = FhcrcPerson::utility();
+  in->rngPrelude->set();
   bool detectable = FhcrcPerson::detectable(now(), year);
   if (in->parameter["rand_biopsy_sensitivityG6"]<1.0) {
     detectable = detectable && R::runif(0.0,1.0) < in->parameter["rand_biopsy_sensitivityG6"];
   }
+  in->rngNh->set();
 
   // record information
   if (in->parameter["full_report"] == 1.0)
@@ -902,7 +910,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toScreen:
   case toBiopsyFollowUpScreen: {
-    in->rngScreen->set();
+    in->rngBx->set();
     this->psa_last_screen = psa;
     if (in->bparameter["includePSArecords"]) {
       out->psarecord.record("id",id);
@@ -979,6 +987,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     // if (panel && !positive_test && t0<now()-35.0 && ext_grade > ext::Gleason_le_6) {
     //   if (R::runif(0.0,1.0) < 1.0-parameter["rTPF"]) positive_test = true;
     // }
+    in->rngBx->set();
     if (positive_test && R::runif(0.0,1.0) < compliance) {
       if (in->bparameter["MRI_screen"]) {
 	scheduleAt(now()+1.0/52.0, toMRI); // MRI in one month
@@ -986,8 +995,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	scheduleAt(now()+1.0/52.0, toScreenInitiatedBiopsy); // biopsy in one month
       }
     } // assumes similar biopsy compliance, reasonable? An option to different psa-thresholds would be to use different biopsyCompliance. /AK
-    else
-      rescreening_schedules(psa, organised, mixed_programs);
+    else {
+          in->rngScreen->set();
+	  rescreening_schedules(psa, organised, mixed_programs);
+    }
     in->rngNh->set();
   } break;
 
@@ -1021,7 +1032,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     break;
 
   case toMRI: {
-    in->rngScreen->set();
+    in->rngBx->set();
     add_costs("MRI"); // does this include costs for the consultation?
     lost_productivity("MRI");
     // scheduleUtilityChange(now(), "MRI");
@@ -1053,7 +1064,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     break;
 
   case toScreenInitiatedBiopsy: {
-    in->rngScreen->set();
+    in->rngBx->set();
     // the following block follows the same pattern as toClinicalDiagnosticBiopsy
     if (in->bparameter["MRI_screen"] && this->MRIpos) {
       add_costs("Combined biopsy");
@@ -1396,6 +1407,8 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   in.rngScreen = new Rng();
   in.rngTreatment = new Rng();
   in.rngSurv = new Rng();
+  in.rngBx = new Rng();
+  in.rngPrelude = new Rng();
   in.rngNh->set();
   Utilities utilities;
 
@@ -1425,8 +1438,12 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
 
   int n = as<int>(parms["n"]);
   int firstId = as<int>(parms["firstId"]);
-  in.background_utilities =
+  DataFrame background_utilities =
     as<DataFrame>(tables["background_utilities"]);
+  in.bg_lower = background_utilities["lower"];
+  in.bg_upper = background_utilities["upper"];
+  in.bg_utility = background_utilities["utility"];
+  
   in.interp_prob_grade7 =
     NumericInterpolate(as<DataFrame>(tables["prob_grade7"]));
   in.prtxCM = TablePrtx(as<DataFrame>(tables["prtx"]),
@@ -1559,6 +1576,8 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
     in.rngScreen->nextSubstream();
     in.rngTreatment->nextSubstream();
     in.rngSurv->nextSubstream();
+    in.rngBx->nextSubstream();
+    in.rngPrelude->nextSubstream();
     R_CheckUserInterrupt();  /* be polite -- did the user hit ctrl-C? */
   }
 

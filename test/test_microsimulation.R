@@ -24,26 +24,54 @@ summary(test1 <- callFhcrc(1e3))
 ## Discounted rate (effect.):      0.030000
 ## Discounted rate (costs):        0.030000
 
-
+library(prostata)
 new.table <- list(background_utilities=data.frame(lower=c(0,5,15,30,45,60,70,80),
                         upper=c(5,15,30,45,60,70,80,1.0e99),
                         utility=c(0.970, 0.983, 0.957, 0.941, 0.903, 0.826, 0.731, 0.642)))
-summary(test1 <- callFhcrc(1e4,nLifeHistories=1e5))
-summary(test2 <- callFhcrc(1e4,tables=new.table,nLifeHistories=1e5))
+## new.table$background_utilities <- transform(new.table$background_utilities,
+##                                             lower=pmax(0,lower-1e-7),
+##                                             upper=upper-1e-7)
+## bg <- transform(prostata:::fhcrcData$background_utilities,
+##                 lower=pmax(0,lower-1e-7),
+##                 upper=upper-1e-7)
+## summary(callFhcrc(1e4,screen="regular_screen"))
+summary(test1 <- callFhcrc(1e4,screen="regular_screen",nLifeHistories=1e5))
+summary(test2 <- callFhcrc(1e4,screen="regular_screen",tables=new.table,nLifeHistories=1e5))
+## summary(test3 <- callFhcrc(1e4,screen="regular_screen",tables=list(background_utilities=bg),
+##                            nLifeHistories=1e5))
 merge(as.data.frame(table(test1$lifeHistories$event)),
       as.data.frame(table(test2$lifeHistories$event)), by="Var1", all=TRUE) # toRT, toCancerDeath, toYearlyActiveSurveillance, toYearlyPostTxFollowUp
-
-(test1$parameters != test2$parameters)[24,]
-rbind(subset(test1$parameters,id==23),
-      subset(test2$parameters, id==23))
-options(width=200)
-subset(test1$lifeHistories,id==23)
-subset(test2$lifeHistories,id==23)
-which(test1$parameters != test2$parameters)
 apply(test1$parameters != test2$parameters, 2, sum) # age_d and pca_death => survival??
 
-subset(test1$lifeHistories,id==132)
-subset(test2$lifeHistories,id==132)
+library(sqldf)
+lh1 <- test1$lifeHistories
+lh2 <- test2$lifeHistories
+diff1 <- sqldf("select distinct id, event from lh1 except select id, event from lh2")
+diff2 <- sqldf("select distinct id, event from lh2 except select id, event from lh1")
+sqldf("select event, count(*) from diff1 group by event")
+sqldf("select event, count(*) from diff2 group by event")
+sqldf("select id from diff1 where event=\"toScreenInitiatedBiopsy\"")
+
+options(width=200)
+subset(test1$lifeHistories,id==138)
+subset(test2$lifeHistories,id==138)
+
+
+which(test1$parameters != test2$parameters)
+which(test1$parameters$age_pca != test2$parameters$age_pca)
+
+rbind(subset(test1$parameters, id==752),
+      subset(test2$parameters, id==752))
+options(width=200)
+subset(test1$lifeHistories,id==752)
+subset(test2$lifeHistories,id==752)
+
+rbind(subset(test1$parameters, id==80),
+      subset(test2$parameters, id==80))
+options(width=200)
+subset(test1$lifeHistories,id==80)
+subset(test2$lifeHistories,id==80)
+
 
 
 ## Issue with small differences

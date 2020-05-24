@@ -758,6 +758,9 @@ ageStandards <- data.frame(Age = cut(seq(0, 85, 5),
 #' @param parms List to update FhcrcParameters, Default: NULL
 #' @param mc.cores Integer with the number of cores to use for the computation,
 #'     Default: 1
+#' @param cl a cluster object, created by the \code{parallel} package or by the \code{snow}
+#'     package.  If NULL, use \code{mclapply} (i.e. does not use the registered
+#'     default cluster).
 #' @param print.timing Boolean should the required time be printed after the
 #'     simulation run, Default: TRUE
 #' @param ... TBA
@@ -778,6 +781,7 @@ ageStandards <- data.frame(Age = cut(seq(0, 85, 5),
 callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                       seed=12345, panel=FALSE, flatPop = FALSE, pop = pop1,
                       tables = IHE, debug=FALSE, parms = NULL, mc.cores = 1,
+                      cl = NULL,
                       print.timing = TRUE,...) {
   ## save the random number state for resetting later
   state <- RNGstate(); on.exit(state$reset())
@@ -831,7 +835,8 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
           cohort <- sample(pop$cohort,n,prob=pop$pop/sum(pop$pop),replace=TRUE)
   }
   cohort <- sort(cohort)
-  ## now separate the data into chunks and set the initial random numbers
+    ## now separate the data into chunks and set the initial random numbers
+    if (!is.null(cl)) mc.cores <- length(cl) # HACK
     currentSeed <- user.Random.seed()
     if (mc.cores==1) {
         chunks <- list(cohort)
@@ -889,8 +894,8 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   bInd <- sapply(parameter,class)=="logical" & sapply(parameter,length)==1
   if (parameter$stockholmTreatment)
       fhcrcData$prtx <- stockholmTreatment
-    ## check some parameters for sanity
-  if (panel && parameter$rTPF>1) stop("Panel: rTPF>1 (not currently implemented)")
+  ## check some parameters for sanity
+    if (panel && parameter$rTPF>1) stop("Panel: rTPF>1 (not currently implemented)")
     if (panel && parameter$rFPF>1) stop("Panel: rFPF>1 (not currently implemented)")
     if (parameter$Andreas && parameter$MRI_screen)
         stop("For 'MRI_screen=TRUE', use 'parms=c(prostata:::ShuangParameters, MRI_screen=TRUE)'")
@@ -898,23 +903,30 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
         stop("Scenarios for 'panel=TRUE' and 'MRI_screen=TRUE' have not been defined")
     if (parameter$MRI_clinical && !parameter$MRI_screen)
         stop("Scenarios for 'MRI_clinical=TRUE' and 'MRI_screen=FALSE' have not been defined")
-  ## now run the chunks separately
-  timingfunction(out <- parallel::mclapply(1:mc.cores,
-                function(i) {
-                  chunk <- chunks[[i]]
-                  set.user.Random.seed(initialSeeds[[i]])
-                  .Call("callFhcrc",
-                        parms=list(n=as.integer(length(chunk)),
-                            firstId=ns[i],
-                            panel=panel, # bool
-                            debug=debug, # bool
-                            cohort=as.double(chunk),
-                            parameter=unlist(parameter[pind]),
-                            bparameter=unlist(parameter[bInd]),
-                            otherParameters=parameter[!pind & !bInd],
-                            tables=fhcrcData),
-                        PACKAGE="prostata")
-                }, mc.cores = mc.cores))
+    ## now run the chunks separately
+    step <- function(i) {
+        chunk <- chunks[[i]]
+        set.user.Random.seed(initialSeeds[[i]])
+        .Call("callFhcrc",
+              parms=list(n=as.integer(length(chunk)),
+                         firstId=ns[i],
+                         panel=panel, # bool
+                         debug=debug, # bool
+                         cohort=as.double(chunk),
+                         parameter=unlist(parameter[pind]),
+                         bparameter=unlist(parameter[bInd]),
+                         otherParameters=parameter[!pind & !bInd],
+                         tables=fhcrcData),
+              PACKAGE="prostata")
+    }
+    if (is.null(cl)) {
+        timingfunction(out <- parallel::mclapply(1:mc.cores, step))
+    } else {
+        clusterEvalQ(cl, {library(prostata);   RNGkind("user")})
+        clusterExport(cl, c("chunks", "initialSeeds", "ns", "panel", "debug", "pind",
+                            "bInd", "parameter", "fhcrcData"), envir=environment())
+        timingfunction(out <- parallel::parLapply(cl, 1:length(cl), step))
+    }
   ## Apologies: we now need to massage the chunks from C++
   ## reader <- function(obj) {
   ##   out <- cbind(data.frame(state=enum(obj$state[[1]],stateT),

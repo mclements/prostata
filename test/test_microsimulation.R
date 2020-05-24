@@ -2,6 +2,16 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
+## Using parLapply (for Windows)
+library(prostata)
+library(parallel)
+fit1 <- callFhcrc(1e4,mc.cores=2,pop=1960)
+cl <- makeCluster(2,type="PSOCK")
+fit2 <- callFhcrc(1e4,cl=cl,pop=1960)
+stopCluster(cl)
+summary(fit1)
+summary(fit2)
+
 ## Testing for using background utilities
 library(prostata)
 summary(test1 <- callFhcrc(1e3))

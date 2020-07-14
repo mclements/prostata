@@ -64,7 +64,22 @@ if(.Platform$OS.type == "unix") {
         microsimulation::user.Random.seed(pkg)
 }
 
-## initial values for the FHCRC model
+##
+#' @title Initial values for the FHCRC model
+#' @description Initial values for the FHCRC model
+#' @format A list
+#' \describe{
+#'}
+#' @details Currently, see the R documentation
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @rdname FhcrcParameters
+#' @export
+"FhcrcParameters"
 FhcrcParameters <- list(
     Andreas = TRUE,               # version for Andreas's CEA paper
     revised_natural_history=TRUE,
@@ -111,7 +126,7 @@ FhcrcParameters <- list(
     RP_mortHR = 0.56, # mortality hazard ratio for surgery over watchful-waiting from SPCG-4 Bill-Axelson 2014
     screeningParticipation = 0.75, # probability of actually having the first PSA test
     rescreeningParticipation = 0.95, # probability of actually having the re-screening PSA tests
-    biopsyCompliance = 0.856, # Formal biopsy compliance, Schröder ERSPC 2014
+    biopsyCompliance = 0.856, # Formal biopsy compliance, Schroder ERSPC 2014
     biopsySensitivityTimeProportionT1T2 = 0.5314886, # time portion when T1-T2 cancers are sensitivity to biopsies (expit from calibration). The remaining part, starting at onset, is not detectable.
     studyParticipation = 50.0/260.0, # observed fraction of population who participated in STHLM3 study
     nLifeHistories = 10L, screen = 0L, ## integers
@@ -492,7 +507,7 @@ rescreening <- data.frame(age5 = c(30, 30, 30, 30, 35, 35, 35, 35, 40, 40,
 #' @rdname FUNCTION_NAME
 #' @export
 "pop1"
-pop1 <- data.frame(cohort=2035:1900,
+pop1 <- data.frame(cohort=as.double(2035:1900),
                     pop=c(rep(17239,32), 16854, 16085, 15504, 15604, 16381, 16705,
                        16762, 16853, 15487, 14623, 14066, 13568, 13361, 13161, 13234,
                        13088, 12472, 12142, 12062, 12078, 11426, 12027, 11963, 12435,
@@ -502,7 +517,7 @@ pop1 <- data.frame(cohort=2035:1900,
                        6942, 7128, 6819, 5037, 6798, rep(6567,46)))
 
 #' @title background_utilities
-#' @description Swedish background utilities from Burström and Rehnberg (2006)
+#' @description Swedish background utilities from Burstrom and Rehnberg (2006)
 #' @format A data frame with 14 rows and 3 variables:
 #' \describe{
 #'   \item{\code{lower}}{double lower age}
@@ -516,7 +531,7 @@ pop1 <- data.frame(cohort=2035:1900,
 #'  background_utilities
 #'  }
 #' }
-#' @rdname FUNCTION_NAME
+#' @rdname background_utilities
 #' @export
 "background_utilities"
 background_utilities <-
@@ -692,18 +707,18 @@ fhcrcData$background_utilities <- background_utilities
 #' @description DATASET_DESCRIPTION
 #' @format A data frame with 18 rows and 3 variables:
 #' \describe{
-#'   \item{\code{Age}}{integer COLUMN_DESCRIPTION}
-#'   \item{\code{Sweden2000}}{double COLUMN_DESCRIPTION}
-#'   \item{\code{World}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{Age}}{integer Left-hand age for five-year age groups to 85+}
+#'   \item{\code{Sweden2000}}{double Sweden 2000 standard weights}
+#'   \item{\code{World}}{double World standard weights}
 #'}
-#' @details DETAILS
+#' @details Age groups 
 #' @examples
 #' \dontrun{
 #' if(interactive()){
 #'  #EXAMPLE1
 #'  }
 #' }
-#' @rdname FUNCTION_NAME
+#' @rdname ageStandards
 #' @export
 "ageStandards"
 ageStandards <- data.frame(Age = cut(seq(0, 85, 5),

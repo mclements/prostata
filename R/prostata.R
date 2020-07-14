@@ -515,6 +515,24 @@ pop1 <- data.frame(cohort=as.double(2035:1900),
                        8350, 7677, 7444, 7175, 6582, 6573, 6691, 6651, 6641, 6268,
                        6691, 6511, 6857, 7304, 7308, 7859, 7277, 8323, 8561, 7173,
                        6942, 7128, 6819, 5037, 6798, rep(6567,46)))
+#' @title DATASET_TITLE
+#' @description DATASET_DESCRIPTION
+#' @format A data frame with 4 rows and 2 variables:
+#' \describe{
+#'   \item{\code{cohort}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{pop}}{double COLUMN_DESCRIPTION}
+#'}
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @rdname cap
+#' @export
+"cap"
+cap <- data.frame(cohort=c(1955,1950,1945,1940), pop=c(55229, 55077,44057,35023))
 
 #' @title background_utilities
 #' @description Swedish background utilities from Burstrom and Rehnberg (2006)
@@ -702,9 +720,19 @@ fhcrcData$biopsyFormalComplianceTable <- swedenFormalBiopsyCompliance
 fhcrcData$secularTrendTreatment2008OR <- secularTrendTreatment2008OR
 ## https://www.socialstyrelsen.se/Lists/Artikelkatalog/Attachments/20008/2015-12-26.pdf
 fhcrcData$background_utilities <- background_utilities
-
-#' @title DATASET_TITLE
-#' @description DATASET_DESCRIPTION
+fhcrcData$cap_screen_uptake <-
+    data.frame(age = as.double(44:76),
+               H = c(0, 0.00279457395690957, 0.0111782958276383,
+                     0.0251511656121861, 0.0447131833105531, 0.0698643489227393, 0.098027986598169,
+                     0.126627420486267, 0.155662650587033, 0.185133676900467, 0.215040499426569,
+                     0.247663838926632, 0.285284416161949, 0.32790223113252, 0.375517283838344,
+                     0.428129574279422, 0.483488769981715, 0.539344538471183, 0.595696879747827,
+                     0.652545793811647, 0.709891280662642, 0.769265269782334, 0.832199690652243,
+                     0.89869454327237, 0.968749827642714, 1.04236554376328, 1.11776147575895,
+                     1.19315740775462, 1.26855333975029, 1.34394927174596, 1.41934520374163,
+                     1.42934520374163, 1.43934520374163))
+#' @title ageStandards
+#' @description Age standardisation weights
 #' @format A data frame with 18 rows and 3 variables:
 #' \describe{
 #'   \item{\code{Age}}{integer Left-hand age for five-year age groups to 85+}
@@ -813,7 +841,8 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                "goteborg", "risk_stratified", "mixed_screening",
                "regular_screen", "single_screen",
                "introduced_screening_only", "introduced_screening_preference",
-               "introduced_screening", "stopped_screening")
+               "introduced_screening", "stopped_screening",
+               "cap_control", "cap_study")
   screen <- match.arg(screen, screenT)
   stopifnot(is.na(n) || is.integer(as.integer(n)))
   stopifnot(is.integer(as.integer(nLifeHistories)))

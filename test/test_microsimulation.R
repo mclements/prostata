@@ -6,6 +6,7 @@
 library(prostata)
 control = callFhcrc(1e4,screen="cap_control",pop=cap, mc.cores=2)
 study = callFhcrc(1e4,screen="cap_study",pop=cap, mc.cores=2)
+ICER(study, control)
 
 
 ## Bug with predictions

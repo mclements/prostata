@@ -1025,11 +1025,11 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     } // assumes similar biopsy compliance, reasonable? An option to different psa-thresholds would be to use different biopsyCompliance. /AK
     else {
           in->rngScreen->set();
+	  if (in->screen == cap_study && organised)
+	    organised = false;
 	  rescreening_schedules(psa, organised, mixed_programs);
     }
     in->rngNh->set();
-    if (in->screen == cap_study && organised)
-      organised = false; // reset (potential issue: any subsequent biopsy will NOT be coded as organised)
   } break;
 
   case toClinicalDiagnosis:
@@ -1073,6 +1073,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (this->MRIpos || in->bparameter("MRInegSBx")) {
       scheduleAt(now(), toScreenInitiatedBiopsy);
     } else {
+      if (in->screen == cap_study && organised)
+	organised = false;
       rescreening_schedules(psa, organised, mixed_programs);
     }
     in->rngNh->set();
@@ -1161,6 +1163,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
         lost_productivity("Assessment", 1535.0/1381.0 - 1.0);
       }
       if (previousNegativeBiopsy || (in->bparameter("MRI_screen") && !this->MRIpos && in->bparameter["rescreenDoubleNeg"])) { // first negative biopsy and not MRI-
+	if (in->screen == cap_study && organised)
+	  organised = false;
         rescreening_schedules(psa_last_screen, organised, mixed_programs);
         previousNegativeBiopsy = false; // if going to rescreening, should their previous negative Bx be forgotten? (Currently only used here)
       } else {

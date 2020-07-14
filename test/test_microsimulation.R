@@ -2,13 +2,42 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
+## Bug with predictions
+library(prostata)
+library(dplyr)
+library(ggplot2)
+sim1 <- callFhcrc(1e4, mc.cores=2)
+pred1 <- predict(sim1, group = c("age"), type = "incidence.rate")
+pred2 <- predict(sim1, group = c("age", "grade"), type = "incidence.rate")
+pred3 <- left_join(pred1[-(3:4)], pred2[-c(3,5)], by=c("age","scenario")) %>%
+    filter(grade!='Healthy') %>%
+    mutate(n=ifelse(is.na(n),0,n),
+           rate=n/pt,
+           grade=droplevels(grade,'Healthy'))
+ggplot(pred3, aes(x=age, y=rate)) + facet_grid(~grade) + geom_line()
+## checks
+sum(sim1$summary$pt$pt)/1e4
+table(sim1$summary$events$event)
+sum(subset(sim1$summary$events,event %in% c("toScreenDiagnosis","toClinicalDiagnosis"))$n)
+sum(pred1$pt)
+sum(pred1$n, na.rm=TRUE)
+sum(pred2$pt)
+sum(pred2$n, na.rm=TRUE)
+
+
+
+
+
 ## Using parLapply (for Windows)
 library(prostata)
 library(parallel)
-fit1 <- callFhcrc(1e4,mc.cores=2,pop=1960)
-cl <- makeCluster(2,type="PSOCK")
-fit2 <- callFhcrc(1e4,cl=cl,pop=1960)
+gc = 0.001
+fit0 <- callFhcrc(1e4,pop=1960,parms=list(gc=gc))
+fit1 <- callFhcrc(1e4,mc.cores=2,pop=1960,parms=list(gc=gc))
+cl <- makeCluster(detectCores(),type="PSOCK")
+fit2 <- callFhcrc(1e4,cl=cl,pop=1960, parms=list(gc=gc))
 stopCluster(cl)
+summary(fit0)
 summary(fit1)
 summary(fit2)
 

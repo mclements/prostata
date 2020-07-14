@@ -57,7 +57,8 @@ namespace fhcrc_example {
   enum screen_t {noScreening, randomScreen50to70, twoYearlyScreen50to70, fourYearlyScreen50to70,
 		 screen50, screen60, screen70, screenUptake, stockholm3_goteborg, stockholm3_risk_stratified,
 		 goteborg, risk_stratified, mixed_screening, regular_screen, single_screen,
-                 introduced_screening_only, introduced_screening_preference, introduced_screening, stopped_screening};
+                 introduced_screening_only, introduced_screening_preference, introduced_screening,
+		 stopped_screening, cap_control, cap_study};
 
   enum treatment_t {no_treatment, CM, RP, RT};
 
@@ -147,6 +148,8 @@ namespace fhcrc_example {
     Table<double,double> production;
     // DataFrame background_utilities;
     NumericVector bg_lower, bg_upper, bg_utility;
+    // cumulative hazard for screenin uptake (currently only cap_control and cap_study)
+    NumericInterpolate H_screen_uptake;
 
     ~SimInput() {
       if (rngNh != NULL) delete rngNh;
@@ -237,7 +240,7 @@ namespace fhcrc_example {
     bool adt;
     double txhaz, psa_last_screen;
     int id, index;
-    double cohort, rescreening_frailty;
+    double cohort, rescreening_frailty, ageEntry;
     bool everPSA, previousNegativeBiopsy, organised, previousFollowup, MRIpos;
     FhcrcPerson(SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950, const int index = 0) :
       in(in), out(out), utilities(utilities), id(id), index(index), cohort(cohort) { };
@@ -524,13 +527,18 @@ namespace fhcrc_example {
       case screen60:
       case screen70:
       case stopped_screening:
+      case cap_control:
+      case cap_study:
         break;
       default:
         REprintf("Screening not matched: %s\n",in->screen);
         break;
       }
     } // rescreening participation
-    if (in->screen == screenUptake || (mixed_programs && !organised))
+    if (in->screen == screenUptake ||
+	in->screen == cap_control ||
+	in->screen == cap_study ||
+	(mixed_programs && !organised))
       opportunistic_rescreening(psa); // includes rescreening participation
   } // rescreening
 
@@ -641,6 +649,7 @@ void FhcrcPerson::init() {
       (R::runif(0.0,1.0) <= in->interp_prob_grade7.approx(beta2) ? ext::Gleason_7 : ext::Gleason_le_6) :
       ext::Gleason_ge_8;
   }
+  ageEntry = 0.0; // used by cap_control and cap_study
 
   if (in->debug) {
     Rprintf("id=%i, future_grade=%i, future_ext_grade=%i, beta0=%f, beta1=%f, beta2=%f, mubeta0=%f, sebeta0=%f, mubeta1=%f, sebeta1=%f, mubeta2=%f, sebeta2=%f\n", id, future_grade, future_ext_grade, beta0, beta1, beta2, double(in->parameter["mubeta0"]), double(in->parameter["sebeta0"]), double(in->parameter["mubeta1"]), double(in->parameter["sebeta1"]), in->mubeta2[future_grade], in->sebeta2[future_grade]);
@@ -689,6 +698,8 @@ void FhcrcPerson::init() {
     case stockholm3_goteborg:
     case stockholm3_risk_stratified:
     case screenUptake:
+    case cap_control:
+    case cap_study:
       // see below (models screening participation)
       break;
     default:
@@ -753,6 +764,22 @@ void FhcrcPerson::init() {
     if (screening_preference())
       opportunistic_uptake_if_ever();
     break;
+  case cap_control:
+  case cap_study: {
+    scheduleAt(in->H_screen_uptake.invert(-log(R::runif(0.0,1.0))), toScreen);
+    ageEntry = 2005.0 - cohort + R::runif(0.0,0.5);
+    if (in->screen == cap_study) {
+      double pScreened = cohort==1955.0 ? 0.3235438 :
+	cohort==1950.0 ? 0.3531057 :
+	cohort==1945.0 ? 0.3582405 :
+	0.3236445;
+      if (R::runif(0.0,1.0)<pScreened)
+	scheduleAt(ageEntry, toOrganised);
+    } else {
+      // keep the RNG in sync
+      R::runif(0.0,1.0);
+    }
+  } break;
   default:
     break;
   }
@@ -810,7 +837,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   bool mixed_programs = (in->screen == mixed_screening) ||
     (in->screen == introduced_screening) ||
     (in->screen == introduced_screening_preference) ||
-    (in->screen == stopped_screening);
+    (in->screen == stopped_screening) ||
+    (in->screen == cap_study);
   bool formal_costs = in->parameter["formal_costs"]==1.0 && (!mixed_programs || organised);
   bool formal_compliance = in->parameter["formal_compliance"]==1.0 && (!mixed_programs || organised);
   double utility = FhcrcPerson::utility();
@@ -1000,6 +1028,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	  rescreening_schedules(psa, organised, mixed_programs);
     }
     in->rngNh->set();
+    if (in->screen == cap_study && organised)
+      organised = false; // reset (potential issue: any subsequent biopsy will NOT be coded as organised)
   } break;
 
   case toClinicalDiagnosis:
@@ -1543,6 +1573,12 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   vector<double> ages(101);
   boost::algorithm::iota(ages.begin(), ages.end(), 0.0);
   ages.push_back(1.0e+6);
+
+  // setup for cap_control and cap_study
+  if (in.screen == cap_control || in.screen == cap_study) {
+    DataFrame cap_screen_uptake = as<DataFrame>(tables["cap_screen_uptake"]); // age,H
+    in.H_screen_uptake = NumericInterpolate(cap_screen_uptake);
+  }
 
   // re-set the output objects
   out.report.clear();

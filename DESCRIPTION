@@ -16,4 +16,4 @@ Imports: Rcpp, graphics, utils, parallel, stats
 LinkingTo: microsimulation, Rcpp, BH
 Suggests: testthat
 LazyData: true
-RoxygenNote: 6.0.1
+RoxygenNote: 7.0.2

@@ -2,6 +2,12 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
+## test for CAP
+library(prostata)
+control = callFhcrc(1e4,screen="cap_control",pop=cap, mc.cores=2)
+study = callFhcrc(1e4,screen="cap_study",pop=cap, mc.cores=2)
+
+
 ## Bug with predictions
 library(prostata)
 library(dplyr)

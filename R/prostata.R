@@ -896,10 +896,10 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   fhcrcData$biopsyOpportunisticComplianceTable <- swedenOpportunisticBiopsyCompliance
   fhcrcData$biopsyFormalComplianceTable <- swedenFormalBiopsyCompliance
   fhcrcData$secularTrendTreatment2008OR <- secularTrendTreatment2008OR
+  fhcrcData$rescreening <- rescreening
   if (!is.null(tables))
       for (name  in names(tables))
           fhcrcData[[name]] <- tables[[name]]
-  fhcrcData$rescreening <- rescreening
   fhcrcData$rescreening$total <- fhcrcData$rescreening$total_cat
   fhcrcData$prtx$Age <- as.double(fhcrcData$prtx$Age)
   fhcrcData$prtx$DxY <- as.double(fhcrcData$prtx$DxY)

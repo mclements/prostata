@@ -1580,8 +1580,8 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
 
   // setup for cap_control and cap_study
   if (in.screen == cap_control || in.screen == cap_study) {
-    DataFrame cap_screen_uptake = as<DataFrame>(tables["cap_screen_uptake"]); // age,H
-    in.H_screen_uptake = NumericInterpolate(cap_screen_uptake);
+    DataFrame uk_screen_uptake = as<DataFrame>(tables["uk_screen_uptake"]); // age,H
+    in.H_screen_uptake = NumericInterpolate(uk_screen_uptake);
   }
 
   // re-set the output objects

@@ -720,7 +720,7 @@ fhcrcData$biopsyFormalComplianceTable <- swedenFormalBiopsyCompliance
 fhcrcData$secularTrendTreatment2008OR <- secularTrendTreatment2008OR
 ## https://www.socialstyrelsen.se/Lists/Artikelkatalog/Attachments/20008/2015-12-26.pdf
 fhcrcData$background_utilities <- background_utilities
-fhcrcData$cap_screen_uptake <-
+fhcrcData$uk_screen_uptake <-
     data.frame(age = as.double(44:76),
                H = c(0, 0.00279457395690957, 0.0111782958276383,
                      0.0251511656121861, 0.0447131833105531, 0.0698643489227393, 0.098027986598169,

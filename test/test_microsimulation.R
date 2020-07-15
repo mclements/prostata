@@ -29,16 +29,29 @@ uk_rescreening1 <-
             lapply(c(50,55,60,65),
                    function(age) do.call(rbind,lapply(c(0,3,4,6,10,20),
                                                       function(psa) solver(age,psa)))))
+uk_rescreening2 <- rbind(transform(subset(rescreening,age5>=80 & total_cat==1), total_cat=0),
+                         subset(rescreening,age5>=80 & total_cat==3),
+                         transform(subset(rescreening,age5>=80 & total_cat==3), total_cat=4),
+                         transform(subset(rescreening,age5>=80 & total_cat==3), total_cat=6),
+                         subset(rescreening,age5>=80 & total_cat==10),
+                         transform(subset(rescreening,age5>=80 & total_cat==10), total_cat=20))
 uk_rescreening <- rbind(transform(subset(uk_rescreening1,age5==50),age5=30),
                          uk_rescreening1,
-                         subset(rescreening,age5>=80))
+                         uk_rescreening2)
+uk_rescreening <- uk_rescreening[with(uk_rescreening, order(age5,total_cat)),]
 dput(uk_rescreening)
 ##
 library(prostata)
 sim1 = callFhcrc(1e4,screen="cap_control",pop=cap, mc.cores=2)
 sim2 = callFhcrc(1e4,screen="cap_control",pop=cap, mc.cores=2, tables=list(rescreening=uk_rescreening))
-summary(sim1)
-summary(sim2)
+plot(sim1,type="testing.rate")
+lines(sim2,type="testing.rate",lty=2)
+plotter <- function(row,t=seq(0,30,length=301), ...)
+    plot(t, 0.9*pweibull(t,row$shape,row$scale), type="l", ...)
+liner <- function(row,t=seq(0,30,length=301), ...)
+    lines(t, 0.9*pweibull(t,row$shape,row$scale), ...)
+plotter(subset(rescreening, age5==30 & total_cat==10))
+liner(subset(uk_rescreening, age5==30 & total_cat==10),lty=2, col="blue")
 
 
 ## test for CAP

@@ -24,19 +24,19 @@ solver <- function(age.,psa.) {
 plotter <- function(row,t=seq(0,30,length=301))
     plot(t, 0.9*pweibull(t,row$shape,row$scale), type="l")
 plotter(solver(50,0))
-cap_rescreening1 <-
+uk_rescreening1 <-
     do.call(rbind,
             lapply(c(50,55,60,65),
                    function(age) do.call(rbind,lapply(c(0,3,4,6,10,20),
                                                       function(psa) solver(age,psa)))))
-cap_rescreening <- rbind(transform(subset(cap_rescreening1,age5==50),age5=30),
-                         cap_rescreening1,
+uk_rescreening <- rbind(transform(subset(uk_rescreening1,age5==50),age5=30),
+                         uk_rescreening1,
                          subset(rescreening,age5>=80))
-dput(cap_rescreening)
-
+dput(uk_rescreening)
+##
 library(prostata)
 sim1 = callFhcrc(1e4,screen="cap_control",pop=cap, mc.cores=2)
-sim2 = callFhcrc(1e4,screen="cap_control",pop=cap, mc.cores=2, tables=list(rescreening=cap_rescreening))
+sim2 = callFhcrc(1e4,screen="cap_control",pop=cap, mc.cores=2, tables=list(rescreening=uk_rescreening))
 summary(sim1)
 summary(sim2)
 

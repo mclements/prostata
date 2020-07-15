@@ -4,7 +4,7 @@
 \name{FhcrcParameters}
 \alias{FhcrcParameters}
 \title{Initial values for the FHCRC model}
-\format{A list 
+\format{A list
 \describe{
 }}
 \usage{

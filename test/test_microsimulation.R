@@ -2,6 +2,45 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
+## UK re-calibration for rescreening
+## Assume: cure and shape related to Sweden; given p1, solve for scale
+library(prostata) # rescreening data-frame
+subset(transform(rescreening, ever=1-cure, p1 = (1-cure)*pweibull(1,shape,scale)),
+       age5>=50 & age5<70)
+cprd <- rbind(data.frame(age=50,psa=c(0,3,4,6,10,20),p1=c(.09,.27,.61,.67,.63,.49)),
+              data.frame(age=55,psa=c(0,3,4,6,10,20),p1=c(.11,.20,.55,.62,.58,.47)),
+              data.frame(age=60,psa=c(0,3,4,6,10,20),p1=c(.13,.18,.50,.58,.57,.42)),
+              data.frame(age=65,psa=c(0,3,4,6,10,20),p1=c(.15,.20,.40,.57,.53,.38)))
+solver <- function(age.,psa.) {
+    row <- subset(rescreening,age5==floor(age./5)*5 &
+                              total_cat==ifelse(psa.<3,1,ifelse(psa.<10,3,10)))
+    shape <- row$shape[1]
+    cure <- row$cure[1]
+    p1 <- subset(cprd, age==age. & psa==psa.)$p1[1]
+    objective <- function(scale) (1-cure)*pweibull(1,shape,scale) - p1
+    data.frame(age5=age., total_cat=psa., shape=shape, cure=cure,
+               scale=uniroot(objective, lower=0.01, upper=10)$root)
+}
+plotter <- function(row,t=seq(0,30,length=301))
+    plot(t, 0.9*pweibull(t,row$shape,row$scale), type="l")
+plotter(solver(50,0))
+cap_rescreening1 <-
+    do.call(rbind,
+            lapply(c(50,55,60,65),
+                   function(age) do.call(rbind,lapply(c(0,3,4,6,10,20),
+                                                      function(psa) solver(age,psa)))))
+cap_rescreening <- rbind(transform(subset(cap_rescreening1,age5==50),age5=30),
+                         cap_rescreening1,
+                         subset(rescreening,age5>=80))
+dput(cap_rescreening)
+
+library(prostata)
+sim1 = callFhcrc(1e4,screen="cap_control",pop=cap, mc.cores=2)
+sim2 = callFhcrc(1e4,screen="cap_control",pop=cap, mc.cores=2, tables=list(rescreening=cap_rescreening))
+summary(sim1)
+summary(sim2)
+
+
 ## test for CAP
 library(prostata)
 control = callFhcrc(1e4,screen="cap_control",pop=cap, mc.cores=2)

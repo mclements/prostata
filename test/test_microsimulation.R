@@ -2,6 +2,13 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
+## CAP reconstruction
+library(prostata)
+sim1 = callFhcrc(1e4,screen="cap_control",pop=cap_control, mc.cores=2,
+                 tables=list(rescreening=uk_rescreening),
+                 nLifeHistories=1e4)
+
+
 ## UK re-calibration for rescreening
 ## Assume: cure and shape related to Sweden; given p1, solve for scale
 library(prostata) # rescreening data-frame

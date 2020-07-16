@@ -767,7 +767,7 @@ void FhcrcPerson::init() {
   case cap_control:
   case cap_study: {
     scheduleAt(in->H_screen_uptake.invert(-log(R::runif(0.0,1.0))), toScreen);
-    ageEntry = 2005.0 - cohort + R::runif(0.0,0.5);
+    ageEntry = 2005.0 - cohort + R::runif(0.0,5.0); // 50-54, 55-59, 60-64, 65-69
     if (in->screen == cap_study) {
       double pScreened = cohort==1955.0 ? 0.3235438 :
 	cohort==1950.0 ? 0.3531057 :

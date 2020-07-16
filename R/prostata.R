@@ -845,6 +845,8 @@ ageStandards <- data.frame(Age = cut(seq(0, 85, 5),
                           World = c(12.0, 10.0, 9.0, 9.0, 8.0, 8.0, 6.0, 6.0, 6.0,
                                     6.0, 5.0, 4.0, 4.0, 3.0, 2.0, 1.0, 0.5, 0.5))
 
+## fix pradt: repeated values in 2004
+fhcrcData$pradt <- unique(fhcrcData$pradt)
 #' @title Define and run simulation
 #' @description Function to specify and run the microsimulation. A large number
 #'     of simulated men, \code{n}, will cause the simulation to take longer time

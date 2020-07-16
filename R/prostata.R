@@ -845,8 +845,14 @@ ageStandards <- data.frame(Age = cut(seq(0, 85, 5),
                           World = c(12.0, 10.0, 9.0, 9.0, 8.0, 8.0, 6.0, 6.0, 6.0,
                                     6.0, 5.0, 4.0, 4.0, 3.0, 2.0, 1.0, 0.5, 0.5))
 
+.xtabsDFCheck <- function(df, dim_cols) {
+    stopifnot(is.data.frame(df))
+    stopifnot(all(dim_cols %in% names(df)))
+    stopifnot(prod(sapply(dim_cols, function(name) length(unique(df[[name]])))) == nrow(df))
+}
 ## fix pradt: repeated values in 2004
 fhcrcData$pradt <- unique(fhcrcData$pradt)
+
 #' @title Define and run simulation
 #' @description Function to specify and run the microsimulation. A large number
 #'     of simulated men, \code{n}, will cause the simulation to take longer time
@@ -1027,6 +1033,15 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   bInd <- sapply(parameter,class)=="logical" & sapply(parameter,length)==1
   if (parameter$stockholmTreatment)
       fhcrcData$prtx <- stockholmTreatment
+  ## table checks
+  .xtabsDFCheck(fhcrcData$prtx,c("Age","DxY","G"))
+  .xtabsDFCheck(fhcrcData$pradt,c("Tx","Age","DxY","Grade"))
+  .xtabsDFCheck(parameter$hr_locoregional,c("age","ext_grade","psa10")) # should this be in fhcrcData?
+  .xtabsDFCheck(fhcrcData$biopsyOpportunisticComplianceTable, c("psa","age"))
+  .xtabsDFCheck(fhcrcData$rescreening,c("age5","total"))
+  .xtabsDFCheck(fhcrcData$survival_dist,c("Grade","Time"))
+  .xtabsDFCheck(fhcrcData$survival_local,c("Age","Grade","Time"))
+
   ## check some parameters for sanity
     if (panel && parameter$rTPF>1) stop("Panel: rTPF>1 (not currently implemented)")
     if (panel && parameter$rFPF>1) stop("Panel: rFPF>1 (not currently implemented)")

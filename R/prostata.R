@@ -333,6 +333,7 @@ FhcrcParameters <- list(
     utility_truncate = TRUE, # should utilities be truncated at zero?
     utility_scales = c("UtilityAdditive"=0,"UtilityMultiplicative"=1,"UtilityMinimum"=2), # encoding for the utility scales
     utility_scale = as.double(1), # default scale = UtilityMultiplicative
+    includeEventHistories = TRUE,
     includePSArecords = FALSE,
     includeBxrecords = FALSE,
     includeDiagnoses = FALSE,

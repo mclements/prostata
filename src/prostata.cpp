@@ -854,7 +854,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     out->report.add(FullState::Type(ext_state, ext_grade, dx, psa>=3.0, cohort), msg->kind, previousEventTime, age, utility, index);
   out->shortReport.add(1, msg->kind, previousEventTime, age, utility);
 
-  if (id < in->nLifeHistories) { // only record up to the first n individuals
+  if (in->bparameter["includeEventHistories"] && id < in->nLifeHistories) { // only record up to the first n individuals
     out->lifeHistories.push_back(LifeHistory::Type(id, ext_state, ext_grade, dx, msg->kind, previousEventTime, age, year, psa, utility));
   }
 

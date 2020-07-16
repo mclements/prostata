@@ -4,7 +4,7 @@
 \name{uk_rescreening}
 \alias{uk_rescreening}
 \title{UK rescreening rates}
-\format{A data frame with 42 rows and 5 variables:
+\format{A data frame with 48 rows and 5 variables:
 \describe{
   \item{\code{age5}}{double COLUMN_DESCRIPTION}
   \item{\code{total_cat}}{double COLUMN_DESCRIPTION}

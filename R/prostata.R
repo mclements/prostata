@@ -517,7 +517,30 @@ pop1 <- data.frame(cohort=as.double(2035:1900),
                        6942, 7128, 6819, 5037, 6798, rep(6567,46)))
 #' @title DATASET_TITLE
 #' @description DATASET_DESCRIPTION
-#' @format A data frame with 4 rows and 2 variables:
+#' @format A data frame with 4 rows and 4 variables:
+#' \describe{
+#'   \item{\code{cohort}}{integer COLUMN_DESCRIPTION}
+#'   \item{\code{pop}}{double COLUMN_DESCRIPTION}
+#'   \item{\code{screened}}{double Number screened at baseline}
+#'   \item{\code{pscreened}}{double Probability of being screened at baseline}
+#'}
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @rdname cap
+#' @export
+"cap_study"
+cap_study <- data.frame(cohort=c(1955,1950,1945,1940),
+                        pop=c(55229, 55077,44057,35023),
+                        screened=c(17869,19448,15783,11335))
+cap_study <- transform(cap_study, pscreened=screened/pop)
+#' @title DATASET_TITLE
+#' @description DATASET_DESCRIPTION
+#' @format A data frame with 4 rows and 4 variables:
 #' \describe{
 #'   \item{\code{cohort}}{integer COLUMN_DESCRIPTION}
 #'   \item{\code{pop}}{double COLUMN_DESCRIPTION}
@@ -531,8 +554,9 @@ pop1 <- data.frame(cohort=as.double(2035:1900),
 #' }
 #' @rdname cap
 #' @export
-"cap"
-cap <- data.frame(cohort=c(1955,1950,1945,1940), pop=c(55229, 55077,44057,35023))
+"cap_control"
+cap_control <- data.frame(cohort=c(1955,1950,1945,1940),
+                          pop=c(63423,63285,51507,41224))
 
 #' @title background_utilities
 #' @description Swedish background utilities from Burstrom and Rehnberg (2006)

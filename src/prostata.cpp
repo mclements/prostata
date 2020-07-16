@@ -811,6 +811,7 @@ void FhcrcPerson::init() {
     out->outParameters.record("psa75",psameasured(75.0));
     out->outParameters.record("psa85",psameasured(85.0));
     out->outParameters.record("rescreening_frailty",rescreening_frailty);
+    out->outParameters.record("ageEntry",ageEntry);
   }
 
   if (in->debug) Rprint_actions();

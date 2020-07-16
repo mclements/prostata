@@ -4,9 +4,85 @@
 
 ## CAP reconstruction
 library(prostata)
-sim1 = callFhcrc(1e4,screen="cap_control",pop=cap_control, mc.cores=2,
-                 tables=list(rescreening=uk_rescreening),
-                 nLifeHistories=1e4)
+## reduce the screening uptake
+uk_screen_uptake <- prostata:::fhcrcData$uk_screen_uptake # not currently exported
+uk_screen_uptake$H <- uk_screen_uptake$H/2
+## run simulations
+sim1 = callFhcrc(n=sum(cap_control$pop),screen="cap_control",pop=cap_control, mc.cores=2,
+                 parms=list(includeEventHistories=FALSE),
+                 tables=list(rescreening=uk_rescreening, uk_screen_uptake=uk_screen_uptake),
+                 nLifeHistories=sum(cap_control$pop))
+sim2 = callFhcrc(n=sum(cap_study$pop),screen="cap_study",pop=cap_study, mc.cores=2,
+                 parms=list(includeEventHistories=FALSE),
+                 tables=list(rescreening=uk_rescreening, uk_screen_uptake=uk_screen_uptake),
+                 nLifeHistories=sum(cap_study$pop))
+cap_study_by_year <- data.frame(year=seq(2002,2009),
+                                p=c(9.89,13.79,17.23,17.756,15.944,21.348,4.06,0))
+cap_control_by_year <- data.frame(year=seq(2002,2009),
+                                  p=c(7.18,5.21,9.15,29.56,25.24,20.88,2.47,0.31))
+## Incidence analysis
+cap_incidence <- function(sim, year, p) {
+    set.seed(12345) # NB: set the seed for re-producibility
+    df <- transform(sim$parameters,
+                    yearFup=2016.25,
+                    yearEntry=sample(year,
+                                     size=nrow(sim$parameters),
+                                     replace=TRUE,
+                                     prob=p)+
+                        runif(nrow(sim$parameters)))
+    df <- transform(df, cohort=yearEntry-ageEntry) # actual birth cohort (double)
+    df <- subset(df, age_d>ageEntry & (age_pca==-1 | age_pca>ageEntry))
+    df <- transform(df,
+                    cap_pca=(age_pca!=-1 & age_pca<age_d & cohort+age_pca<yearFup))
+    df <- transform(df,
+                    pt=ifelse(cap_pca, age_pca, pmin(age_d, yearFup-cohort))-ageEntry)
+    df
+}
+controls <- cap_incidence(sim1, cap_control_by_year$year, cap_control_by_year$p)
+study <- cap_incidence(sim2, cap_study_by_year$year, cap_study_by_year$p)
+## Plot of cumulative hazards curves for incidence // Figure 2 Panel B from Martin et al (2018)
+library(survival)
+plot(survfit(Surv(pt,cap_pca)~1, study), fun="cumhaz")
+lines(survfit(Surv(pt,cap_pca)~1, controls),col=2,fun="cumhaz")
+legend("topleft", c("Study arm","Control arm"), lty=1,col=1:2,bty="n")
+## Table: Counts by age at study entry and Gleason score, simulated CAP control arm
+xtabs(~I(floor(ageEntry/5)*5)+future_ext_grade, controls, subset=cap_pca)
+## Cox regression for incidence
+joint <- rbind(transform(controls,study=0),
+               transform(study,study=1))
+summary(coxph(Surv(pt,cap_pca)~study,joint)) ## HR=1.17 (1.14, 1.21) cf. 1.19 (1.14,1.25) from Martin et al
+##
+## Mortality analysis
+cap_death <- function(sim, year, p) {
+    set.seed(12345) # NB: set the seed for re-producibility
+    df <- transform(sim$parameters,
+                    yearFup=2016.25,
+                    yearEntry=sample(year,
+                                     size=nrow(sim$parameters),
+                                     replace=TRUE,
+                                     prob=p)+
+                        runif(nrow(sim$parameters)))
+    df <- transform(df, cohort=yearEntry-ageEntry) # actual birth cohort (double)
+    df <- subset(df, age_d>ageEntry & (age_pca==-1 | age_pca>ageEntry))
+    df <- transform(df,
+                    cap_dth=(pca_death & cohort+age_d<yearFup),
+                    pt=pmin(age_d, yearFup-cohort)-ageEntry)
+    df
+}
+controls <- cap_death(sim1, cap_control_by_year$year, cap_control_by_year$p)
+study <- cap_death(sim2, cap_study_by_year$year, cap_study_by_year$p)
+## Plot of cumulative hazards curves for incidence // Figure 2 Panel A from Martin et al (2018)
+library(survival)
+plot(survfit(Surv(pt,cap_dth)~1, study), fun="cumhaz")
+lines(survfit(Surv(pt,cap_dth)~1, controls),col=2,fun="cumhaz")
+legend("topleft", c("Study arm","Control arm"), lty=1,col=1:2,bty="n")
+## Table: Counts by age at study entry and Gleason score, simulated CAP control arm
+xtabs(~I(floor(ageEntry/5)*5)+future_ext_grade, controls, subset=cap_dth)
+## Cox regression for incidence
+joint <- rbind(transform(controls,study=0),
+               transform(study,study=1))
+summary(coxph(Surv(pt,cap_dth)~study,joint)) ## HR=0.91 (0.80,1.03) cf. 0.96 (0.85, 1.08) from Martin et al
+
 
 
 ## UK re-calibration for rescreening

@@ -82,7 +82,20 @@ xtabs(~I(floor(ageEntry/5)*5)+future_ext_grade, controls, subset=cap_dth)
 joint <- rbind(transform(controls,study=0),
                transform(study,study=1))
 summary(coxph(Surv(pt,cap_dth)~study,joint)) ## HR=0.91 (0.80,1.03) cf. 0.96 (0.85, 1.08) from Martin et al
-
+##
+## p-values
+local({
+    a <- c(0.91, 0.80,1.03)
+    b <- c(0.96, 0.85, 1.08)
+    statistic <- (a[1]-b[1])/sqrt(((a[3]-a[2])/2/1.96)^2+((b[3]-b[2])/2/1.96)^2)
+    (1-pnorm(abs(statistic)))*2
+})
+local({
+    a <- c(1.17, 1.14, 1.21)
+    b <- c(1.19, 1.14,1.25)
+    statistic <- (a[1]-b[1])/sqrt(((a[3]-a[2])/2/1.96)^2+((b[3]-b[2])/2/1.96)^2)
+    (1-pnorm(abs(statistic)))*2
+})
 
 
 ## UK re-calibration for rescreening

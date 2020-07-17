@@ -139,8 +139,8 @@ liner(subset(uk_rescreening, age5==30 & total_cat==10),lty=2, col="blue")
 
 ## test for CAP
 library(prostata)
-control = callFhcrc(1e4,screen="cap_control",pop=cap, mc.cores=2)
-study = callFhcrc(1e4,screen="cap_study",pop=cap, mc.cores=2)
+control = callFhcrc(1e4,screen="cap_control",pop=cap_control, mc.cores=2)
+study = callFhcrc(1e4,screen="cap_study",pop=cap_study, mc.cores=2)
 ICER(study, control)
 
 

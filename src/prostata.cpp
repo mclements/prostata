@@ -1619,7 +1619,7 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
     in.rngSurv->nextSubstream();
     in.rngBx->nextSubstream();
     in.rngPrelude->nextSubstream();
-    R_CheckUserInterrupt();  /* be polite -- did the user hit ctrl-C? */
+    if (i % 10000 == 0) Rcpp::checkUserInterrupt(); /* be polite -- did the user hit ctrl-C? */
   }
 
   // output

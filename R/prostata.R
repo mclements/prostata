@@ -1042,7 +1042,6 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   .xtabsDFCheck(fhcrcData$rescreening,c("age5","total"))
   .xtabsDFCheck(fhcrcData$survival_dist,c("Grade","Time"))
   .xtabsDFCheck(fhcrcData$survival_local,c("Age","Grade","Time"))
-
   ## check some parameters for sanity
     if (panel && parameter$rTPF>1) stop("Panel: rTPF>1 (not currently implemented)")
     if (panel && parameter$rFPF>1) stop("Panel: rFPF>1 (not currently implemented)")
@@ -1095,7 +1094,6 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   rbindExtract <- function(obj,name)
       do.call("rbind",lapply(obj, function(obji) data.frame(obji[[name]])))
   reader <- function(obj) {
-    obj <- cbindList(obj)
     out <- cbind(data.frame(state=ext_state2state(enum(obj[[1]],ext_stateT)),
                             ext_state=enum(obj[[1]],ext_stateT),
                             grade=enum(obj[[2]],gradeT),

@@ -1088,21 +1088,20 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   ## }
   ext_state2state <- function(obj) # collapses T-stages to localised
       `levels<-`(factor(obj),list(Healthy="Healthy",Localised=list("T1_T2","T3plus"),Metastatic="Metastatic"))
-  cbindList <- function(obj) # recursive
+  cbindList <- function(obj) # recursive (not used)
     if (is.list(obj)) do.call("cbind",lapply(obj,cbindList)) else data.frame(obj)
-  rbindList <- function(obj) # recursive
+  rbindList <- function(obj) # recursive (not used)
       if (is.list(obj)) do.call("rbind",lapply(obj,rbindList)) else data.frame(obj)
   rbindExtract <- function(obj,name)
       do.call("rbind",lapply(obj, function(obji) data.frame(obji[[name]])))
   reader <- function(obj) {
-    out <- cbind(data.frame(state=ext_state2state(enum(obj[[1]],ext_stateT)),
-                            ext_state=enum(obj[[1]],ext_stateT),
-                            grade=enum(obj[[2]],gradeT),
-                            dx=enum(obj[[3]],diagnosisT),
-                            psa=enum(obj[[4]],psaT),
-                            cohort=obj[[5]]),
-                 data.frame(obj[,-(1:5)]))
-    out
+    cbind(data.frame(state=ext_state2state(enum(obj[[1]],ext_stateT)),
+                     ext_state=enum(obj[[1]],ext_stateT),
+                     grade=enum(obj[[2]],gradeT),
+                     dx=enum(obj[[3]],diagnosisT),
+                     psa=enum(obj[[4]],psaT),
+                     cohort=obj[[5]]),
+          data.frame(obj[,-(1:5)]))
   }
   ## grab all of the pt, prev, ut, events from summary
   ## pt <- lapply(out, function(obj) obj$summary$pt)

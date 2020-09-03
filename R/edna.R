@@ -15,7 +15,5 @@ EdnaParameters <- function(base = ShuangParameters)
                    shapeT = 4.8,  # = shapeA
                    scaleT = 15.0, # = scaleA
 
-                   eol=NULL # placemarker
-                   
+                   eol=1 # placemarker
                ))
-    

@@ -440,13 +440,13 @@ namespace fhcrc_example {
   }
 
   void FhcrcPerson::opportunistic_uptake_if_ever() {
-    // Assume:
+    // Defaults values assume:
     // (i)   cohorts aged <35 in 1995 have a llogis(3.8,15) from age 35 (cohort > 1960)
     // (ii)  cohorts aged 50+ in 1995 have a llogis(2,10) distribution from 1995 (cohort < 1945)
     // (iii) intermediate cohorts are a weighted mixture of (i) and (ii)
     double first_screen;
     if (cohort > double(in->parameter["endUptakeMixture"])) {
-      first_screen = 35.0 + R::rllogis(in->parameter["shapeA"],
+      first_screen = in->parameter["uptakeStartAge"] + R::rllogis(in->parameter["shapeA"],
 				       in->parameter["scaleA"]); // (i) age
     } else if (cohort < double(in->parameter["startUptakeMixture"])) {
       first_screen = (double(in->parameter["screeningIntroduced"]) - cohort) +
@@ -454,11 +454,11 @@ namespace fhcrc_example {
     } else {
       double age0 = double(in->parameter["screeningIntroduced"]) - cohort;
       double u = R::runif(0.0,1.0);
-      if ((age0 - 35.0) / (double(in->parameter["endUptakeMixture"]) -
+      if ((age0 - in->parameter["uptakeStartAge"]) / (double(in->parameter["endUptakeMixture"]) -
 			   double(in->parameter["startUptakeMixture"])) < u) // (iii) mixture
 	first_screen = age0 + R::rllogis_trunc(in->parameter["shapeA"],
 					       in->parameter["scaleA"],
-					       age0-35.0);
+					       age0-in->parameter["uptakeStartAge"]);
       else first_screen = age0 + R::rllogis(in->parameter["shapeT"],
 					    in->parameter["scaleT"]);
     }

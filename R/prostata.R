@@ -90,6 +90,7 @@ FhcrcParameters <- list(
     yearlyUptakeIncrease = 0.03,
     startUptakeMixture = 1945.0,
     endUptakeMixture = 1960.0,
+    uptakeStartAge=35.0,
     screeningIntroduced = 1995.0,
     shapeA = 3.8,
     scaleA = 15.0,

@@ -1134,7 +1134,18 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   parameters <- rbindExtract(out,"parameters")
   indiv_costs <- do.call(c, lapply(out, "[[", "indiv_costs"))
   indiv_utilities <- do.call(c, lapply(out, "[[", "indiv_utilities"))
-
+  combine.Means <- function(df) {
+      n <- sum(df$n)
+      sum <- sum(df$sum)
+      sumsq <- sum(df$sumsq)
+      mean <- sum/n
+      var <- n/(n-1)*(sumsq/n-mean*mean)
+      sd <- sqrt(var)
+      se <- sd/sqrt(n)
+      data.frame(n,mean,var,sd,se,sum,sumsq)
+  }
+  mean_utilities <- combine.Means(df=rbindExtract(out, "mean_utilities"))
+  mean_costs <- combine.Means(df=rbindExtract(out, "mean_costs"))
   appendMeans <- function(x) c(x,
                               mean.sum = x[["sum"]] / x[["n"]],
                               mean.sumsq = x[["sumsq"]] / x[["n"]])
@@ -1169,7 +1180,9 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
               falsePositives=falsePositives, panel=panel, call = call,
               natural.history.summary=natural.history.summary,
               indiv_costs=indiv_costs,
-              indiv_utilities=indiv_utilities)
+              indiv_utilities=indiv_utilities,
+              mean_utilities=mean_utilities,
+              mean_costs=mean_costs)
   class(out) <- "fhcrc"
   out
 }

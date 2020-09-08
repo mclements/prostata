@@ -876,6 +876,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       out->outParameters.revise("pca_death",1.0);
     }
     Sim::stop_simulation();
+    out->report.individualReset();
+    out->costs.individualReset();
     break;
 
   case toOtherDeath:
@@ -885,6 +887,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       out->outParameters.record("age_d",now());
     }
     Sim::stop_simulation();
+    out->report.individualReset();
+    out->costs.individualReset();
     break;
 
   case toLocalised:
@@ -1635,7 +1639,9 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
 		      _("diagnoses")=out.diagnoses.wrap(),          // SimpleReport<double>
 		      _("tmc_minus_t0")=out.tmc_minus_t0.wrap(),    // Means
 		      _("indiv_costs")=out.costs.wrap_indiv(),      // vector<double>
-		      _("indiv_utilities")=out.report.wrap_indiv()  // vector<double>
+		      _("indiv_utilities")=out.report.wrap_indiv(), // vector<double>
+		      _("mean_utilities")=out.report.wrap_means(),  // Rcpp::DataFrame
+		      _("mean_costs")=out.costs.wrap_means()        // Rcpp::DataFrame
 		      );
 }
 

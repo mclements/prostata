@@ -1069,7 +1069,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
               PACKAGE="prostata")
     }
     if (is.null(cl)) {
-        timingfunction(out <- parallel::mclapply(1:mc.cores, step))
+        timingfunction(out <- parallel::mclapply(1:mc.cores, step, mc.cores=mc.cores))
     } else {
         clusterEvalQ(cl, {library(prostata);   RNGkind("user")})
         clusterExport(cl, c("chunks", "initialSeeds", "ns", "panel", "debug", "pind",

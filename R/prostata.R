@@ -1106,11 +1106,10 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   }
   ## grab all of the pt, prev, ut, events from summary
   ## pt <- lapply(out, function(obj) obj$summary$pt)
-  if (length(out[[1]]$summary) == 0) summary <- list()
-  else {
-      summary <- lapply(seq_along(out[[1]]$summary),
-                        function(i) do.call("rbind",
-                                            lapply(out, function(obj) reader(obj$summary[[i]]))))
+    if (length(out[[1]]$summary) > 0) {
+      summary <- lapply(names(out[[1]]$summary),
+                        function(name) do.call(rbind,
+                                            lapply(out, function(obj) reader(obj$summary[[name]]))))
       names(summary) <- names(out[[1]]$summary)
       states <- c("state","ext_state","grade","dx","psa","cohort")
       names(summary$prev) <- c(states,"age","count")
@@ -1120,8 +1119,26 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
       if(FALSE) age <- NULL # To pass false-positive check note
       summary <- lapply(summary,function(obj) within(obj,year <- cohort+age))
       enum(summary$events$event) <- eventT
-}
-
+    }
+    else if (length(out[[1]]$shortSummary) > 0) {
+        ## use shortSummary
+        summary <- lapply(names(out[[1]]$shortSummary),
+                          function(name) do.call(rbind,
+                                                 lapply(out, function(obj) obj$shortSummary[[name]])))
+        names(summary) <- names(out[[1]]$shortSummary)
+        states <- "state"
+        names(summary$prev) <- c(states,"age","count")
+        names(summary$pt) <- c(states,"age","pt")
+        names(summary$ut) <- c(states,"age","ut")
+        names(summary$events) <- c(states,"event","age","n")
+        if(FALSE) age <- NULL # To pass false-positive check note
+        if ("cohort" %in% names(summary))
+            summary <- lapply(summary,function(obj) within(obj,year <- cohort+age))
+        enum(summary$events$event) <- eventT
+    }
+    else {
+        summary <- list()
+  }
   ## lifeHistories <- do.call("rbind",lapply(out,function(obj) data.frame(obj$lifeHistories)))
   ## psarecord <- do.call("rbind",lapply(out,function(obj) data.frame(obj$psarecord)))
   ## diagnoses <- do.call("rbind",lapply(out,function(obj) data.frame(obj$diagnoses)))
@@ -1151,7 +1168,6 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                               mean.sum = x[["sum"]] / x[["n"]],
                               mean.sumsq = x[["sumsq"]] / x[["n"]])
   natural.history.summary <- data.frame(tmc_minus_t0 = appendMeans(sapply(rbindExtract(out,"tmc_minus_t0"), sum)))
-
   ## Identifying elements without name which also need to be rbind:ed
   societal.costs <- do.call("rbind",lapply(out,function(obj) data.frame(obj$costs))) #split in sociatal and healthcare perspective
   ## names(costs) <- c("type","item","cohort","age","costs")

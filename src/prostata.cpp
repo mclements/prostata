@@ -851,9 +851,17 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   in->rngNh->set();
 
   // record information
-  if (in->parameter["full_report"] == 1.0)
+  switch(int(in->parameter["full_report"])) {
+  case 1:
     out->report.add(FullState::Type(ext_state, ext_grade, dx, psa>=3.0, cohort), msg->kind, previousEventTime, age, utility, index);
-  out->shortReport.add(1, msg->kind, previousEventTime, age, utility);
+    break;
+  case 0:
+    out->shortReport.add(1, msg->kind, previousEventTime, age, utility);
+    break;
+  default:
+    out->shortReport.addBrief(previousEventTime, age, utility);
+    break;
+  }
 
   if (in->bparameter["includeEventHistories"] && id < in->nLifeHistories) { // only record up to the first n individuals
     out->lifeHistories.push_back(LifeHistory::Type(id, ext_state, ext_grade, dx, msg->kind, previousEventTime, age, year, psa, utility));
@@ -887,9 +895,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (id < in->nLifeHistories) {
       out->outParameters.record("age_d",now());
     }
-    Sim::stop_simulation();
     out->report.individualReset();
+    out->shortReport.individualReset();
     out->costs.individualReset();
+    Sim::stop_simulation();
     break;
 
   case toLocalised:
@@ -1603,12 +1612,18 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
 
   out.report.discountRate = in.parameter["discountRate.effectiveness"];
   out.report.setPartition(ages);
-  out.report.resize(indiv_reports ? n : 1);
+  out.report.setStartReportAge(in.parameter["startReportAge"]);
   out.shortReport.discountRate = in.parameter["discountRate.effectiveness"];
   out.shortReport.setPartition(ages);
+  out.shortReport.setStartReportAge(in.parameter["startReportAge"]);
   out.costs.discountRate = in.parameter["discountRate.costs"];
   out.costs.setPartition(ages);
-  out.costs.resize(indiv_reports ? n : 1);
+  out.costs.setStartReportAge(in.parameter["startReportAge"]);
+  if (indiv_reports) {
+    out.costs.setIndivN(n);
+    out.report.setIndivN(n);
+    out.shortReport.setIndivN(n);
+  }
 
   // main loop
   FhcrcPerson person(&in, &out, &utilities, 1, 2000, 0);
@@ -1641,7 +1656,7 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
 		      _("tmc_minus_t0")=out.tmc_minus_t0.wrap(),    // Means
 		      _("indiv_costs")=out.costs.wrap_indiv(),      // vector<double>
 		      _("indiv_utilities")=out.report.wrap_indiv(), // vector<double>
-		      _("mean_utilities")=out.report.wrap_means(),  // Rcpp::DataFrame
+		      _("mean_utilities")=(in.parameter["full_report"] == 1.0) ? out.report.wrap_means() : out.shortReport.wrap_means(),  // Rcpp::DataFrame
 		      _("mean_costs")=out.costs.wrap_means()        // Rcpp::DataFrame
 		      );
 }

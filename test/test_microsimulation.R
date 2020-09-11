@@ -2,6 +2,42 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
+## Changing the startReportAge
+library(prostata)
+## undebug(callFhcrc)
+sim1 <- callFhcrc(1e3,screen="regular_screen",cohort=1960,
+          parms=list(indiv_reports=TRUE,
+                     screening_interval=2, start_screening=55,
+                     startReportAge=55, full_report=1),mc.cores=2)
+summary(sim1,from=55) # post hoc adjustment
+sim1$mean_utilities # in-simulations calculations - including StdErrs
+sim1$mean_costs # in-simulations calculations - including StdErrs
+
+## Timing for full reporting vs brief reporting
+library(prostata)
+## callFhcrc(1e6,screen="regular_screen",cohort=1960,
+##           parms=list(indiv_reports=TRUE,
+##                      screening_interval=2, start_screening=55),mc.cores=2) # 350 s
+## callFhcrc(1e5,screen="regular_screen",cohort=1960,
+##           parms=list(indiv_reports=TRUE,
+##                      screening_interval=2, start_screening=55),mc.cores=2) # 35 s
+sim3 <- callFhcrc(1e4,screen="regular_screen",cohort=1960,
+                  parms=list(indiv_reports=TRUE,
+                             screening_interval=2, start_screening=55,
+                             full_report=1), mc.cores=2) # 3.5 s
+sim4 <- callFhcrc(1e4,screen="regular_screen",cohort=1960,
+                  parms=list(indiv_reports=TRUE,
+                             screening_interval=2, start_screening=55,
+                             full_report=0), mc.cores=2) # 2.4 s
+sim5 <- callFhcrc(1e4,screen="regular_screen",cohort=1960,
+                  parms=list(indiv_reports=TRUE,
+                             screening_interval=2, start_screening=55,
+                             full_report=-1), mc.cores=2) # 1.8 s
+summary(sim3)
+summary(sim4)
+## summary(sim5) # not currently available with full_report=-1
+sim5$mean_costs
+sim5$mean_utilities
 ## CAP reconstruction
 library(prostata)
 ## reduce the screening uptake

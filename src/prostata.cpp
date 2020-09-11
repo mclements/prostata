@@ -875,9 +875,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       out->outParameters.record("age_d",now());
       out->outParameters.revise("pca_death",1.0);
     }
-    Sim::stop_simulation();
     out->report.individualReset();
+    out->shortReport.individualReset();
     out->costs.individualReset();
+    Sim::stop_simulation();
     break;
 
   case toOtherDeath:

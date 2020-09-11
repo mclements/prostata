@@ -1,7 +1,7 @@
 Package: prostata
 Type: Package
 Title: Prostate Cancer Microsimulation for Sweden
-Version: 1.3.0
+Version: 1.3.1
 Date: 2020-08-12
 Authors@R: c(person("Mark", "Clements", role = c("aut", "cre"),
                      email = "mark.clements@ki.se"),
@@ -11,7 +11,7 @@ Authors@R: c(person("Mark", "Clements", role = c("aut", "cre"),
                      email = "andreas.a.karlsson@ki.se"))
 Description: Microsimulation using discrete event simulation in R and C++. This includes a full prostate cancer model.
 License: GPL (>= 3)
-Depends: microsimulation (>= 1.3.0)
+Depends: microsimulation (>= 1.3.1)
 Imports: Rcpp, graphics, utils, parallel, stats
 LinkingTo: microsimulation, Rcpp, BH
 Suggests: testthat

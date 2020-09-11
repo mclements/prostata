@@ -167,6 +167,55 @@ summary(sim4)
 ## summary(sim5) # not currently available with full_report=-1
 sim5$mean_costs
 sim5$mean_utilities
+
+## Assess Monte Carlo errors
+library(prostata)
+sim1 = callFhcrc(1e4,screen="regular_screen",cohort=1960,parms=list(indiv_reports=TRUE,
+                                                                    screening_interval=2, start_screening=55),mc.cores=2)
+sim2 = callFhcrc(1e4,screen="regular_screen",cohort=1960,parms=list(indiv_reports=TRUE,
+                                                                    screening_interval=4, start_screening=55),mc.cores=2)
+##
+mean(sim1$indiv_costs-sim2$indiv_costs)
+sd(sim1$indiv_costs-sim2$indiv_costs)/sqrt(sim1$n)
+mean(sim1$indiv_utilities-sim2$indiv_utilities)
+sd(sim1$indiv_utilities-sim2$indiv_utilities)/sqrt(sim1$n)
+##
+mean(sim1$indiv_utilities)
+sd(sim1$indiv_utilities)/sqrt(sim1$n)
+sim1$mean_utilities
+
+## plot of decomposed costs over time
+library(prostata)
+sim2 = callFhcrc(1e4,screen="regular_screen",cohort=1960,parms=list(indiv_reports=TRUE,
+                                                                    screening_interval=4, start_screening=55),mc.cores=2)
+stacked <- function(x, y, col=1:ncol(y), ...) {
+    cumy <- t(apply(cbind(0,y),1,cumsum))
+    matplot(x,cumy,type="n",...)
+    for (i in 2:ncol(cumy))
+        polygon(c(x,rev(x)), c(cumy[,i],rev(cumy[,i-1])), border=col[i-1], col=col[i-1])
+}
+costs <- sim2$societal.costs
+## combine levels
+levels(costs$item) <- c("Active surveillance", "Active surveillance",
+                        "Diagnostic", "Diagnostic", "Cancer death", "Metastatic cancer",
+                        "Opportunistic PSA", "Post-Tx follow-up", "Prostatectomy",
+                        "Radiation therapy", "Terminal illness")
+## reorder levels
+costs$item <-
+    factor(costs$item,
+           levels=c("Opportunistic PSA", "Diagnostic",
+                    "Active surveillance", "Prostatectomy",  "Radiation therapy",
+                    "Post-Tx follow-up", "Metastatic cancer",
+                    "Terminal illness", "Cancer death"))
+##
+pdf("~/Documents/clients/shuang/Study2/costsByAge.pdf")
+library(RColorBrewer)
+cols <- brewer.pal(9, "Spectral")
+tab <- xtabs(costs~age+item,costs,subset=age>=50)
+stacked(as.numeric(rownames(tab)), tab/sim2$n, xlab="Age", ylab="Age-specific annual cost per man", col=cols)
+legend("topright",legend=levels(costs$item),fill=cols,bty="n")
+dev.off()
+
 ## CAP reconstruction
 library(prostata)
 ## reduce the screening uptake

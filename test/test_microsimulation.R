@@ -2,6 +2,135 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
+## Assess Monte Carlo errors - Shuang
+library(prostata)
+n.sim <- 1e6
+mc.cores <- 2
+ShuangParametersPorpusU <- prostata:::ShuangParameters
+ShuangParameters_BaseTBx <- prostata:::ShuangParameters
+ShuangParameters_BaseTBx$pTBxG0ifG1_MRIpos=0.2474775    # Pr(TBx gives ISUP 0 | ISUP 1, MRI+) 2020-03-23
+ShuangParameters_BaseTBx$pTBxG0ifG2_MRIpos=0.06570613   # Pr(TBx gives ISUP 0 | ISUP 2, MRI+) 2020-03-23
+ShuangParameters_BaseTBx$cost_parameters =  c("Invitation" = 7                         # Invitation letter
+                                         + 7,                                      # Results letter
+                                         "Formal PSA" = 355.82                     # test sampling, primary care
+                                         + 57.4                                    # PSA analysis
+                                         + 0 * 1493.43,                            # No GP primary care
+                                         "Formal panel" =  355.82                  # test sampling, primary care
+                                         + 57.4                                    # PSA analysis not included in panel price
+                                         + 3300                                    # From BergusMedical (official lab for Sthlm3)
+                                         + 0 * 1493.43,                            # No GP for formal
+                                         "Opportunistic PSA" = 57.4                # PSA analysis
+                                         + 0.2 * 1493.43,                          # GP primary care
+                                         "Opportunistic panel" = 57.4              # PSA analysis not included in panel price
+                                         + 3300                                    # From BergusMedical (official lab for Sthlm3)
+                                         + 0.2 * 1493.43,                          # GP primary care
+                                         "Biopsy" = 3010                           # Systematic biopsy cost (SBx)
+                                         + 4238.25,                                # Pathology of biopsy
+                                         "MRI" = 3500,                             # MRI cost
+                                         "Combined biopsy" = 2990                  # Biopsy cost (TBx), still called Combined biopsy
+                                         + 4238.25,                                # Pathology of biopsy
+                                         "Assessment" = 1460,                      # Urologist and nurse consultation
+                                         "Prostatectomy" = 121170.69               # Robot assisted surgery
+                                         + 6302.19*20*0.25                         # Radiation therapy
+                                         + 1460*1,                                 # Urology and nurse visit
+                                         "Radiation therapy" = 6302.19*20          # Radiation therapy
+                                         + 3903.27*1                               # Oncologist new visit
+                                         + 1683.36*1                               # Oncologist further visit
+                                         + 400*20                                  # Nurse visit
+                                         + 67490.20*0.2,                           # Hormone therapy
+                                         "Active surveillance - yearly - w/o MRI" = 1460    # Urology visit and nurse visit
+                                         + 355.82*3                                # PSA sampling
+                                         + 57.4*3                                  # PSA analysis
+                                         + 3010*0.33                               # Systematic biopsy
+                                         + 4238.25*0.33,                           # Pathology of biopsy
+                                         "Active surveillance - yearly - with MRI" = 1460   # Urology visit and nurse visit
+                                         + 355.82*3                                # PSA sampling
+                                         + 57.4*3                                  # PSA analysis
+                                         + 3500*0.33                               # MRI cost
+                                         + 2990*0.33                               # Biopsy cost (TBx)
+                                         + 4238.25*0.33,                           # Pathology of biopsy
+                                         "ADT+chemo" = 71579.64*1.5,               # NEW: Chemo and hormone therapy
+                                         "Post-Tx follow-up - yearly first" = 1460 # Urologist and nurse consultation
+                                         + 355.82                                  # PSA test sampling
+                                         + 57.4,                                   # PSA analysis
+                                         "Post-Tx follow-up - yearly after" = 355.82  # PSA test sampling
+                                         + 57.4                                    # PSA analysis,
+                                         + 146,                                    # Telefollow-up by urologist
+                                         "Palliative therapy - yearly" = 161593.05, # Palliative care cost
+                                         "Terminal illness" = 161593.05*0.5)       # Terminal illness cost
+## fit3: MRI+TBx
+fit3 <- callFhcrc(n.sim, screen="regular_screen",
+                       flatPop=TRUE,pop=1995-55,
+                       parms=modifyList(ShuangParameters_BaseTBx, #Using different parameters from fit1, fit2 and fit3
+                                        list(MRI_screen=TRUE,
+                                             start_screening=55,
+                                             screening_interval=4,
+                                             formal_compliance=1,
+                                             indiv_reports=TRUE,
+                                             startReportAge=55)),
+                       mc.cores=mc.cores)
+# fit4: MRI+TBx/SBx
+fit4 <- callFhcrc(n.sim, screen="regular_screen",
+                       flatPop=TRUE,pop=1995-55,
+                       parms=modifyList(ShuangParametersPorpusU, # check: is this the correct set?
+                                        list(MRI_screen=TRUE,
+                                             start_screening=55,
+                                             screening_interval=4,
+                                             formal_compliance=1,
+                                             indiv_reports=TRUE,
+                                             startReportAge=55)),
+                       mc.cores=mc.cores)
+summary(fit3,from=55)
+fit3$mean_utilities
+fit3$mean_costs
+summary(fit4,from=55)
+fit4$mean_utilities
+fit4$mean_costs
+mean(fit3$indiv_utilities-fit4$indiv_utilities,na.rm=TRUE)
+sd(fit3$indiv_utilities-fit4$indiv_utilities,na.rm=TRUE)/sqrt(fit3$mean_utilities$n)
+mean(fit3$indiv_costs-fit4$indiv_costs,na.rm=TRUE)
+sd(fit3$indiv_costs-fit4$indiv_costs,na.rm=TRUE)/sqrt(fit3$mean_costs$n)
+
+## Monte Carlo uncertainty in the ICER
+## NB: do *not* use do.boot=TRUE with n.sim=1e6 and R=1000 locally, as it segfaults.
+mc.uncertainty <- function(title,fit1_costs,fit1_utilities,fit2_costs,fit2_utilities,R=1000,do.boot=FALSE) {
+    out <- local({
+        index <- !is.na(fit2_costs)
+        X <- (fit2_costs-fit1_costs)[index]
+        Y <- (fit2_utilities-fit1_utilities)[index]
+        muX <- mean(X)
+        muY <- mean(Y)
+        n <- length(X)
+        list(icer=muX/muY,
+             d_costs=muX,
+             d_utilities=muY,
+             se_d_costs=sd(X)/sqrt(n-1),
+             se_d_utilities=sd(Y)/sqrt(n-1),
+             coefVar_costs=sd(X)/muX/sqrt(n-1),
+             coefVar_utilities=sd(Y)/muY/sqrt(n-1),
+             log_costs=log(muX),
+             log_utilities=log(muY),
+             se_log_costs=sd(X)/muX/sqrt(n-1),
+             se_log_utilities=sd(Y)/muY/sqrt(n-1),
+             se_log_ratio=sqrt((sd(X)/muX/sqrt(n-1))^2+(sd(Y)/muY/sqrt(n-1))^2))
+    })
+    out$icer.lower = with(out, icer*exp(-1.96*se_log_ratio))
+    out$icer.upper = with(out, icer*exp(1.96*se_log_ratio))
+    if (do.boot) {
+        stopifnot(require(boot))
+        index <- !is.na(fit2_costs)
+        d <- data.frame(x=(fit2_costs-fit1_costs),
+                        y=fit2_utilities-fit1_utilities)[index,]
+        boot1 <- boot(d,
+                      function(d, w) log(mean(d$x[w])/mean(d$y[w])),
+                      R=R)
+        out <- c(list(boot=boot1),out)
+    }
+    cat(title)
+    out
+}
+mc.uncertainty("", fit3$indiv_costs,fit3$indiv_utilities,fit4$indiv_costs,fit4$indiv_utilities)
+
 ## Changing the startReportAge
 library(prostata)
 ## undebug(callFhcrc)

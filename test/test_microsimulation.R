@@ -2,6 +2,19 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
+## Pr(Survival to age 55 years)
+library(prostata)
+fit <- callFhcrc(1e3,"noScreening",pop=1960,flatPop=TRUE,mc.cores=2)
+with(fit, binom.test(x=sum(subset(summary$prev,age==55)$count), n)) # 951/1e2
+fit <- callFhcrc(1e4,"noScreening",pop=1960,flatPop=TRUE,mc.cores=2)
+with(fit, binom.test(x=sum(subset(summary$prev,age==55)$count), n)) # 9525/1e4
+fit <- callFhcrc(1e5,"noScreening",pop=1960,flatPop=TRUE,mc.cores=2)
+with(fit, binom.test(x=sum(subset(summary$prev,age==55)$count), n)) # 95189/1e5
+fit <- callFhcrc(1e6,"noScreening",pop=1960,flatPop=TRUE,mc.cores=2)
+with(fit, binom.test(x=sum(subset(summary$prev,age==55)$count), n)) # 951355/1e6
+fit <- callFhcrc(1e7,"noScreening",pop=1960,flatPop=TRUE,mc.cores=2)
+with(fit, binom.test(x=sum(subset(summary$prev,age==55)$count), n)) # 9512712/1e7
+
 ## Assess Monte Carlo errors - Shuang
 library(prostata)
 n.sim <- 1e6

@@ -14,6 +14,10 @@ EdnaParameters <- function(base = ShuangParameters)
                    scaleA = 15.0,
                    shapeT = 4.8,  # = shapeA
                    scaleT = 15.0, # = scaleA
+                   cap_pScreened = c(0.3235438, # 50-54
+                                     0.3531057, # 55-59
+                                     0.3582405, # 60-64
+                                     0.3236445),# 65-59
 
                    eol=1 # placemarker
                ))

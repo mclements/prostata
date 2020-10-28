@@ -148,8 +148,9 @@ namespace fhcrc_example {
     Table<double,double> production;
     // DataFrame background_utilities;
     NumericVector bg_lower, bg_upper, bg_utility;
-    // cumulative hazard for screenin uptake (currently only cap_control and cap_study)
+    // cumulative hazard for screening uptake (currently only cap_control and cap_study)
     NumericInterpolate H_screen_uptake;
+    NumericVector cap_pScreened;
 
     ~SimInput() {
       if (rngNh != NULL) delete rngNh;
@@ -769,10 +770,10 @@ void FhcrcPerson::init() {
     scheduleAt(in->H_screen_uptake.invert(-log(R::runif(0.0,1.0))), toScreen);
     ageEntry = 2005.0 - cohort + R::runif(0.0,5.0); // 50-54, 55-59, 60-64, 65-69
     if (in->screen == cap_study) {
-      double pScreened = cohort==1955.0 ? 0.3235438 :
-	cohort==1950.0 ? 0.3531057 :
-	cohort==1945.0 ? 0.3582405 :
-	0.3236445;
+      double pScreened = in->cap_pScreened[cohort==1955.0 ? 0 :
+					    cohort==1950.0 ? 1 :
+					    cohort==1945.0 ? 2 :
+					    3];
       if (R::runif(0.0,1.0)<pScreened)
 	scheduleAt(ageEntry, toOrganised);
     } else {
@@ -1594,9 +1595,12 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   ages.push_back(1.0e+6);
 
   // setup for cap_control and cap_study
-  if (in.screen == cap_control || in.screen == cap_study) {
-    DataFrame uk_screen_uptake = as<DataFrame>(tables["uk_screen_uptake"]); // age,H
-    in.H_screen_uptake = NumericInterpolate(uk_screen_uptake);
+  // if (in.screen == cap_control || in.screen == cap_study) {
+  //   DataFrame uk_screen_uptake = as<DataFrame>(tables["uk_screen_uptake"]); // age,H
+  //   in.H_screen_uptake = NumericInterpolate(uk_screen_uptake);
+  // }
+  if (in.screen == cap_study) {
+    in.cap_pScreened = as<NumericVector>(otherParameters["cap_pScreened"]);
   }
 
   // re-set the output objects

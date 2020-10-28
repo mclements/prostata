@@ -23,54 +23,16 @@ ShuangParametersPorpusU <- prostata:::ShuangParameters
 ShuangParameters_BaseTBx <- prostata:::ShuangParameters
 ShuangParameters_BaseTBx$pTBxG0ifG1_MRIpos=0.2474775    # Pr(TBx gives ISUP 0 | ISUP 1, MRI+) 2020-03-23
 ShuangParameters_BaseTBx$pTBxG0ifG2_MRIpos=0.06570613   # Pr(TBx gives ISUP 0 | ISUP 2, MRI+) 2020-03-23
-ShuangParameters_BaseTBx$cost_parameters =  c("Invitation" = 7                         # Invitation letter
-                                         + 7,                                      # Results letter
-                                         "Formal PSA" = 355.82                     # test sampling, primary care
-                                         + 57.4                                    # PSA analysis
-                                         + 0 * 1493.43,                            # No GP primary care
-                                         "Formal panel" =  355.82                  # test sampling, primary care
-                                         + 57.4                                    # PSA analysis not included in panel price
-                                         + 3300                                    # From BergusMedical (official lab for Sthlm3)
-                                         + 0 * 1493.43,                            # No GP for formal
-                                         "Opportunistic PSA" = 57.4                # PSA analysis
-                                         + 0.2 * 1493.43,                          # GP primary care
-                                         "Opportunistic panel" = 57.4              # PSA analysis not included in panel price
-                                         + 3300                                    # From BergusMedical (official lab for Sthlm3)
-                                         + 0.2 * 1493.43,                          # GP primary care
-                                         "Biopsy" = 3010                           # Systematic biopsy cost (SBx)
-                                         + 4238.25,                                # Pathology of biopsy
-                                         "MRI" = 3500,                             # MRI cost
-                                         "Combined biopsy" = 2990                  # Biopsy cost (TBx), still called Combined biopsy
-                                         + 4238.25,                                # Pathology of biopsy
-                                         "Assessment" = 1460,                      # Urologist and nurse consultation
-                                         "Prostatectomy" = 121170.69               # Robot assisted surgery
-                                         + 6302.19*20*0.25                         # Radiation therapy
-                                         + 1460*1,                                 # Urology and nurse visit
-                                         "Radiation therapy" = 6302.19*20          # Radiation therapy
-                                         + 3903.27*1                               # Oncologist new visit
-                                         + 1683.36*1                               # Oncologist further visit
-                                         + 400*20                                  # Nurse visit
-                                         + 67490.20*0.2,                           # Hormone therapy
-                                         "Active surveillance - yearly - w/o MRI" = 1460    # Urology visit and nurse visit
-                                         + 355.82*3                                # PSA sampling
-                                         + 57.4*3                                  # PSA analysis
-                                         + 3010*0.33                               # Systematic biopsy
-                                         + 4238.25*0.33,                           # Pathology of biopsy
-                                         "Active surveillance - yearly - with MRI" = 1460   # Urology visit and nurse visit
-                                         + 355.82*3                                # PSA sampling
-                                         + 57.4*3                                  # PSA analysis
-                                         + 3500*0.33                               # MRI cost
-                                         + 2990*0.33                               # Biopsy cost (TBx)
-                                         + 4238.25*0.33,                           # Pathology of biopsy
-                                         "ADT+chemo" = 71579.64*1.5,               # NEW: Chemo and hormone therapy
-                                         "Post-Tx follow-up - yearly first" = 1460 # Urologist and nurse consultation
-                                         + 355.82                                  # PSA test sampling
-                                         + 57.4,                                   # PSA analysis
-                                         "Post-Tx follow-up - yearly after" = 355.82  # PSA test sampling
-                                         + 57.4                                    # PSA analysis,
-                                         + 146,                                    # Telefollow-up by urologist
-                                         "Palliative therapy - yearly" = 161593.05, # Palliative care cost
-                                         "Terminal illness" = 161593.05*0.5)       # Terminal illness cost
+ShuangParameters_BaseTBx$cost_parameters["Combined biopsy"] =
+    2990 +                  # Biopsy cost (TBx), still called Combined biopsy
+    4238.25                 # Pathology of biopsy
+ShuangParameters_BaseTBx$cost_parameters["Active surveillance - yearly - with MRI"] =
+    1460+                   # Urology visit and nurse visit
+    355.82*3+               # PSA sampling
+    57.4*3+                 # PSA analysis
+    3500*0.33+              # MRI cost
+    2990*0.33+              # Biopsy cost (TBx)
+    4238.25*0.33            # Pathology of biopsy
 ## fit3: MRI+TBx
 fit3 <- callFhcrc(n.sim, screen="regular_screen",
                        flatPop=TRUE,pop=1995-55,
@@ -144,6 +106,52 @@ mc.uncertainty <- function(title,fit1_costs,fit1_utilities,fit2_costs,fit2_utili
 }
 mc.uncertainty("", fit3$indiv_costs,fit3$indiv_utilities,fit4$indiv_costs,fit4$indiv_utilities)
 
+## Plot of costs over ages
+## checks
+ShuangParameters_BaseTBx$cost_parameters-
+    ShuangParametersPorpusU$cost_parameters # only two costs have changed
+all(names(ShuangParameters_BaseTBx$cost_parameters) ==
+    names(ShuangParametersPorpusU$cost_parameters))
+stacked <- function(x, y, col=1:ncol(y), ...) {
+    cumy <- t(apply(cbind(0,y),1,cumsum))
+    matplot(x,cumy,type="n",...)
+    for (i in 1:ncol(y))
+        polygon(c(x,rev(x)), c(cumy[,i+1],rev(cumy[,i])), border=col[i], col=col[i])
+}
+xtabs(costs~item,fit3$societal.costs, subset=age>=50)
+xtabs(costs~item,fit4$societal.costs, subset=age>=50)
+costs <- fit3$societal.costs
+## xtabs(costs~item,costs,subset=age>=50)
+dput(levels(costs$item))
+## combine levels
+levels(costs$item) <-
+    c("Active surveillance", "ADT+chemo", "Diagnostic",
+      "Diagnostic", "Diagnostic", "Productivity losses", "Diagnostic", "PSA testing",
+      "Palliative therapy", "Post-Tx follow-up",
+      "Post-Tx follow-up", "Post-Tx follow-up",
+      "Prostatectomy", "Radiation therapy", "Terminal illness")
+## xtabs(costs~item,costs,subset=age>=50)
+## xtabs(costs~item,costs,subset=age>=50)
+## reorder levels
+costs$item <-
+    factor(costs$item,
+           levels=
+               c("PSA testing","Diagnostic",
+                 "Active surveillance", "Prostatectomy", "Radiation therapy", "ADT+chemo",
+                 "Productivity losses", "Post-Tx follow-up",
+                 "Palliative therapy",
+                 "Terminal illness"))
+## xtabs(costs~item,costs,subset=age>=50)
+##
+library(Cairo)
+CairoPDF("~/Documents/clients/shuang/Study2/costsByAge.pdf")
+library(RColorBrewer)
+tab <- xtabs(costs~age+item,costs,subset=age>=54)
+cols <- brewer.pal(ncol(tab), "Spectral")
+stacked(as.numeric(rownames(tab)), tab/fit3$n, xlab="Age (years)", ylab="Age-specific annual cost (€) per man", col=cols)
+legend("topright",legend=rev(levels(costs$item)),fill=rev(cols),bty="n")
+dev.off()
+
 ## Changing the startReportAge
 library(prostata)
 ## undebug(callFhcrc)
@@ -197,52 +205,22 @@ mean(sim1$indiv_utilities)
 sd(sim1$indiv_utilities)/sqrt(sim1$n)
 sim1$mean_utilities
 
-## plot of decomposed costs over time
-library(prostata)
-sim2 = callFhcrc(1e4,screen="regular_screen",cohort=1960,parms=list(indiv_reports=TRUE,
-                                                                    screening_interval=4, start_screening=55),mc.cores=2)
-stacked <- function(x, y, col=1:ncol(y), ...) {
-    cumy <- t(apply(cbind(0,y),1,cumsum))
-    matplot(x,cumy,type="n",...)
-    for (i in 2:ncol(cumy))
-        polygon(c(x,rev(x)), c(cumy[,i],rev(cumy[,i-1])), border=col[i-1], col=col[i-1])
-}
-costs <- sim2$societal.costs
-## combine levels
-levels(costs$item) <- c("Active surveillance", "Active surveillance",
-                        "Diagnostic", "Diagnostic", "Cancer death", "Metastatic cancer",
-                        "Opportunistic PSA", "Post-Tx follow-up", "Prostatectomy",
-                        "Radiation therapy", "Terminal illness")
-## reorder levels
-costs$item <-
-    factor(costs$item,
-           levels=c("Opportunistic PSA", "Diagnostic",
-                    "Active surveillance", "Prostatectomy",  "Radiation therapy",
-                    "Post-Tx follow-up", "Metastatic cancer",
-                    "Terminal illness", "Cancer death"))
-##
-pdf("~/Documents/clients/shuang/Study2/costsByAge.pdf")
-library(RColorBrewer)
-cols <- brewer.pal(9, "Spectral")
-tab <- xtabs(costs~age+item,costs,subset=age>=50)
-stacked(as.numeric(rownames(tab)), tab/sim2$n, xlab="Age", ylab="Age-specific annual cost per man", col=cols)
-legend("topright",legend=levels(costs$item),fill=cols,bty="n")
-dev.off()
 
 ## CAP reconstruction
 library(prostata)
-## reduce the screening uptake
-uk_screen_uptake <- prostata:::fhcrcData$uk_screen_uptake # not currently exported
-uk_screen_uptake$H <- uk_screen_uptake$H/2
+library(parallel)
+parms = modifyList(prostata:::EdnaParameters(), list(includeEventHistories=FALSE))
 ## run simulations
-sim1 = callFhcrc(n=sum(cap_control$pop),screen="cap_control",pop=cap_control, mc.cores=2,
-                 parms=list(includeEventHistories=FALSE),
-                 tables=list(rescreening=uk_rescreening, uk_screen_uptake=uk_screen_uptake),
+cl <- makeCluster(detectCores(),type="PSOCK")
+sim1 = callFhcrc(n=sum(cap_control$pop),screen="cap_control",pop=cap_control, cl=cl,
+                 parms=parms,
+                 tables=list(rescreening=uk_rescreening),
                  nLifeHistories=sum(cap_control$pop))
-sim2 = callFhcrc(n=sum(cap_study$pop),screen="cap_study",pop=cap_study, mc.cores=2,
-                 parms=list(includeEventHistories=FALSE),
-                 tables=list(rescreening=uk_rescreening, uk_screen_uptake=uk_screen_uptake),
+sim2 = callFhcrc(n=sum(cap_study$pop),screen="cap_study",pop=cap_study, cl=cl,
+                 parms=parms,
+                 tables=list(rescreening=uk_rescreening),
                  nLifeHistories=sum(cap_study$pop))
+stopCluster(cl)
 cap_study_by_year <- data.frame(year=seq(2002,2009),
                                 p=c(9.89,13.79,17.23,17.756,15.944,21.348,4.06,0))
 cap_control_by_year <- data.frame(year=seq(2002,2009),

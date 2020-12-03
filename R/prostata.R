@@ -152,6 +152,9 @@ FhcrcParameters <- list(
     stop_screening = 70.0,  # end of organised screening
     screening_interval = 2.0, # screening interval for regular_screening and introduced_screening*
     introduction_year = 2015.0, # year to start organised screening for introduced_screening*  & cancel the opportunistic testing under stopped_screening
+    risk_psa_threshold=1, # PSA threshold for risk-stratified screening
+    risk_lower_interval=8, # re-screening interval for lower risk
+    risk_upper_interval=4, # re-screening interval for higher risk
     mu0=c(0.00219, 0.000304, 5.2e-05, 0.000139, 0.000141, 3.6e-05, 7.3e-05,
         0.000129, 3.8e-05, 0.000137, 6e-05, 8.1e-05, 6.1e-05, 0.00012,
         0.000117, 0.000183, 0.000185, 0.000397, 0.000394, 0.000585, 0.000448,

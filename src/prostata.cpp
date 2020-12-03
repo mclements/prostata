@@ -241,7 +241,7 @@ namespace fhcrc_example {
     bool adt;
     double txhaz, psa_last_screen;
     int id, index;
-    double cohort, rescreening_frailty, ageEntry;
+    double cohort, rescreening_frailty, ageEntry, grs_frailty;
     bool everPSA, previousNegativeBiopsy, organised, previousFollowup, MRIpos;
     FhcrcPerson(SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950, const int index = 0) :
       in(in), out(out), utilities(utilities), id(id), index(index), cohort(cohort) { };
@@ -502,10 +502,12 @@ namespace fhcrc_example {
       case stockholm3_risk_stratified:
       case risk_stratified:
         if (now() >= in->parameter["start_screening"]) {
-          if (psa<1.0 && now()+8.0 <= in->parameter["stop_screening"])
-            scheduleAt(now() + 8.0, toScreen);
-          if (psa>=1.0 && now()+4.0 <= in->parameter["stop_screening"])
-            scheduleAt(now() + 4.0, toScreen);
+          if (psa < in->parameter["risk_psa_threshold"] &&
+	      now()+in->parameter["risk_lower_interval"] <= in->parameter["stop_screening"])
+            scheduleAt(now() + in->parameter["risk_lower_interval"], toScreen);
+          if (psa >= in->parameter["risk_psa_threshold"] &&
+	      now()+in->parameter["risk_higher_interval"] <= in->parameter["stop_screening"])
+            scheduleAt(now() + in->parameter["risk_higher_interval"], toScreen);
         }
         break;
       case regular_screen:
@@ -606,8 +608,19 @@ void FhcrcPerson::init() {
   dx = NotDiagnosed;
   everPSA = previousNegativeBiopsy = organised = adt = previousFollowup = MRIpos = false;
   in->rngNh->set();
+  // https://journals.plos.org/plosmedicine/article/file?id=10.1371/journal.pmed.1002998&type=printable
+  // genetic risk score (log-normal distribution with mean=1 and variance=0.68)
+  // E(T)=exp(mu+sigma^2/2)=1 and var(T)=(exp(sigma^2)-1)*exp(2*mu+sigma^2)=0.68
+  // => mu=-sigma^2/2 and 0.68=exp(sigma^2)-1
+  // => sigma=sqrt(log(1.68))
+  // => mu=-log(1.68)/2
+  // R: local({y=rlnorm(1e5,-log(1.68)/2,sqrt(log(1.68))); c(mean(y), var(y))})
+  double grs_log_mean = -log(1.68)/2.0;
+  double grs_log_sd = sqrt(log(1.68));
+  // grs_frailty = rlnorm(grs_log_mean, grs_log_sd);
+  grs_frailty = 1.0;
   if (R::runif(0.0, 1.0) <= in->parameter["susceptible"]) // portion susceptible
-    t0 = sqrt(2*R::rexp(1.0)/in->parameter["g0"]); // is susceptible
+    t0 = sqrt(2*R::rexp(1.0)/(in->parameter["g0"]*grs_frailty)); // is susceptible
   else
     t0 = 200.0; // not susceptible
   if (!in->bparameter["revised_natural_history"]){

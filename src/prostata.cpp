@@ -58,7 +58,7 @@ namespace fhcrc_example {
 		 screen50, screen60, screen70, screenUptake, stockholm3_goteborg, stockholm3_risk_stratified,
 		 goteborg, risk_stratified, mixed_screening, regular_screen, single_screen,
                  introduced_screening_only, introduced_screening_preference, introduced_screening,
-		 stopped_screening, cap_control, cap_study};
+		 stopped_screening, cap_control, cap_study, sthlm3_mri_arm};
 
   enum treatment_t {no_treatment, CM, RP, RT};
 
@@ -532,6 +532,7 @@ namespace fhcrc_example {
       case stopped_screening:
       case cap_control:
       case cap_study:
+      case sthlm3_mri_arm:
         break;
       default:
         REprintf("Screening not matched: %s\n",in->screen);
@@ -541,6 +542,7 @@ namespace fhcrc_example {
     if (in->screen == screenUptake ||
 	in->screen == cap_control ||
 	in->screen == cap_study ||
+	in->screen == sthlm3_mri_arm ||
 	(mixed_programs && !organised))
       opportunistic_rescreening(psa); // includes rescreening participation
   } // rescreening
@@ -609,14 +611,13 @@ void FhcrcPerson::init() {
   everPSA = previousNegativeBiopsy = organised = adt = previousFollowup = MRIpos = false;
   in->rngNh->set();
   // https://journals.plos.org/plosmedicine/article/file?id=10.1371/journal.pmed.1002998&type=printable
-  // genetic risk score (log-normal distribution with mean=1 and variance=0.68)
-  // E(T)=exp(mu+sigma^2/2)=1 and var(T)=(exp(sigma^2)-1)*exp(2*mu+sigma^2)=0.68
-  // => mu=-sigma^2/2 and 0.68=exp(sigma^2)-1
-  // => sigma=sqrt(log(1.68))
-  // => mu=-log(1.68)/2
-  // R: local({y=rlnorm(1e5,-log(1.68)/2,sqrt(log(1.68))); c(mean(y), var(y))})
-  double grs_log_mean = -log(1.68)/2.0;
-  double grs_log_sd = sqrt(log(1.68));
+  // genetic risk score with T ~ LogNormal(mu,sigma^2) with mean(T) =1 and sigma^2=0.68
+  // E(T)=exp(mu+sigma^2/2)=1 
+  // => mu=-sigma^2/2 
+  // R: local({y=rlnorm(1e5,-1.68/2,sqrt(1.68)); c(mean(y), var(y))})
+  // R: local({y=rlnorm(1e5,-1.68/2,sqrt(1.68)); plot(density(y,from=0),xlim=c(0,5))})
+  // double grs_log_mean = -1.68/2.0;
+  // double grs_log_sd = sqrt(1.68);
   // grs_frailty = rlnorm(grs_log_mean, grs_log_sd);
   grs_frailty = 1.0;
   if (R::runif(0.0, 1.0) <= in->parameter["susceptible"]) // portion susceptible
@@ -663,7 +664,7 @@ void FhcrcPerson::init() {
       (R::runif(0.0,1.0) <= in->interp_prob_grade7.approx(beta2) ? ext::Gleason_7 : ext::Gleason_le_6) :
       ext::Gleason_ge_8;
   }
-  ageEntry = 0.0; // used by cap_control and cap_study
+  ageEntry = 0.0; // used by cap_control, cap_study and sthlm3_mri_arm
 
   if (in->debug) {
     Rprintf("id=%i, future_grade=%i, future_ext_grade=%i, beta0=%f, beta1=%f, beta2=%f, mubeta0=%f, sebeta0=%f, mubeta1=%f, sebeta1=%f, mubeta2=%f, sebeta2=%f\n", id, future_grade, future_ext_grade, beta0, beta1, beta2, double(in->parameter["mubeta0"]), double(in->parameter["sebeta0"]), double(in->parameter["mubeta1"]), double(in->parameter["sebeta1"]), in->mubeta2[future_grade], in->sebeta2[future_grade]);
@@ -714,6 +715,7 @@ void FhcrcPerson::init() {
     case screenUptake:
     case cap_control:
     case cap_study:
+    case sthlm3_mri_arm:
       // see below (models screening participation)
       break;
     default:
@@ -794,6 +796,12 @@ void FhcrcPerson::init() {
       R::runif(0.0,1.0);
     }
   } break;
+  case sthlm3_mri_arm:
+    if (screening_preference())
+      opportunistic_uptake_if_ever();
+    ageEntry = R::runif(2019.0,2020.5) - cohort; 
+    scheduleAt(ageEntry, toOrganised);
+    break;
   default:
     break;
   }
@@ -853,7 +861,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     (in->screen == introduced_screening) ||
     (in->screen == introduced_screening_preference) ||
     (in->screen == stopped_screening) ||
-    (in->screen == cap_study);
+    (in->screen == cap_study) ||
+    (in->screen == sthlm3_mri_arm);
   bool formal_costs = in->parameter["formal_costs"]==1.0 && (!mixed_programs || organised);
   bool formal_compliance = in->parameter["formal_compliance"]==1.0 && (!mixed_programs || organised);
   double utility = FhcrcPerson::utility();
@@ -1054,7 +1063,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     } // assumes similar biopsy compliance, reasonable? An option to different psa-thresholds would be to use different biopsyCompliance. /AK
     else {
           in->rngScreen->set();
-	  if (in->screen == cap_study && organised)
+	  if ((in->screen == cap_study || in->screen == sthlm3_mri_arm) && organised)
 	    organised = false;
 	  rescreening_schedules(psa, organised, mixed_programs);
     }
@@ -1102,7 +1111,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (this->MRIpos || in->bparameter("MRInegSBx")) {
       scheduleAt(now(), toScreenInitiatedBiopsy);
     } else {
-      if (in->screen == cap_study && organised)
+      if ((in->screen == cap_study || in->screen == sthlm3_mri_arm) && organised)
 	organised = false;
       rescreening_schedules(psa, organised, mixed_programs);
     }
@@ -1192,7 +1201,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
         lost_productivity("Assessment", 1535.0/1381.0 - 1.0);
       }
       if (previousNegativeBiopsy || (in->bparameter("MRI_screen") && !this->MRIpos && in->bparameter["rescreenDoubleNeg"])) { // first negative biopsy and not MRI-
-	if (in->screen == cap_study && organised)
+	if ((in->screen == cap_study || in->screen == sthlm3_mri_arm) && organised)
 	  organised = false;
         rescreening_schedules(psa_last_screen, organised, mixed_programs);
         previousNegativeBiopsy = false; // if going to rescreening, should their previous negative Bx be forgotten? (Currently only used here)

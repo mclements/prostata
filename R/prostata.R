@@ -965,7 +965,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                "regular_screen", "single_screen",
                "introduced_screening_only", "introduced_screening_preference",
                "introduced_screening", "stopped_screening",
-               "cap_control", "cap_study")
+               "cap_control", "cap_study", "sthlm3_mri_arm")
   screen <- match.arg(screen, screenT)
   stopifnot(is.na(n) || is.integer(as.integer(n)))
   stopifnot(is.integer(as.integer(nLifeHistories)))

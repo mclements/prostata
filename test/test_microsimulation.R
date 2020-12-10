@@ -2,6 +2,13 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
+## STHLM3-MRI
+library(prostata)
+prostata::sthlm3_mri_arm
+callFhcrc(1e4, screen="sthlm3_mri_arm", pop=sthlm3_mri_arm, parms=prostata:::ShuangParameters,
+          mc.cores=6)
+
+
 ## Pr(Survival to age 55 years)
 library(prostata)
 fit <- callFhcrc(1e3,"noScreening",pop=1960,flatPop=TRUE,mc.cores=2)

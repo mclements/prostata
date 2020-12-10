@@ -368,7 +368,7 @@ ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply
 #'  #EXAMPLE1
 #'  }
 #' }
-#' @rdname FUNCTION_NAME
+#' @rdname Sweden
 #' @export
 "swedenOpportunisticBiopsyCompliance"
 swedenOpportunisticBiopsyCompliance <- data.frame(
@@ -391,7 +391,7 @@ swedenOpportunisticBiopsyCompliance <- data.frame(
 #'  #EXAMPLE1
 #'  }
 #' }
-#' @rdname FUNCTION_NAME
+#' @rdname Sweden
 #' @export
 "swedenFormalBiopsyCompliance"
 swedenFormalBiopsyCompliance <- cbind(expand.grid(psa=c(3,5,10),age=seq(40,80,10)),
@@ -414,7 +414,7 @@ swedenFormalBiopsyCompliance <- cbind(expand.grid(psa=c(3,5,10),age=seq(40,80,10
 #'  #EXAMPLE1
 #'  }
 #' }
-#' @rdname FUNCTION_NAME
+#' @rdname Sweden
 #' @export
 "stockholmTreatment"
 stockholmTreatment <-
@@ -447,7 +447,7 @@ secularTrendTreatment2008OR <-
 #'  #EXAMPLE1
 #'  }
 #' }
-#' @rdname FUNCTION_NAME
+#' @rdname Sweden
 #' @export
 "rescreening"
 rescreening <- data.frame(age5 = c(30, 30, 30, 30, 35, 35, 35, 35, 40, 40,
@@ -510,7 +510,7 @@ rescreening <- data.frame(age5 = c(30, 30, 30, 30, 35, 35, 35, 35, 40, 40,
 #'  #EXAMPLE1
 #'  }
 #' }
-#' @rdname FUNCTION_NAME
+#' @rdname Sweden
 #' @export
 "pop1"
 pop1 <- data.frame(cohort=as.double(2035:1900),
@@ -587,6 +587,28 @@ background_utilities <-
                upper=c(18, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 1.0e55),
                utility=c(1, 0.89, 0.89, 0.88, 0.87, 0.84, 0.84, 0.83, 0.83, 0.82, 0.83, 0.81,
                          0.79, 0.74))
+#' @title Population for the STHLM3-MRI MRI arm
+#' @description Birth cohorts for the study, assuming 2019.5 is the middle of the study
+#' @format A data frame with 30 rows and 2 variables:
+#' \describe{
+#'   \item{\code{cohort}}{birt cohort}
+#'   \item{\code{pop}}{population count}
+#'}
+#' @details 
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  background_utilities
+#'  }
+#' }
+#' @rdname STHLM3
+#' @export
+"sthlm3_mri_arm"
+sthlm3_mri_arm <- data.frame(cohort = 2019 - 45:74,
+                             pop = c(1, 4, 6, 9, 10, 11, 21, 22, 20, 28, 23,
+                                   34, 44, 37, 48, 58, 59, 60, 71, 60, 71, 79, 76, 71, 79, 91, 95,
+                                   77, 83, 54))
+
 
 
 #' @title List tables for the simulation

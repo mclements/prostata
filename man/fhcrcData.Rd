@@ -4,14 +4,173 @@
 \name{fhcrcData}
 \alias{fhcrcData}
 \title{List tables for the simulation}
-\format{A data frame with 12120 rows and 4 variables:
+\format{
+A data frame with 12120 rows and 4 variables:
 \describe{
   \item{\code{BirthCohort}}{integer COLUMN_DESCRIPTION}
   \item{\code{Age}}{integer COLUMN_DESCRIPTION}
   \item{\code{AnnualMortality}}{double COLUMN_DESCRIPTION}
   \item{\code{Survival}}{double COLUMN_DESCRIPTION}
 }
-\strong{biopsy_frequency}}
+\strong{biopsy_frequency}
+
+A data frame with 3 rows and 7 variables:
+\describe{
+  \item{\code{PSA.beg}}{integer COLUMN_DESCRIPTION}
+  \item{\code{PSA.end}}{integer COLUMN_DESCRIPTION}
+  \item{\code{X55.59}}{double COLUMN_DESCRIPTION}
+  \item{\code{X60.64}}{double COLUMN_DESCRIPTION}
+  \item{\code{X65.69}}{double COLUMN_DESCRIPTION}
+  \item{\code{X70.74}}{double COLUMN_DESCRIPTION}
+  \item{\code{X75.79}}{double COLUMN_DESCRIPTION}
+}
+\strong{biopsy_sensitivity}
+
+A data frame with 14 rows and 2 variables:
+\describe{
+  \item{\code{Year}}{integer COLUMN_DESCRIPTION}
+  \item{\code{Sensitivity}}{double COLUMN_DESCRIPTION}
+}
+\strong{neg_biopsy_to_psa}
+
+A data frame with 4 rows and 3 variables. Describing the
+    time to the next PSA test following a negative biopsy. Modelled
+    as a competing risk with a biopsy. Informed by the Stockholm
+    PSA and Biopsy Register (SPBR).:
+\describe{
+  \item{\code{age}}{integer with age groups}
+  \item{\code{meanlog}}{double for the mean of a log-normal time to
+  a PSA test following a negative biopsy.}
+  \item{\code{sdlog}}{double for the standard deviation of a
+  log-normal.}
+}
+\strong{neg_biopsy_to_biopsy}
+
+A data frame with 4 rows and 3 variables. Describing the
+    time to the next biopsy following a negative biopsy. Modelled
+    as a competing risk with a PSA test. Informed by the Stockholm
+    PSA and Biopsy Register (SPBR).:
+\describe{
+  \item{\code{age}}{integer with age groups}
+  \item{\code{meanlog}}{double describing the mean of a log-normal}
+  \item{\code{sdlog}}{double describing the standard deviation of a
+  log-normal}
+}
+\strong{cure_m_CM_to_RP}
+
+A data frame with 4 rows and 4 variables. Cure model giving
+    the probability of not having a radical prostatectomy following
+    assignment to conservative management (active surveillance &
+    watchfull waiting). Log-normal distribution of the time to
+    radical prostatectomy for those that do have that. A future
+    extension would be to model active surveillance and watchfull
+    waiting separately:
+\describe{
+\item{\code{age}}{double with age groups}
+\item{\code{pnever}}{double probability of not having a radical
+prostatectomy}
+\item{\code{meanlog}}{double mean of log-normal time to radical
+prostatectomy}
+\item{\code{sdlog}}{double standard deviation of log-normal time to
+radical prostatectomy}
+}
+\strong{cure_m_CM_to_RT}
+
+A data frame with 4 rows and 4 variables. Cure model giving
+    the probability of not having a radiation therapy following
+    assignment to conservative management (active surveillance &
+    watchfull waiting). Log-normal distribution of the time to
+    radiation therapy for those that do have that. A future
+    extension would be to model active surveillance and watchfull
+    waiting separately:
+\describe{
+\item{\code{age}}{double with age groups}
+\item{\code{pnever}}{double probability of not having a radical
+prostatectomy}
+\item{\code{meanlog}}{double mean of log-normal time to
+radiation therapy}
+\item{\code{sdlog}}{double standard deviation of log-normal time to
+radiation therapy}
+}
+
+A data frame with 4 rows and 3 variables. Describing the
+    time to the next biopsy following a negative biopsy. Modelled
+    as a competing risk with a PSA test. Informed by the Stockholm
+    PSA and Biopsy Register (SPBR).:
+\describe{
+  \item{\code{age}}{integer with age groups}
+  \item{\code{meanlog}}{double describing the mean of a log-normal}
+  \item{\code{sdlog}}{double describing the standard deviation of a
+  log-normal}
+}
+\strong{dre}
+
+A data frame with 4 rows and 4 variables:
+\describe{
+  \item{\code{psa.low}}{integer COLUMN_DESCRIPTION}
+  \item{\code{psa.high}}{double COLUMN_DESCRIPTION}
+  \item{\code{sensitivity}}{double COLUMN_DESCRIPTION}
+  \item{\code{specificity}}{double COLUMN_DESCRIPTION}
+}
+\strong{prob_grade7}
+
+A data frame with 51 rows and 2 variables:
+\describe{
+  \item{\code{slope}}{double COLUMN_DESCRIPTION}
+  \item{\code{Pr.grade.7.}}{double COLUMN_DESCRIPTION}
+}
+\strong{pradt}
+
+A data frame with 8208 rows and 6 variables:
+\describe{
+  \item{\code{Tx}}{integer COLUMN_DESCRIPTION}
+  \item{\code{Age}}{integer COLUMN_DESCRIPTION}
+  \item{\code{DxY}}{integer COLUMN_DESCRIPTION}
+  \item{\code{Grade}}{integer COLUMN_DESCRIPTION}
+  \item{\code{NoADT}}{double COLUMN_DESCRIPTION}
+  \item{\code{ADT}}{double COLUMN_DESCRIPTION}
+}
+\strong{prtx}
+
+A data frame with 2664 rows and 6 variables:
+\describe{
+  \item{\code{Age}}{integer COLUMN_DESCRIPTION}
+  \item{\code{DxY}}{integer COLUMN_DESCRIPTION}
+  \item{\code{G}}{integer COLUMN_DESCRIPTION}
+  \item{\code{CM}}{double COLUMN_DESCRIPTION}
+  \item{\code{RP}}{double COLUMN_DESCRIPTION}
+  \item{\code{RT}}{double COLUMN_DESCRIPTION}
+}
+\strong{survival_dist}
+
+A data frame with 42 rows and 3 variables:
+\describe{
+  \item{\code{Grade}}{integer COLUMN_DESCRIPTION}
+  \item{\code{Time}}{integer COLUMN_DESCRIPTION}
+  \item{\code{Survival}}{double COLUMN_DESCRIPTION}
+}
+\strong{survival_local}
+
+A data frame with 294 rows and 5 variables:
+\describe{
+  \item{\code{AgeLow}}{integer COLUMN_DESCRIPTION}
+  \item{\code{AgeHigh}}{integer COLUMN_DESCRIPTION}
+  \item{\code{Grade}}{integer COLUMN_DESCRIPTION}
+  \item{\code{Time}}{integer COLUMN_DESCRIPTION}
+  \item{\code{Survival}}{double COLUMN_DESCRIPTION}
+}
+\strong{prob_earlystage}
+
+A data frame with 84 rows and 6 variables:
+\describe{
+  \item{\code{BeginAge}}{integer COLUMN_DESCRIPTION}
+  \item{\code{EndAge}}{integer COLUMN_DESCRIPTION}
+  \item{\code{BeginPSA}}{integer COLUMN_DESCRIPTION}
+  \item{\code{EndPSA}}{integer COLUMN_DESCRIPTION}
+  \item{\code{Grade}}{integer COLUMN_DESCRIPTION}
+  \item{\code{Prob}}{double COLUMN_DESCRIPTION}
+}
+}
 \usage{
 fhcrcData
 }

@@ -4,12 +4,14 @@
 \name{background_utilities}
 \alias{background_utilities}
 \title{background_utilities}
-\format{A data frame with 14 rows and 3 variables:
+\format{
+A data frame with 14 rows and 3 variables:
 \describe{
   \item{\code{lower}}{double lower age}
   \item{\code{lower}}{double upper age}
   \item{\code{utility}}{double background utility value}
-}}
+}
+}
 \usage{
 background_utilities
 }

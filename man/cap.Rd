@@ -5,13 +5,21 @@
 \alias{cap_study}
 \alias{cap_control}
 \title{DATASET_TITLE}
-\format{A data frame with 4 rows and 4 variables:
+\format{
+A data frame with 4 rows and 4 variables:
 \describe{
   \item{\code{cohort}}{integer COLUMN_DESCRIPTION}
   \item{\code{pop}}{double COLUMN_DESCRIPTION}
   \item{\code{screened}}{double Number screened at baseline}
   \item{\code{pscreened}}{double Probability of being screened at baseline}
-}}
+}
+
+A data frame with 4 rows and 4 variables:
+\describe{
+  \item{\code{cohort}}{integer COLUMN_DESCRIPTION}
+  \item{\code{pop}}{double COLUMN_DESCRIPTION}
+}
+}
 \usage{
 cap_study
 

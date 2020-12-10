@@ -4,12 +4,14 @@
 \name{ageStandards}
 \alias{ageStandards}
 \title{ageStandards}
-\format{A data frame with 18 rows and 3 variables:
+\format{
+A data frame with 18 rows and 3 variables:
 \describe{
   \item{\code{Age}}{integer Left-hand age for five-year age groups to 85+}
   \item{\code{Sweden2000}}{double Sweden 2000 standard weights}
   \item{\code{World}}{double World standard weights}
-}}
+}
+}
 \usage{
 ageStandards
 }

@@ -185,7 +185,7 @@ if(year==2019)
          ## https://a23lab.se/stockholm3/
          
          ## Latest cost for 2019
-         cost_parameters =  c("Invitation" = 7.12                      # Invitation letter
+         list(cost_parameters =  c("Invitation" = 7.12                      # Invitation letter
                               + 7.12,                                   # Results letter
                               "Formal PSA" = 362.16                     # test sampling, primary care
                               + 58.42                                   # PSA analysis
@@ -274,7 +274,7 @@ if(year==2019)
                0.016865,0.018438,0.020668,0.022392,0.025004,0.028228,0.031763,0.035649,0.040985,0.045583,
                0.052091,0.059322,0.067212,0.076669,0.087961,0.101087,0.115534,0.131556,0.147308,0.169331,
                0.194948,0.215649,0.242328,0.270844,0.300826,0.335924,0.371850,0.411620,0.432771,0.482348,
-               0.526314,0.536479,0.665380,0.477720,0.845950,0.821827,1.135842,2.321872,6.000000))                
+               0.526314,0.536479,0.665380,0.477720,0.845950,0.821827,1.135842,2.321872,6.000000)))
          # 2015-2019 death rates from human mortality database https://www.mortality.org/,
          # find "Sweden" and click on 1x5 death rates https://www.mortality.org/hmd/SWE/STATS/Mx_1x5.txt, 
          # Access date: 2020-12-08

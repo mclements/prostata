@@ -2,12 +2,183 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
-## STHLM3-MRI
+## STHLM3-MRI simulation
 library(prostata)
-prostata::sthlm3_mri_arm
-callFhcrc(1e4, screen="sthlm3_mri_arm", pop=sthlm3_mri_arm, parms=prostata:::ShuangParameters,
-          mc.cores=6)
+library(dplyr)
+## prostata::sthlm3_mri_arm
+s3m_parms = modifyList(prostata:::ShuangParameters,
+                       list(includePSArecords = FALSE,
+                            includeEventHistories = FALSE,
+                            pMRIposG0=0.28,          # Pr(MRI+ or MRI-S3m>=25 | ISUP 0 || undetectable) 2020-03-23
+                            pMRIposG1=0.9595385,     # Pr(MRI+ or MRI-S3m>=25 | ISUP 1 && detectable) 2020-03-23
+                            pMRIposG2=0.9900455,     # Pr(MRI+ or MRI-S3m>=25 | ISUP 2+ && detectable) 2020-03-23
+                            MRI_screen = TRUE,
+                            PSA_FP_threshold_nCa=6.38, # reduce FP in no cancers with PSA threshold
+                            PSA_FP_threshold_GG6=7.04, # reduce FP in GG 6 with PSA threshold
+                            PSA_FP_threshold_GG7plus=3.55, # reduce FP in GG >= 7 with PSA threshold
+                            panelReflexThreshold = 1.5,
+                            SplitS3M25plus = TRUE,
+                            PrS3MposIfBx_nCa = 0.575,
+                            PrS3MposIfBx_GG6 = 0.7878788,
+                            PrS3MposIfBx_GG7plus = 0.9565217,
+                            start_screening=55,
+                            stop_screening=70,
+                            screening_interval=4))
+psa_parms = modifyList(s3m_parms,
+                   list(pMRIposG0=0.148,          # Pr(MRI+ or MRI-S3m>=25 | ISUP 0 || undetectable) 2020-03-23
+                        pMRIposG1=0.743,     # Pr(MRI+ or MRI-S3m>=25 | ISUP 1 && detectable) 2020-03-23
+                        pMRIposG2=0.948,     # Pr(MRI+ or MRI-S3m>=25 | ISUP 2+ && detectable) 2020-03-23
+                        SplitS3M25plus = FALSE,
+                        PSA_FP_threshold_nCa=3, # reduce FP in no cancers with PSA threshold
+                        PSA_FP_threshold_GG6=3, # reduce FP in GG 6 with PSA threshold
+                        PSA_FP_threshold_GG7plus=3 # reduce FP in GG >= 7 with PSA threshold
+                        ))
 
+## code to compare with simulation with the trial
+s3m <- callFhcrc(1e5, screen="sthlm3_mri_arm", pop=sthlm3_mri_arm, parms=s3m_parms,
+                   mc.cores=6, nLifeHistories=1e8, panel=TRUE)
+psa <- callFhcrc(1e5, screen="sthlm3_mri_arm", pop=sthlm3_mri_arm, parms=psa_parms,
+                   mc.cores=6, nLifeHistories=1e8, panel=FALSE)
+s3m_parameters <- filter(s3m$parameters, (age_pca==-1 | age_pca>ageEntry) & age_d>ageEntry)
+psa_parameters <- filter(psa$parameters, (age_pca==-1 | age_pca>ageEntry) & age_d>ageEntry)
+## get PSA records at age of study entry
+ISUP = function(x) ifelse(x==0,1,
+                   ifelse(x %in% c(1,2), 2,
+                   ifelse(x==3,0,
+                          NA)))
+s3m_entry = inner_join(s3m_parameters, s3m$psarecord, by="id") %>% filter(age==ageEntry) %>%
+    mutate(isup=ISUP(ifelse(detectable==1,future_ext_grade,3)))
+psa_entry = inner_join(psa_parameters, psa$psarecord, by="id") %>% filter(age==ageEntry) %>%
+    mutate(isup=ISUP(ifelse(detectable==1,future_ext_grade,3)))
+table(s3m_entry$isup)
+table(psa_entry$isup) # not identical??
+table(s3m$lifeHistories$event)
+
+
+## PSA>=2.0
+## c(7.40, 7.94, 4.74) # pseudo-thresholds
+## c(0.5428571, 0.8000000, 0.9597701) # =1/adjBoth2.0 -- the split proportions
+## adjBoth2.0 = c(1.84210526315789,1.25,1.04191616766467)
+## PrMRIpos_s3m2.0 = c(0.159,0.768,0.950)
+## adjBoth2.0*PrMRIpos_s3m2.0
+## c(0.2928947, 0.96, 0.9898204)
+s3m_parms2.0 = modifyList(s3m_parms,
+                       list(pMRIposG0=0.2928947,
+                            pMRIposG1=0.96,
+                            pMRIposG2=0.9898204,
+                            PSA_FP_threshold_nCa=7.4,
+                            PSA_FP_threshold_GG6=7.94,
+                            PSA_FP_threshold_GG7plus=4.74,
+                            panelReflexThreshold = 2.0,
+                            PrS3MposIfBx_nCa = 0.5428571,
+                            PrS3MposIfBx_GG6 = 0.8,
+                            PrS3MposIfBx_GG7plus = 0.9597701))
+
+s3m1.5 <- callFhcrc(1e6, screen="regular_screen", pop=1940, flatpop=TRUE, parms=s3m_parms,
+                   mc.cores=6, nLifeHistories=1e8, panel=TRUE)
+psa <- callFhcrc(1e6, screen="regular_screen", pop=1940, flatpop=TRUE, parms=psa_parms,
+                   mc.cores=6, nLifeHistories=1e8, panel=FALSE)
+s3m2.0 <- callFhcrc(1e6, screen="regular_screen", pop=1940, flatpop=TRUE, parms=s3m_parms2.0,
+                    mc.cores=6, nLifeHistories=1e8, panel=TRUE)
+ICER(s3m1.5,psa,from=55)
+ICER(s3m2.0,psa,from=55)
+ICER(s3m1.5,s3m2.0,from=55)
+
+merge(as.data.frame(xtabs(costs~item,s3m1.5$healthsector.costs)),
+      as.data.frame(xtabs(costs~item,psa$healthsector.costs)), by="item",all=TRUE)
+
+
+oldpar = options()
+options(width=140)
+subset(s3m$lifeHistories,id==4)
+options(width=80)
+
+
+## STHLM3-MRI test calibration
+library(prostata)
+library(dplyr)
+## prostata::sthlm3_mri_arm
+parms = modifyList(prostata:::ShuangParameters,
+                   list(includePSArecords = TRUE))
+
+model <- callFhcrc(1e5, screen="sthlm3_mri_arm", pop=sthlm3_mri_arm, parms=parms,
+                   mc.cores=6, nLifeHistories=1e8)
+## names(model)
+## head(model$lifeHistories)
+## head(model$parameters)
+## head(model$psarecord)
+
+## remove men who got cancer or died before "ageEntry"
+parameters <- filter(model$parameters, (age_pca==-1 | age_pca>ageEntry) & age_d>ageEntry)
+## dim(model$parameters)
+## dim(parameters)
+## get PSA records at age of study entry
+ISUP = function(x) ifelse(x==0,1,
+                   ifelse(x %in% c(1,2), 2,
+                   ifelse(x==3,0,
+                          NA)))
+temp = inner_join(parameters, model$psarecord, by="id") %>% filter(age==ageEntry) %>%
+    mutate(isup=ISUP(ifelse(detectable==1,future_ext_grade,3)))
+## head(temp)
+## dim(temp)
+## table(temp$detectable)
+## temp %>% select(isup) %>% table
+## temp %>% filter(psa>=4) %>% select(isup) %>% table
+## check ages
+## table(floor(parameters$ageEntry))
+
+## ratio of (MRI-S3M>=25 or MRI+S3M+) to MRI+S3M+ --> number of biopsies
+adjBoth1.5 = c(1.73913043478261,1.26923076923077,1.04545454545455) 
+adjBoth2.0 = c(1.84210526315789,1.25,1.04191616766467)
+## see Table 1A
+PrMRIpos_s3m1.5 = c(0.161,0.756,0.947)
+PrMRIpos_s3m2.0 = c(0.159,0.768,0.950)
+PrMRIpos_psa = c(0.148,0.743,0.948)
+rpf1.5 = c(0.8, 0.825, 1.005)
+rpf2.0 = c(0.7,0.75,0.951)
+
+## expected number of MRI+ (== number of biopsies if 100% compliance == number of diagnoses if 100% accuracy) for PSA>=3
+EmriPos = temp %>% filter(psa>=3) %>% mutate(mri=PrMRIpos_psa[isup+1]) %>% group_by(isup) %>%
+    summarise(Emri=sum(mri), .groups="drop_last") %>% data.frame
+adjBoth = adjBoth1.5
+PrMRIpos_s3m = PrMRIpos_s3m1.5
+rpf = rpf1.5
+adjBoth = adjBoth2.0
+PrMRIpos_s3m = PrMRIpos_s3m2.0
+rpf = rpf2.0
+
+temp2 <- temp %>% mutate(mripos=PrMRIpos_s3m[isup+1], bx=mripos*adjBoth[isup+1]) 
+## temp2 %>% filter(psa>=3) %>% group_by(isup) %>% summarise(Emri=sum(mri)) %>% data.frame
+f = function(data,.isup,.psa,EmriPosData)
+    sum(filter(data,isup==.isup & psa>=.psa)$bx)/EmriPosData$Emri[.isup+1]
+## f(temp2,0,3.5,EmriPos)
+## f(temp2,0,3.,Emri)
+##
+uniroot(function(psa) f(temp2,0,psa,EmriPos)-rpf[1], c(1,10)) # 6.40
+uniroot(function(psa) f(temp2,1,psa,EmriPos)-rpf[2], c(1,10)) # 7.04
+uniroot(function(psa) f(temp2,2,psa,EmriPos)-rpf[3], c(1,10)) # 3.56
+
+uniroot(function(psa) f(temp2,0,psa,EmriPos)-rpf[1], c(1,10)) # 7.40
+uniroot(function(psa) f(temp2,1,psa,EmriPos)-rpf[2], c(1,10)) # 7.94
+uniroot(function(psa) f(temp2,2,psa,EmriPos)-rpf[3], c(1,10)) # 4.74
+
+## given this pseudo threshold: (i) test if MRI+; (ii) if MRI-, also test if S3M>=25
+## Alternatively: test if bx; if bx, split by whether MRI+ or MRI-/S3M>=25
+
+## ratio of MRI tests (S3M+ vs PSA+)
+nrow(subset(temp2,psa>=6.38 & isup==0))/nrow(subset(temp2,psa>=3 & isup==0)) # 0.423
+nrow(subset(temp,psa>=7.04 & isup==1))/nrow(subset(temp,psa>=3 & isup==1)) # 0.639
+nrow(subset(temp,psa>=3.55 & isup==2))/nrow(subset(temp,psa>=3 & isup==2)) # 0.963
+
+## ratio of biopsies
+sum(subset(temp2,psa>=6.38 & isup==0)$bx)/sum(subset(temp2,psa>=3 & isup==0)$mripos) # 0.735
+sum(subset(temp2,psa>=7.04 & isup==1)$bx)/sum(subset(temp2,psa>=3 & isup==1)$mripos) # 0.811
+sum(subset(temp2,psa>=3.55 & isup==2)$bx)/sum(subset(temp2,psa>=3 & isup==2)$mripos) # 1.007
+
+## we still need to split by S3M+MRI+ vs MRI-/S3M>=25; Pr(MRI+S3M+ | S3M+MRI+ vs MRI-/S3M>=25) =
+PrS3MposIfBx = 1/adjBoth
+
+PrBxIfS3M1.5pos = PrMRIpos_s3m1.5(0:2)*adjBoth
 
 ## Pr(Survival to age 55 years)
 library(prostata)

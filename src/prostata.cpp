@@ -1135,10 +1135,28 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toScreenInitiatedBiopsy: {
     in->rngBx->set();
-    // the following block follows the same pattern as toClinicalDiagnosticBiopsy
+    double u1 = R::runif(0.0,1.0);
+    // the general case for the following block follows the same pattern as toClinicalDiagnosticBiopsy
     if (in->bparameter["MRI_screen"] && this->MRIpos) {
-      add_costs("Combined biopsy");
-      lost_productivity("Combined biopsy");
+      // specific case: MRI+S3M+ or MRI-S3M>=25 (split by type of biopsy: combined and systematic, respectively)
+      if (in->bparameter.containsElementNamed("SplitS3M25plus") &&
+	  in->bparameter["SplitS3M25plus"]) {
+	double pS3Mpos = (detectable && this->ext_grade == ext::Gleason_le_6) ? in->parameter["PrS3MposIfBx_GG6"] :
+	  (detectable && this->ext_grade == ext::Gleason_7) ? in->parameter["PrS3MposIfBx_GG7plus"] :
+	  (detectable && this->ext_grade == ext::Gleason_ge_8) ? in->parameter["PrS3MposIfBx_GG7plus"] :
+	  in->parameter["PrS3MposIfBx_nCa"];
+	if (u1 < pS3Mpos) {
+	  add_costs("Combined biopsy");
+	  lost_productivity("Combined biopsy");
+	} else {
+	  add_costs("Biopsy");
+	  lost_productivity("Biopsy");
+	}
+      }
+      else { // general case
+	add_costs("Combined biopsy");
+	lost_productivity("Combined biopsy");
+      }
     } else {
       add_costs("Biopsy");
       lost_productivity("Biopsy");

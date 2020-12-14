@@ -1136,6 +1136,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   case toScreenInitiatedBiopsy: {
     in->rngBx->set();
     double u1 = R::runif(0.0,1.0);
+    double u2 = R::runif(0.0,1.0);
     // the general case for the following block follows the same pattern as toClinicalDiagnosticBiopsy
     if (in->bparameter["MRI_screen"] && this->MRIpos) {
       // specific case: MRI+S3M+ or MRI-S3M>=25 (split by type of biopsy: combined and systematic, respectively)
@@ -1192,17 +1193,17 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	// pass
       } else if (in->bparameter["MRI_screen"] && this->MRIpos) {
 	if (this->ext_grade == ext::Gleason_le_6) {
-	  Bx_missed = (R::runif(0.0,1.0) < in->parameter["pTBxG0ifG1_MRIpos"]);
+	  Bx_missed = (u2 < in->parameter["pTBxG0ifG1_MRIpos"]);
 	}
 	if (this->ext_grade == ext::Gleason_7) {
-	  Bx_missed = (R::runif(0.0,1.0) < in->parameter["pTBxG0ifG2_MRIpos"]);
+	  Bx_missed = (u2 < in->parameter["pTBxG0ifG2_MRIpos"]);
 	}
       } else { // SBx compared with MRI
 	if (this->ext_grade == ext::Gleason_le_6) {
-	  Bx_missed = (R::runif(0.0,1.0) < in->parameter["pSBxG0ifG1"]);
+	  Bx_missed = (u2 < in->parameter["pSBxG0ifG1"]);
 	}
 	if (this->ext_grade == ext::Gleason_7) {
-	  Bx_missed = (R::runif(0.0,1.0) < in->parameter["pSBxG0ifG2"]);
+	  Bx_missed = (u2 < in->parameter["pSBxG0ifG2"]);
 	}
       }
       if (!Bx_missed)

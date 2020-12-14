@@ -9,6 +9,7 @@ library(dplyr)
 s3m_parms = modifyList(prostata:::ShuangParameters,
                        list(includePSArecords = FALSE,
                             includeEventHistories = FALSE,
+                            formal_compliance=1,
                             pMRIposG0=0.28,          # Pr(MRI+ or MRI-S3m>=25 | ISUP 0 || undetectable) 2020-03-23
                             pMRIposG1=0.9595385,     # Pr(MRI+ or MRI-S3m>=25 | ISUP 1 && detectable) 2020-03-23
                             pMRIposG2=0.9900455,     # Pr(MRI+ or MRI-S3m>=25 | ISUP 2+ && detectable) 2020-03-23
@@ -34,26 +35,6 @@ psa_parms = modifyList(s3m_parms,
                         PSA_FP_threshold_GG7plus=3 # reduce FP in GG >= 7 with PSA threshold
                         ))
 
-## code to compare with simulation with the trial
-s3m <- callFhcrc(1e5, screen="sthlm3_mri_arm", pop=sthlm3_mri_arm, parms=s3m_parms,
-                   mc.cores=6, nLifeHistories=1e8, panel=TRUE)
-psa <- callFhcrc(1e5, screen="sthlm3_mri_arm", pop=sthlm3_mri_arm, parms=psa_parms,
-                   mc.cores=6, nLifeHistories=1e8, panel=FALSE)
-s3m_parameters <- filter(s3m$parameters, (age_pca==-1 | age_pca>ageEntry) & age_d>ageEntry)
-psa_parameters <- filter(psa$parameters, (age_pca==-1 | age_pca>ageEntry) & age_d>ageEntry)
-## get PSA records at age of study entry
-ISUP = function(x) ifelse(x==0,1,
-                   ifelse(x %in% c(1,2), 2,
-                   ifelse(x==3,0,
-                          NA)))
-s3m_entry = inner_join(s3m_parameters, s3m$psarecord, by="id") %>% filter(age==ageEntry) %>%
-    mutate(isup=ISUP(ifelse(detectable==1,future_ext_grade,3)))
-psa_entry = inner_join(psa_parameters, psa$psarecord, by="id") %>% filter(age==ageEntry) %>%
-    mutate(isup=ISUP(ifelse(detectable==1,future_ext_grade,3)))
-table(s3m_entry$isup)
-table(psa_entry$isup) # not identical??
-table(s3m$lifeHistories$event)
-
 
 ## PSA>=2.0
 ## c(7.40, 7.94, 4.74) # pseudo-thresholds
@@ -74,11 +55,11 @@ s3m_parms2.0 = modifyList(s3m_parms,
                             PrS3MposIfBx_GG6 = 0.8,
                             PrS3MposIfBx_GG7plus = 0.9597701))
 
-s3m1.5 <- callFhcrc(1e6, screen="regular_screen", pop=1940, flatpop=TRUE, parms=s3m_parms,
+s3m1.5 <- callFhcrc(1e6, screen="regular_screen", pop=1940, flatPop=TRUE, parms=s3m_parms,
                    mc.cores=6, nLifeHistories=1e8, panel=TRUE)
-psa <- callFhcrc(1e6, screen="regular_screen", pop=1940, flatpop=TRUE, parms=psa_parms,
+psa <- callFhcrc(1e6, screen="regular_screen", pop=1940, flatPop=TRUE, parms=psa_parms,
                    mc.cores=6, nLifeHistories=1e8, panel=FALSE)
-s3m2.0 <- callFhcrc(1e6, screen="regular_screen", pop=1940, flatpop=TRUE, parms=s3m_parms2.0,
+s3m2.0 <- callFhcrc(1e6, screen="regular_screen", pop=1940, flatPop=TRUE, parms=s3m_parms2.0,
                     mc.cores=6, nLifeHistories=1e8, panel=TRUE)
 ICER(s3m1.5,psa,from=55)
 ICER(s3m2.0,psa,from=55)
@@ -87,6 +68,30 @@ ICER(s3m1.5,s3m2.0,from=55)
 merge(as.data.frame(xtabs(costs~item,s3m1.5$healthsector.costs)),
       as.data.frame(xtabs(costs~item,psa$healthsector.costs)), by="item",all=TRUE)
 
+
+
+
+## code to compare with simulation with the trial
+s3m <- callFhcrc(1e5, screen="sthlm3_mri_arm", pop=sthlm3_mri_arm,
+                 parms=modifyList(s3m_parms, list(includePSArecords=TRUE)),
+                   mc.cores=6, nLifeHistories=1e8, panel=TRUE)
+psa <- callFhcrc(1e5, screen="sthlm3_mri_arm", pop=sthlm3_mri_arm,
+                 parms=modifyList(psa_parms, list(includePSArecords=TRUE)),
+                   mc.cores=6, nLifeHistories=1e8, panel=FALSE)
+s3m_parameters <- filter(s3m$parameters, (age_pca==-1 | age_pca>ageEntry) & age_d>ageEntry)
+psa_parameters <- filter(psa$parameters, (age_pca==-1 | age_pca>ageEntry) & age_d>ageEntry)
+## get PSA records at age of study entry
+ISUP = function(x) ifelse(x==0,1,
+                   ifelse(x %in% c(1,2), 2,
+                   ifelse(x==3,0,
+                          NA)))
+s3m_entry = inner_join(s3m_parameters, s3m$psarecord, by="id") %>% filter(age==ageEntry) %>%
+    mutate(isup=ISUP(ifelse(detectable==1,future_ext_grade,3)))
+psa_entry = inner_join(psa_parameters, psa$psarecord, by="id") %>% filter(age==ageEntry) %>%
+    mutate(isup=ISUP(ifelse(detectable==1,future_ext_grade,3)))
+table(s3m_entry$isup)
+table(psa_entry$isup) # not identical??
+table(s3m$lifeHistories$event)
 
 oldpar = options()
 options(width=140)

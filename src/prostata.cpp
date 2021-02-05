@@ -519,6 +519,7 @@ namespace fhcrc_example {
         if (50.0 <= now() && now() < 70.0)
           scheduleAt(now() + 2.0, toScreen);
         break;
+      case sthlm3_mri_arm:
       case fourYearlyScreen50to70:
         if (50.0 <= now() && now() < 70.0)
           scheduleAt(now() + 4.0, toScreen);
@@ -532,7 +533,7 @@ namespace fhcrc_example {
       case stopped_screening:
       case cap_control:
       case cap_study:
-      case sthlm3_mri_arm:
+	// case sthlm3_mri_arm:
         break;
       default:
         REprintf("Screening not matched: %s\n",in->screen);
@@ -542,7 +543,7 @@ namespace fhcrc_example {
     if (in->screen == screenUptake ||
 	in->screen == cap_control ||
 	in->screen == cap_study ||
-	in->screen == sthlm3_mri_arm ||
+	// in->screen == sthlm3_mri_arm ||
 	(mixed_programs && !organised))
       opportunistic_rescreening(psa); // includes rescreening participation
   } // rescreening
@@ -799,7 +800,7 @@ void FhcrcPerson::init() {
   case sthlm3_mri_arm:
     if (screening_preference())
       opportunistic_uptake_if_ever();
-    ageEntry = R::runif(2019.0,2020.5) - cohort; 
+    ageEntry = R::runif(2019.0,2020.0) - cohort;
     scheduleAt(ageEntry, toOrganised);
     break;
   default:
@@ -861,8 +862,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     (in->screen == introduced_screening) ||
     (in->screen == introduced_screening_preference) ||
     (in->screen == stopped_screening) ||
-    (in->screen == cap_study) ||
-    (in->screen == sthlm3_mri_arm);
+    (in->screen == cap_study);
   bool formal_costs = in->parameter["formal_costs"]==1.0 && (!mixed_programs || organised);
   bool formal_compliance = in->parameter["formal_compliance"]==1.0 && (!mixed_programs || organised);
   double utility = FhcrcPerson::utility();
@@ -1023,7 +1023,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       false;
     // Important case: PSA<1 (to check)
     // Reduce false positives wrt Gleason 7+ by 1-rFPF: which BPThreshold?
-    if (in->panel && positive_test && psa < 10.) {
+    if (in->panel && positive_test && (!in->bparameter["Andreas"] || psa < 10.)) {
       if (int(in->parameter("biomarker_model"))==random_correction) { // simplistic model for the biomarker
 	if (R::runif(0.0,1.0) < 1.0 - in->parameter["rFPF"])
 	  positive_test = false;

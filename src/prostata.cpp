@@ -1628,9 +1628,9 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   bool indiv_reports = as<bool>(in.bparameter["indiv_reports"]);
 
   // set up the parameters
-  double ages0[106];
-  boost::algorithm::iota(ages0, ages0+106, 0.0);
-  in.rmu0 = Rpexp(&mu0[0], ages0, 106);
+  double ages0[mu0.size()];
+  boost::algorithm::iota(ages0, ages0+mu0.size(), 0.0);
+  in.rmu0 = Rpexp(&mu0[0], ages0, mu0.size());
   vector<double> ages(101);
   boost::algorithm::iota(ages.begin(), ages.end(), 0.0);
   ages.push_back(1.0e+6);

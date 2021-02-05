@@ -1,4 +1,4 @@
-EdnaParameters <- function(base = ShuangParameters)
+EdnaParameters <- function(base = ShuangParameters())
     modifyList(base,
                list(
 

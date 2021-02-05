@@ -347,6 +347,7 @@ temp = inner_join(parameters, model$psarecord, by="id") %>% filter(age==ageEntry
 ## see Table 1A
 PrMRIpos_s3m1.5 = c(0.167,0.96,0.96)
 PrMRIpos_s3m2.0 = c(0.164,0.96,0.959)
+PrMRIpos11_s3m1.5 = c(0.145,0.968,0.962)
 PrMRIpos11_s3m2.0 = c(0.149,0.968,0.962)
 PrMRIpos11_s3m2.5 = c(0.161,0.968,0.961)
 PrMRIpos_s3m2.5 = c(0.164,0.96,0.959)
@@ -357,6 +358,7 @@ rpf2.0 = c(0.494,0.686,0.944)
 rpf11_2.0 = c(0.909,1,1.09)
 rpf11_2.5 = c(0.753,0.771,1.006)
 rpf2.5 = c(0.442,0.514,0.904)
+rpf11_1.5=c(1.078,1.171,1.192)
 
 ## PrMRIpos_s3m1.5 = c(0.161,0.756,0.947)
 ## PrMRIpos_s3m2.0 = c(0.159,0.768,0.950)
@@ -382,6 +384,7 @@ do = function(PrMRIpos_s3m,rpf,adjBoth=rep(1,3)) {
 ## Do.call = function(list,f) do.call(f,list)
 do.call(rbind,do(PrMRIpos_s3m1.5,rpf1.5))
 do.call(rbind,do(PrMRIpos_s3m2.0,rpf2.0))
+do.call(rbind,do(PrMRIpos11_s3m1.5,rpf11_1.5))
 do.call(rbind,do(PrMRIpos11_s3m2.0,rpf11_2.0))
 do.call(rbind,do(PrMRIpos11_s3m2.5,rpf11_2.5))
 do.call(rbind,do(PrMRIpos_s3m2.5,rpf2.5))

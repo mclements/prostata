@@ -621,8 +621,11 @@ void FhcrcPerson::init() {
   // double grs_log_sd = sqrt(1.68);
   // grs_frailty = rlnorm(grs_log_mean, grs_log_sd);
   grs_frailty = 1.0;
-  if (R::runif(0.0, 1.0) <= in->parameter["susceptible"]) // portion susceptible
+  if (R::runif(0.0, 1.0) <= in->parameter["susceptible"]) { // portion susceptible
     t0 = sqrt(2*R::rexp(1.0)/(in->parameter["g0"]*grs_frailty)); // is susceptible
+    if (in->bparameter["weibull_onset"])
+      t0 = R::rweibull(in->parameter["weibull_onset_shape"], in->parameter["weibull_onset_scale"]);
+  }
   else
     t0 = 200.0; // not susceptible
   if (!in->bparameter["revised_natural_history"]){

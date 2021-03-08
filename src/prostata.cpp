@@ -613,7 +613,7 @@ void FhcrcPerson::init() {
   in->rngNh->set();
   // https://journals.plos.org/plosmedicine/article/file?id=10.1371/journal.pmed.1002998&type=printable
   // genetic risk score with T ~ LogNormal(mu,sigma^2) with mean(T) =1 and sigma^2=0.68
-  // E(T)=exp(mu+sigma^2/2)=1 
+  // E(T)=exp(mu+sigma^2/2)=1 (assumed mean)
   // => mu=-sigma^2/2 
   // R: local({y=rlnorm(1e5,-1.68/2,sqrt(1.68)); c(mean(y), var(y))})
   // R: local({y=rlnorm(1e5,-1.68/2,sqrt(1.68)); plot(density(y,from=0),xlim=c(0,5))})

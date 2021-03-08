@@ -348,9 +348,9 @@ FhcrcParameters <- list(
     rescreenDoubleNeg = FALSE,    # defines whether MRI-/Bx- men should move to rescreening (cf. repeat PSA and Bx within ~12 months)
     indiv_reports = FALSE,        # should the cost and standard reports include individual values?
     startReportAge = 0.0,          # Age to start reporting (currently only means_utilities and means_costs)
-    weibull_onset = FALSE,
-    weibull_onset_shape = 2,
-    weibull_onset_scale= 40
+    weibull_onset = FALSE,        # flag to use Weibull-distributed onset
+    weibull_onset_shape = 2,      # shape; values (0,Inf)
+    weibull_onset_scale= 40       # scale; values (0,Inf)
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]

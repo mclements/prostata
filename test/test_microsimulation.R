@@ -352,13 +352,25 @@ PrMRIpos11_s3m2.0 = c(0.149,0.968,0.962)
 PrMRIpos11_s3m2.5 = c(0.161,0.968,0.961)
 PrMRIpos_s3m2.5 = c(0.164,0.96,0.959)
 PrMRIpos_psa = c(0.148,0.743,0.948)
+##
+PrMRIpos_s3m1.5_tbx = c(0.224,0.96,0.96)
+PrMRIpos_s3m2.0_tbx = c(0.223,0.96,0.959)
+PrMRIpos_psa_tbx = c(0.175,0.743,0.948)
+PrMRIpos_s3m1.5_ITT = c(0.175,0.960,0.960)
+PrMRIpos_s3m2.0_ITT = c(0.174,0.960,0.959)
+PrMRIpos_psa_ITT = c(0.150,0.743,0.948)
+##
 rpf1.5 = c(0.597, 0.743, 0.994)
-rpf2.0 = c(0.494,0.686,0.944)
 rpf2.0 = c(0.494,0.686,0.944)
 rpf11_2.0 = c(0.909,1,1.09)
 rpf11_2.5 = c(0.753,0.771,1.006)
 rpf2.5 = c(0.442,0.514,0.904)
 rpf11_1.5=c(1.078,1.171,1.192)
+##
+rpf1.5_tbx = c(0.63,1.174,0.975)
+rpf2.0_tbx = c(0.528,1.087,0.938)
+rpf1.5_ITT = c(0.81,0.829,1)
+rpf2.0_ITT = c(0.714,0.756,0.948)
 
 ## PrMRIpos_s3m1.5 = c(0.161,0.756,0.947)
 ## PrMRIpos_s3m2.0 = c(0.159,0.768,0.950)
@@ -390,15 +402,23 @@ do.call(rbind,do(PrMRIpos11_s3m2.5,rpf11_2.5))
 do.call(rbind,do(PrMRIpos_s3m2.5,rpf2.5))
 ## do.call(rbind,do(PrMRIpos_s3m1.5,rpf25.1.5,adjBoth25.1.5))
 ## do.call(rbind,do(PrMRIpos_s3m2.0,rpf25.2.0,adjBoth25.2.0))
+do.call(rbind,do(PrMRIpos_s3m1.5_tbx,rpf1.5_tbx))
+do.call(rbind,do(PrMRIpos_s3m2.0_tbx,rpf2.0_tbx))
+do.call(rbind,do(PrMRIpos_s3m1.5_ITT,rpf1.5_ITT))
+do.call(rbind,do(PrMRIpos_s3m2.0_ITT,rpf2.0_ITT))
 
 ## given this pseudo threshold: (i) test if MRI+; (ii) if MRI-, also test if S3M>=25
 ## Alternatively: test if bx; if bx, split by whether MRI+ or MRI-/S3M>=25
-
-thresholds1.5 = sapply(do(PrMRIpos_s3m1.5,rpf1.5), "[[", "root") # c(5.322, 8.933, 3.427)
+getRoots = function(x) dput(round(sapply(x, "[[", "root"),3))
+thresholds1.5 = getRoots(do(PrMRIpos_s3m1.5,rpf1.5)) # c(5.322, 8.933, 3.427)
 thresholds2.0 = sapply(do(PrMRIpos_s3m2.0,rpf2.0), "[[", "root") # c(6.123, 9.901, 4.455)
 thresholds11_2.0 = sapply(do(PrMRIpos11_s3m2.0,rpf11_2.0), "[[", "root") # c(3.311,5.813,1.167)
 thresholds11_2.5 = sapply(do(PrMRIpos11_s3m2.5,rpf11_2.5), "[[", "root") # c(4.230,8.612,3.165)
 thresholds2.5 = sapply(do(PrMRIpos_s3m2.5,rpf2.5), "[[", "root") # c(6.696, 13.603, 5.250)
+getRoots(do(PrMRIpos_s3m1.5_tbx,rpf1.5_tbx)) # c(6.475, 4.021, 3.836)
+getRoots(do(PrMRIpos_s3m2.0_tbx,rpf2.0_tbx)) # c(7.414, 4.841, 4.593)
+getRoots(do(PrMRIpos_s3m1.5_ITT,rpf1.5_ITT)) # c(4.268, 7.715, 3.282)
+getRoots(do(PrMRIpos_s3m2.0_ITT,rpf2.0_ITT)) # c(4.74, 8.759, 4.391)
 ## thresholds25.1.5 = sapply(do(PrMRIpos_s3m1.5,rpf25.1.5,adjBoth25.1.5), "[[", "root")
 ## thresholds25.2.0 = sapply(do(PrMRIpos_s3m2.0,rpf25.2.0,adjBoth25.2.0), "[[", "root")
 
@@ -420,10 +440,94 @@ do(thresholds2.0,PrMRIpos_s3m2.0,rpf2.0)
 do(thresholds25.1.5,PrMRIpos_s3m1.5,rpf25.1.5,adjBoth25.1.5)
 do(thresholds25.2.0,PrMRIpos_s3m2.0,rpf25.2.0,adjBoth25.2.0)
 
+## simulate for thresholds
+library(prostata)
+library(dplyr)
+parms = modifyList(prostata:::ShuangParameters(),
+                   list(includePSArecords = TRUE, includeLifeHistories=TRUE))
+model <- callFhcrc(1e6, screen="sthlm3_mri_arm", pop=sthlm3_mri_arm, parms=parms,
+                   mc.cores=6, nLifeHistories=1e8)
+## remove men who got cancer or died before "ageEntry"
+parameters <- filter(model$parameters, (age_pca==-1 | age_pca>ageEntry) & age_d>ageEntry)
+## get PSA records at age of study entry
+ISUP = function(x) ifelse(x==0,1,
+                   ifelse(x %in% c(1,2), 2,
+                   ifelse(x==3,0,
+                          NA)))
+temp = inner_join(parameters, model$psarecord, by="id") %>% filter(age==ageEntry) %>%
+    mutate(isup=ISUP(ifelse(detectable==1,future_ext_grade,3)))
+logitInputs=list(PrMRIpos_psaGG0 = c(p=0.148, lower=0.126, upper=0.192),
+                 PrMRIpos_psaGG1 = c(0.743, 0.676, 0.816),
+                 PrMRIpos_psaGG2 = c(0.948, 0.925, 0.971),
+                 PrMRIpos_s3m1.5GG0 = c(0.167, 0.124, 0.224),
+                 PrMRIpos_s3m1.5GG1 = c(0.96, 0.796, 0.999),
+                 PrMRIpos_s3m1.5GG2 = c(0.96, 0.9, 0.989),
+                 PrMRIpos_s3mGG0 = c(0.164, 0.119, 0.226),
+                 PrMRIpos_s3mGG1 = c(0.960, 0.796, 0.999),
+                 PrMRIpos_s3mGG2 = c(0.959, 0.899, 0.989))
+logInputs=list(rpf1.5GG0 = c(0.597, 0.454, 0.785),
+               rpf1.5GG1 = c(0.743, 0.524, 1.054),
+               rpf1.5GG2 = c(0.994, 0.91, 1.086),
+               rpf2.0GG0 = c(0.494, 0.372, 0.655),
+               rpf2.0GG1 = c(0.686, 0.483, 0.974),
+               rpf2.0GG2 = c(0.944, 0.868, 1.026))
+logit=binomial()$linkfun
+expit=binomial()$linkinv
+sapply(logitInputs, function(tuple) tuple[1] - expit(mean(logit(tuple[2:3])))) # check
+sapply(logInputs, function(tuple) tuple[1] - exp(mean(log(tuple[2:3])))) # check
+set.seed(1234567)
+n = 1000
+logitSims = lapply(logitInputs, function(tuple) {
+    se = diff(logit(tuple[2:3]))/2/1.96
+    expit(rnorm(n, logit(tuple[1]), se))
+})
+logSims = lapply(logInputs, function(tuple) {
+    se = diff(log(tuple[2:3]))/2/1.96
+    exp(rnorm(n, log(tuple[1]), se))
+})
+## t(sapply(logitSims, function(x) c(mean=mean(x), quantile(x,c(0.025, 0.975)))))
+## t(sapply(logSims, function(x) c(mean=mean(x), quantile(x,c(0.025, 0.975)))))
+PrMRIpos_psa = with(logitSims, cbind(PrMRIpos_psaGG0, PrMRIpos_psaGG1, PrMRIpos_psaGG2))
+PrMRIpos_s3m = with(logitSims, cbind(PrMRIpos_s3mGG0, PrMRIpos_s3mGG1, PrMRIpos_s3mGG2))
+PrMRIpos_s3m1.5 = with(logitSims, cbind(PrMRIpos_s3m1.5GG0, PrMRIpos_s3m1.5GG1, PrMRIpos_s3m1.5GG2))
+rpf = with(logSims, cbind(rpf2.0GG0, rpf2.0GG1, rpf2.0GG2))
+rpf1.5 = with(logSims, cbind(rpf1.5GG0, rpf1.5GG1, rpf1.5GG2))
+nMRI = sapply(0:2,function(.isup) nrow(filter(temp,psa>=3 & isup==.isup)))
+PSAs = sapply(0:2, function(.isup) sort(filter(temp, isup==.isup)$psa))
+do = function(.isup,PrMRIpos_psa,PrMRIpos_s3m,rpf) {
+    psa = PSAs[[.isup+1]]
+    index = findInterval(PrMRIpos_psa*nMRI[.isup+1]*rpf, (1:length(psa))*PrMRIpos_s3m)
+    rev(psa)[index]
+}
+do2 = function(.isup,PrMRIpos_psa,PrMRIpos_s3m,rpf) {
+    EmriPos = PrMRIpos_psa*nMRI[.isup+1]
+    temp2 = data.frame(psa=PSAs[[.isup+1]]) %>% mutate(bx=PrMRIpos_s3m)
+    f = function(.psa)
+        sum(filter(temp2,psa>=.psa)$bx)/EmriPos
+    uniroot(function(psa) f(psa)-rpf, c(0.1,100))$root
+}
+## Do.call = function(list,f) do.call(f,list)
+do(0,PrMRIpos_psa[1,1],PrMRIpos_s3m1.5[1,1],rpf1.5[1,1])
+do2(0,PrMRIpos_psa[1,1],PrMRIpos_s3m1.5[1,1],rpf1.5[1,1])
+threshold1.5GG0 = mapply(function(a,b,c) do(0,a,b,c), PrMRIpos_psa[,1],PrMRIpos_s3m1.5[,1], rpf1.5[,1])
+threshold1.5GG1 = mapply(function(a,b,c) do(1,a,b,c), PrMRIpos_psa[,2],PrMRIpos_s3m1.5[,2], rpf1.5[,2])
+threshold1.5GG2 = mapply(function(a,b,c) do(2,a,b,c), PrMRIpos_psa[,3],PrMRIpos_s3m1.5[,3], rpf1.5[,3])
+thresholdGG0 = mapply(function(a,b,c) do(0,a,b,c), PrMRIpos_psa[,1],PrMRIpos_s3m[,1], rpf[,1])
+thresholdGG1 = mapply(function(a,b,c) do(1,a,b,c), PrMRIpos_psa[,2],PrMRIpos_s3m[,2], rpf[,2])
+thresholdGG2 = mapply(function(a,b,c) do(2,a,b,c), PrMRIpos_psa[,3],PrMRIpos_s3m[,3], rpf[,3])
+threshold = cbind(thresholdGG0,thresholdGG1,thresholdGG2)
+threshold1.5 = cbind(threshold1.5GG0,threshold1.5GG1,threshold1.5GG2)
+## save(threshold, threshold1.5, PrMRIpos_psa, PrMRIpos_s3m, PrMRIpos_s3m1.5, file="~/Documents/clients/shuang/Study3/Data/sensitivity_inputs.RData")
+apply(threshold,2,mean)
+apply(threshold1.5,2,mean)
+
+
+
 ## To split by S3M+MRI+ vs MRI-/S3M>=25; Pr(MRI+S3M+ | S3M+MRI+ vs MRI-/S3M>=25) =
 PrS3MposIfBx = 1/adjBoth
 ## 
 PrBxIfS3M1.5pos = PrMRIpos_s3m1.5(0:2)*adjBoth
+
 
 
 ## Pr(Survival to age 55 years)

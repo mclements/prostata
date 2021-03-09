@@ -241,7 +241,7 @@ namespace fhcrc_example {
     bool adt;
     double txhaz, psa_last_screen;
     int id, index;
-    double cohort, rescreening_frailty, ageEntry, grs_frailty;
+    double cohort, rescreening_frailty, ageEntry, grs_frailty, other_frailty;
     bool everPSA, previousNegativeBiopsy, organised, previousFollowup, MRIpos;
     FhcrcPerson(SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950, const int index = 0) :
       in(in), out(out), utilities(utilities), id(id), index(index), cohort(cohort) { };
@@ -583,6 +583,9 @@ namespace fhcrc_example {
     vector<double> v; v.push_back(x.first); v.push_back(x.second);
     return wrap(v);
   }
+  double rweibull_frailty(double shape, double scale, double frailty=1.0) {
+    return R::rweibull(shape, scale/std::pow(frailty,1.0/shape));
+  }
 
 
 /**
@@ -614,17 +617,28 @@ void FhcrcPerson::init() {
   // https://journals.plos.org/plosmedicine/article/file?id=10.1371/journal.pmed.1002998&type=printable
   // genetic risk score with T ~ LogNormal(mu,sigma^2) with mean(T) =1 and sigma^2=0.68
   // E(T)=exp(mu+sigma^2/2)=1 (assumed mean)
-  // => mu=-sigma^2/2 
+  // => mu=-sigma^2/2 , sd=sqrt(sigma^2)
   // R: local({y=rlnorm(1e5,-1.68/2,sqrt(1.68)); c(mean(y), var(y))})
   // R: local({y=rlnorm(1e5,-1.68/2,sqrt(1.68)); plot(density(y,from=0),xlim=c(0,5))})
-  // double grs_log_mean = -1.68/2.0;
-  // double grs_log_sd = sqrt(1.68);
-  // grs_frailty = rlnorm(grs_log_mean, grs_log_sd);
-  grs_frailty = 1.0;
+  if (in->bparameter["frailty"]) {
+    double grs_log_mean = -in->parameter["grs_variance"]/2;
+    double grs_log_sd = std::sqrt(in->parameter["grs_variance"]);
+    double other_log_mean = -in->parameter["other_variance"]/2;
+    double other_log_sd = std::sqrt(in->parameter["other_variance"]);
+    grs_frailty = R::rlnorm(grs_log_mean, grs_log_sd);
+    other_frailty = R::rlnorm(other_log_mean, other_log_sd);
+  } else {
+    grs_frailty = 1.0;
+    other_frailty = 1.0;
+  }
   if (R::runif(0.0, 1.0) <= in->parameter["susceptible"]) { // portion susceptible
-    t0 = sqrt(2*R::rexp(1.0)/(in->parameter["g0"]*grs_frailty)); // is susceptible
-    if (in->bparameter["weibull_onset"])
-      t0 = R::rweibull(in->parameter["weibull_onset_shape"], in->parameter["weibull_onset_scale"]);
+    if (in->bparameter["weibull_onset"]) {
+      t0 = rweibull_frailty(in->parameter["weibull_onset_shape"],
+			    in->parameter["weibull_onset_scale"],
+			    grs_frailty*other_frailty);
+    } else {
+      t0 = sqrt(2*R::rexp(1.0)/(in->parameter["g0"]*grs_frailty*other_frailty)); // is susceptible
+    }
   }
   else
     t0 = 200.0; // not susceptible

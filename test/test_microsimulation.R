@@ -2,8 +2,23 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
-## Edna debug
+## Edna extension
 library(prostata)
+frailty = 0.1
+rweibullFrailty1 = function(n,shape,scale,frailty) {
+    scale*rexp(n,frailty)^(1/shape)
+}
+set.seed(123456)
+rweibullFrailty2 = function(n,shape,scale,frailty) {
+    rweibull(n,shape,scale/frailty^(1/shape))
+}
+set.seed(123456)
+y1=rweibullFrailty1(1e5,2,3,frailty)
+set.seed(123456)
+y2=rweibullFrailty2(1e5,2,3,frailty)
+plot(density(y1,from=0))
+lines(density(y2,from=0),lty=2)
+
 
 
 ## STHLM3-MRI simulation

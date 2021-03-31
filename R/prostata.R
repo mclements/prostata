@@ -1,4 +1,4 @@
-' prostata
+#' prostata
 #'
 #' @section Introduction:
 #'
@@ -29,35 +29,31 @@
 #' @docType package
 #' @name prostata-package
 #' @aliases prostata
-#' @author Mark Clements \email{mark.clements@ki.se
-#' Andreas}
+#' @author Mark Clements \email{mark.clements@ki.se}
 #' @references \url{https://github.com/mclements/prostata}
 #' @references \url{https://github.com/mclements/microsimulation}
 #' @seealso \code{\link{Rcpp}}
 #' @useDynLib prostata, .registration=TRUE
 #' @import microsimulation
 #' @importFrom Rcpp evalCpp compileAttributes
+#' @importFrom utils packageName
 NULL
 
 if(.Platform$OS.type == "unix") {
-    #' @importFrom utils packageName
     pkg <- packageName()
     ## http://r.789695.n4.nabble.com/How-to-construct-a-valid-seed-for-l-Ecuyer-s-method-with-given-Random-seed-td4656340.html
 
-    #' @rdname set.user.Random.seed
-    #' @param seed PARAM_DESCRIPTION
+    #' @param seed Random seed
     #' @keywords internal
     #' @importFrom microsimulation set.user.Random.seed
     set.user.Random.seed <- function (seed)
         microsimulation::set.user.Random.seed(seed,pkg)
 
-    #' @rdname next.user.Random.substream
     #' @keywords internal
     #' @importFrom microsimulation next.user.Random.substream
     next.user.Random.substream <- function ()
         microsimulation::next.user.Random.substream(pkg)
 
-    #' @rdname user.Random.seed
     #' @keywords internal
     #' @importFrom microsimulation user.Random.seed
     user.Random.seed <- function()

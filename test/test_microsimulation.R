@@ -2,7 +2,8 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
-## Edna extension
+## Edna extensions
+## Check coding for Weibull distribution with a frailty
 library(prostata)
 frailty = 0.1
 rweibullFrailty1 = function(n,shape,scale,frailty) {
@@ -18,7 +19,64 @@ set.seed(123456)
 y2=rweibullFrailty2(1e5,2,3,frailty)
 plot(density(y1,from=0))
 lines(density(y2,from=0),lty=2)
+## Compare frailty distributions with the previous onset distribution
+g0 = 0.0005
+function(age) pmax(0,age-35)*g0
+H = function(age) pmax(0,age-35)^2*g0/2
+H2 = Vectorize(function(age) integrate(h,0,age)$value)
+par(mfrow=c(2,2))
+x = seq(0,100,length=301)
+## survival plot
+plot(x,exp(-H(x)),type="l",ylab="Survival",ylim=0:1)
+lines(x,exp(-H2(x)),col=2)
+lines(35+x,pweibull(x,shape=2,scale=sqrt(2/g0),lower.tail=FALSE),col=3)
+## density plot
+plot(x,h(x)*exp(-H(x)),type="l",ylab="Density")
+lines(x,h(x)*exp(-H2(x)),col=2)
+lines(35+x,dweibull(x,shape=2,scale=sqrt(2/g0)),col=3)
+## hazard plot
+plot(x,h(x),type="l",ylab="Hazard")
+lines(x,h(x),col=2)
+lines(35+x,
+      dweibull(x,shape=2,scale=sqrt(2/g0))/pweibull(x,shape=2,scale=sqrt(2/g0),lower.tail=FALSE),
+      col=3)
+##
+set.seed(12345)
+n = 1e5
+x = seq(0,100,length=301)
+g0 = 0.0005
+grs_variance = 0.68           # Callender et al (2019)
+other_variance = 1.14          # total variance = 1.82 from Kicinski et al (2011)
+grs_log_mean = -grs_variance/2
+grs_log_sd = sqrt(grs_variance)
+other_log_mean = -other_variance/2
+other_log_sd = sqrt(other_variance)
+grs_frailty = rlnorm(n, grs_log_mean, grs_log_sd)
+other_frailty = rlnorm(n, other_log_mean, other_log_sd)
+plot(density(pmin(grs_frailty*other_frailty,10),from=0))
+rweibullFrailty = function(n,shape,scale,frailty) {
+    rweibull(n,shape,scale/frailty^(1/shape))
+}
+## base shape=1
+plot(35+x,dweibull(x,shape=2,scale=sqrt(2/g0)), type="l")
+y = pmin(200,35+rweibullFrailty(n, shape=1, scale=sqrt(2/g0)*1, frailty=grs_frailty*other_frailty))
+lines(density(y,from=35),col=3)
+## base shape=1.5
+plot(35+x,dweibull(x,shape=2,scale=sqrt(2/g0)), type="l")
+y = pmin(200,35+rweibullFrailty(n, shape=1.5, scale=sqrt(2/g0)*0.4, frailty=grs_frailty*other_frailty))
+lines(density(y,from=35),col=4)
+## base shape=2
+plot(35+x,dweibull(x,shape=2,scale=sqrt(2/g0)), type="l")
+y = pmin(200,35+rweibullFrailty(n, shape=2, scale=sqrt(2/g0)*0.5, frailty=grs_frailty*other_frailty))
+lines(density(y,from=35),col=4)
+## base shape=3
+plot(35+x,dweibull(x,shape=2,scale=sqrt(2/g0)), type="l")
+y = pmin(200,35+rweibullFrailty(n, shape=3, scale=sqrt(2/g0)*0.75, frailty=grs_frailty*other_frailty))
+lines(density(y,from=35),col=4)
 
+plot(35+x,dweibull(x,shape=1,scale=120), type="l")
+y = pmin(200,35+rweibullFrailty(n, shape=1.5, scale=120*0.5, frailty=grs_frailty*other_frailty))
+lines(density(y,from=35),col=4)
 
 
 ## STHLM3-MRI simulation

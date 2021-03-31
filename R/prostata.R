@@ -270,8 +270,8 @@ FhcrcParameters <- list(
                         + 45                                      # PSA analysis,
                         + 474,                                    # Telefollow-up by urologist
                         "Cancer death" = 100160 * 3               # Care for spread disease
-                        + 68000 * 3),                             # Drugs for spread disease
-
+                        + 68000 * 3,                              # Drugs for spread disease
+                        "Polygenic risk stratification" = 250*12),# Callender et al (2021) with exchange rate of approximately 12
     ## Swedish governmental report on organised PSA testing (p.23):
     ## https://www.socialstyrelsen.se/SiteCollectionDocuments/2018-2-13-halsoekonomisk-analys.pdf
     production = data.frame(ages = c(0, 54, 64, 74),
@@ -348,8 +348,9 @@ FhcrcParameters <- list(
     weibull_onset_shape = 2,      # shape; values (0,Inf)
     weibull_onset_scale= 40,      # scale; values (0,Inf)
     frailty = FALSE,              # assume a frailty distribution on the onset distribution?
-    grs_variance = 0.68,           # Callender et al (2019)
-    other_variance = 1.14          # total variance = 1.82 from Kicinski et al (2011; https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0027130)
+    grs_variance = 0.68,          # Callender et al (2019)
+    other_variance = 1.14,        # total variance = 1.82 from Kicinski et al (2011; https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0027130)
+    grs_risk_threshold = 0.04     # ten-year risk threshold for GRS-based risk stratified screening
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]
@@ -596,7 +597,6 @@ background_utilities <-
 #'   \item{\code{cohort}}{birt cohort}
 #'   \item{\code{pop}}{population count}
 #'}
-#' @details 
 #' @examples
 #' \dontrun{
 #' if(interactive()){
@@ -767,8 +767,8 @@ sthlm3_mri_arm <- data.frame(cohort = 2019 - 45:74,
 #'   \item{\code{Grade}}{integer COLUMN_DESCRIPTION}
 #'   \item{\code{Prob}}{double COLUMN_DESCRIPTION}
 #'}
-#' @export
 "fhcrcData"
+
 fhcrcData$biopsyOpportunisticComplianceTable <- swedenOpportunisticBiopsyCompliance
 fhcrcData$biopsyFormalComplianceTable <- swedenFormalBiopsyCompliance
 fhcrcData$secularTrendTreatment2008OR <- secularTrendTreatment2008OR
@@ -967,7 +967,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                "regular_screen", "single_screen",
                "introduced_screening_only", "introduced_screening_preference",
                "introduced_screening", "stopped_screening",
-               "cap_control", "cap_study", "sthlm3_mri_arm")
+               "cap_control", "cap_study", "sthlm3_mri_arm", "grs_stratified")
   screen <- match.arg(screen, screenT)
   stopifnot(is.na(n) || is.integer(as.integer(n)))
   stopifnot(is.integer(as.integer(nLifeHistories)))

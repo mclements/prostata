@@ -58,7 +58,7 @@ namespace fhcrc_example {
 		 screen50, screen60, screen70, screenUptake, stockholm3_goteborg, stockholm3_risk_stratified,
 		 goteborg, risk_stratified, mixed_screening, regular_screen, single_screen,
                  introduced_screening_only, introduced_screening_preference, introduced_screening,
-		 stopped_screening, cap_control, cap_study, sthlm3_mri_arm};
+		 stopped_screening, cap_control, cap_study, sthlm3_mri_arm, grs_stratified};
 
   enum treatment_t {no_treatment, CM, RP, RT};
 
@@ -242,7 +242,7 @@ namespace fhcrc_example {
     double txhaz, psa_last_screen;
     int id, index;
     double cohort, rescreening_frailty, ageEntry, grs_frailty, other_frailty;
-    bool everPSA, previousNegativeBiopsy, organised, previousFollowup, MRIpos;
+    bool everPSA, previousNegativeBiopsy, organised, previousFollowup, MRIpos, everGRS;
     FhcrcPerson(SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950, const int index = 0) :
       in(in), out(out), utilities(utilities), id(id), index(index), cohort(cohort) { };
     double utility() { return utilities->utility(); }
@@ -255,6 +255,7 @@ namespace fhcrc_example {
     void opportunistic_rescreening(double psa);
     void opportunistic_uptake_if_ever();
     bool screening_preference();
+    double callenderStartAge(double frailty, double threshold=0.04);
     void cancel_events_after_diagnosis();
     void rescreening_schedules(double psa, bool organised, bool mixed_programs);
     bool detectable(double now, double year);
@@ -289,7 +290,7 @@ namespace fhcrc_example {
       Report on costs for a given item
   */
   void FhcrcPerson::add_costs(string item, cost_t cost_type, double weight) {
-    out->costs.add(CostKey((int) cost_type,item),now(),in->cost_parameters[item] * weight,
+    out->costs.add(CostKey((int) cost_type,item),now(),in->cost_parameters(item) * weight,
 		   index);
   }
 
@@ -511,6 +512,7 @@ namespace fhcrc_example {
         }
         break;
       case regular_screen:
+      case grs_stratified:
         if (in->parameter["start_screening"] <= now() &&
             now() + in->parameter["screening_interval"] <= in->parameter["stop_screening"])
           scheduleAt(now() + in->parameter["screening_interval"], toScreen);
@@ -556,6 +558,17 @@ namespace fhcrc_example {
           in->parameter["biopsySensitivityTimeProportionT1T2"] *
           in->tableBiopsySensitivity(bounds(year,1987.0,2000.0)) /
           in->tableBiopsySensitivity(2000.0))));
+  }
+
+  double FhcrcPerson::callenderStartAge(double frailty, double threshold) {
+    double tenYearRisk[] = {0.013, 0.015, 0.018, 0.02, 0.023, 0.026, 0.03, 0.033, 0.037,
+			    0.041, 0.045, 0.049, 0.052, 0.056, 0.059, 0.062, 0.065,
+			    0.067, 0.069, 0.071};
+    for (int i=0; i<20; i++) {
+      double rr = log(1.0-threshold)/log(1.0-tenYearRisk[i]);
+      if (frailty>rr) return i+50;
+    }
+    return R_PosInf;
   }
 
   Double rbinorm(Double mean, Double sd, double rho) {
@@ -612,7 +625,7 @@ void FhcrcPerson::init() {
   grade = base::Healthy;
   ext_grade = ext::Healthy;
   dx = NotDiagnosed;
-  everPSA = previousNegativeBiopsy = organised = adt = previousFollowup = MRIpos = false;
+  everPSA = previousNegativeBiopsy = organised = adt = previousFollowup = MRIpos = everGRS = false;
   in->rngNh->set();
   // https://journals.plos.org/plosmedicine/article/file?id=10.1371/journal.pmed.1002998&type=printable
   // genetic risk score with T ~ LogNormal(mu,sigma^2) with mean(T) =1 and sigma^2=0.68
@@ -723,6 +736,11 @@ void FhcrcPerson::init() {
     case screen70:
       scheduleAt(70.0,toScreen);
       break;
+    case grs_stratified: {
+      double startAge = callenderStartAge(grs_frailty, in->parameter("grs_risk_threshold"));
+      if (startAge != R_PosInf)
+	scheduleAt(startAge,toScreen);
+    } break;
     case mixed_screening:
     case introduced_screening:
     case introduced_screening_preference:
@@ -1011,6 +1029,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       out->psarecord.record("Z",Z);
       out->psarecord.record("onset",double(onset_p()));
       out->psarecord.record("detectable",double(detectable));
+    }
+    if (in->screen==grs_stratified && !everGRS) {
+      add_costs("Polygenic risk stratification"); // once-only cost
+      everGRS = true;
     }
     if (!everPSA) {
       if (id < in->nLifeHistories) {

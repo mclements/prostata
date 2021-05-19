@@ -58,7 +58,8 @@ namespace fhcrc_example {
 		 screen50, screen60, screen70, screenUptake, stockholm3_goteborg, stockholm3_risk_stratified,
 		 goteborg, risk_stratified, mixed_screening, regular_screen, single_screen,
                  introduced_screening_only, introduced_screening_preference, introduced_screening,
-		 stopped_screening, cap_control, cap_study, sthlm3_mri_arm, grs_stratified};
+		 stopped_screening, cap_control, cap_study, sthlm3_mri_arm,
+		 grs_stratified, grs_stratified_age};
 
   enum treatment_t {no_treatment, CM, RP, RT};
 
@@ -241,7 +242,7 @@ namespace fhcrc_example {
     bool adt;
     double txhaz, psa_last_screen;
     int id, index;
-    double cohort, rescreening_frailty, ageEntry, grs_frailty, other_frailty;
+    double cohort, rescreening_frailty, ageEntry, grs_frailty, other_frailty, ageFirstScreen;
     bool everPSA, previousNegativeBiopsy, organised, previousFollowup, MRIpos, everGRS;
     FhcrcPerson(SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950, const int index = 0) :
       in(in), out(out), utilities(utilities), id(id), index(index), cohort(cohort) { };
@@ -512,10 +513,22 @@ namespace fhcrc_example {
         }
         break;
       case regular_screen:
-      case grs_stratified:
         if (in->parameter["start_screening"] <= now() &&
             now() + in->parameter["screening_interval"] <= in->parameter["stop_screening"])
           scheduleAt(now() + in->parameter["screening_interval"], toScreen);
+        break;
+      case grs_stratified:
+        if (now() + in->parameter["screening_interval"] <= in->parameter["stop_screening"])
+          scheduleAt(now() + in->parameter["screening_interval"], toScreen);
+        break;
+      case grs_stratified_age:
+	if (ageFirstScreen < in->parameter("screening_interval_split")) {
+	  if (now() + in->parameter["screening_interval1"] <= in->parameter["stop_screening"])
+	    scheduleAt(now() + in->parameter["screening_interval1"], toScreen);
+	} else {
+	  if (now() + in->parameter["screening_interval2"] <= in->parameter["stop_screening"])
+	    scheduleAt(now() + in->parameter["screening_interval2"], toScreen);
+	}
         break;
       case twoYearlyScreen50to70:
         if (50.0 <= now() && now() < 70.0)
@@ -625,6 +638,7 @@ void FhcrcPerson::init() {
   grade = base::Healthy;
   ext_grade = ext::Healthy;
   dx = NotDiagnosed;
+  ageFirstScreen = -1.0;
   everPSA = previousNegativeBiopsy = organised = adt = previousFollowup = MRIpos = everGRS = false;
   in->rngNh->set();
   // https://journals.plos.org/plosmedicine/article/file?id=10.1371/journal.pmed.1002998&type=printable
@@ -736,6 +750,7 @@ void FhcrcPerson::init() {
     case screen70:
       scheduleAt(70.0,toScreen);
       break;
+    case grs_stratified_age:
     case grs_stratified: {
       double startAge = callenderStartAge(grs_frailty, in->parameter("grs_risk_threshold"));
       if (startAge != R_PosInf)
@@ -1011,6 +1026,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toScreen:
   case toBiopsyFollowUpScreen: {
+    if (ageFirstScreen < 0.0) ageFirstScreen = now();
     in->rngBx->set();
     this->psa_last_screen = psa;
     if (in->bparameter["includePSArecords"]) {
@@ -1030,7 +1046,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       out->psarecord.record("onset",double(onset_p()));
       out->psarecord.record("detectable",double(detectable));
     }
-    if (in->screen==grs_stratified && !everGRS) {
+    if ((in->screen==grs_stratified || in->screen==grs_stratified_age) && !everGRS) {
       add_costs("Polygenic risk stratification"); // once-only cost
       everGRS = true;
     }

@@ -343,7 +343,6 @@ FhcrcParameters <- list(
     MRI_screen = FALSE,           # defines whether MRI pathway is used for screen-positive patients
     MRI_clinical = FALSE,         # defines whether MRI pathway is used for clinically detected cancers
     MRInegSBx=FALSE,              # No SBx for MRI- (by default)
-    MRInegSBx=FALSE,              # No SBx for MRI- (by default)
     rescreenDoubleNeg = FALSE,    # defines whether MRI-/Bx- men should move to rescreening (cf. repeat PSA and Bx within ~12 months)
     indiv_reports = FALSE,        # should the cost and standard reports include individual values?
     startReportAge = 0.0,          # Age to start reporting (currently only means_utilities and means_costs)

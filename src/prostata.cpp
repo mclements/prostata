@@ -1179,6 +1179,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   // record additional biopsies for clinical diagnoses
   case toClinicalDiagnosticBiopsy:
     if (in->bparameter("MRI_clinical")) {
+      add_costs("MRI");
+      lost_productivity("MRI");
       add_costs("Combined biopsy");
       lost_productivity("Combined biopsy");
     } else {

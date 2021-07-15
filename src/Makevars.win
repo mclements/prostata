@@ -2,7 +2,7 @@ PKGB_PATH=`echo 'library(microsimulation); cat(system.file("libs", package="micr
  | rterm --vanilla --slave`
 PKG_LIBS= -L"$(PKGB_PATH)$(R_ARCH)" -lmicrosimulation
 
-PKG_CXXFLAGS = -I.
+PKG_CXXFLAGS = -I. -DBOOST_NO_AUTO_PTR
 PKG_CFLAGS = -I.
 
 OBJECTS = prostata-init.o prostata.o

@@ -1061,8 +1061,6 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   parameter$cost_parameters <- parameter$currency_rate * parameter$cost_parameters
   parameter$production <- data.frame(ages = parameter$production$ages,
                                      values = parameter$currency_rate * parameter$production$values)
-  pind <- sapply(parameter,class)=="numeric" & sapply(parameter,length)==1
-  bInd <- sapply(parameter,class)=="logical" & sapply(parameter,length)==1
   if (parameter$stockholmTreatment)
       fhcrcData$prtx <- stockholmTreatment
   ## table checks
@@ -1072,7 +1070,13 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   .xtabsDFCheck(fhcrcData$biopsyOpportunisticComplianceTable, c("psa","age"))
   .xtabsDFCheck(fhcrcData$rescreening,c("age5","total"))
   .xtabsDFCheck(fhcrcData$survival_dist,c("Grade","Time"))
-  .xtabsDFCheck(fhcrcData$survival_local,c("Age","Grade","Time"))
+    .xtabsDFCheck(fhcrcData$survival_local,c("Age","Grade","Time"))
+  if (any(.intersection <- (names(parameter) %in% names(fhcrcData))))
+      warning("The following tables are being over-written by values from parms: ",
+              paste0(names(parameter)[.intersection], collapse=", "))
+  parameter <- modifyList(fhcrcData, parameter)
+  pind <- sapply(parameter,class)=="numeric" & sapply(parameter,length)==1
+  bInd <- sapply(parameter,class)=="logical" & sapply(parameter,length)==1
   ## check some parameters for sanity
     if (panel && parameter$rTPF>1) stop("Panel: rTPF>1 (not currently implemented)")
     if (panel && parameter$rFPF>1) stop("Panel: rFPF>1 (not currently implemented)")
@@ -1094,8 +1098,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                          cohort=as.double(chunk),
                          parameter=unlist(parameter[pind]),
                          bparameter=unlist(parameter[bInd]),
-                         otherParameters=parameter[!pind & !bInd],
-                         tables=fhcrcData),
+                         otherParameters=parameter[!pind & !bInd]),
               PACKAGE="prostata")
     }
     if (is.null(cl)) {
@@ -1103,7 +1106,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
     } else {
         clusterEvalQ(cl, {library(prostata);   RNGkind("user")})
         clusterExport(cl, c("chunks", "initialSeeds", "ns", "panel", "debug", "pind",
-                            "bInd", "parameter", "fhcrcData"), envir=environment())
+                            "bInd", "parameter"), envir=environment())
         timingfunction(out <- parallel::parLapply(cl, 1:length(cl), step))
     }
   ## Apologies: we now need to massage the chunks from C++

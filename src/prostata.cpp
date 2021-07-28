@@ -1565,7 +1565,6 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
 
   // read in the parameters
   List parms(parmsIn);
-  List tables = parms("tables");
   in.parameter = parms("parameter");
   in.bparameter = parms("bparameter"); // scalar bools
   List otherParameters = parms("otherParameters");
@@ -1590,18 +1589,18 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   int n = as<int>(parms("n"));
   int firstId = as<int>(parms("firstId"));
   DataFrame background_utilities =
-    as<DataFrame>(tables("background_utilities"));
+    as<DataFrame>(otherParameters("background_utilities"));
   in.bg_lower = background_utilities("lower");
   in.bg_upper = background_utilities("upper");
   in.bg_utility = background_utilities("utility");
   
   in.interp_prob_grade7 =
-    NumericInterpolate(as<DataFrame>(tables("prob_grade7")));
-  in.prtxCM = TablePrtx(as<DataFrame>(tables("prtx")),
+    NumericInterpolate(as<DataFrame>(otherParameters("prob_grade7")));
+  in.prtxCM = TablePrtx(as<DataFrame>(otherParameters("prtx")),
 			       "Age","DxY","G","CM"); // NB: Grade is now {0,1[,2]} coded cf {1,2[,3]}
-  in.prtxRP = TablePrtx(as<DataFrame>(tables("prtx")),
+  in.prtxRP = TablePrtx(as<DataFrame>(otherParameters("prtx")),
 			       "Age","DxY","G","RP");
-  in.pradt = TablePradt(as<DataFrame>(tables("pradt")),"Tx","Age","DxY","Grade","ADT");
+  in.pradt = TablePradt(as<DataFrame>(otherParameters("pradt")),"Tx","Age","DxY","Grade","ADT");
   in.hr_locoregional = TableLocoHR(as<DataFrame>(otherParameters("hr_locoregional")),"age","ext_grade","psa10","hr");
   in.hr_metastatic = TableMetastaticHR(as<DataFrame>(otherParameters("hr_metastatic")),"age","hr");
   in.tableBiopsySensitivity = TableDD(as<DataFrame>(otherParameters("biopsy_sensitivity")),"Year","Sensitivity");
@@ -1615,18 +1614,18 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   in.tableCMtoRTpnever = TableDD(as<DataFrame>(otherParameters("cure_m_CM_to_RT")), "age", "pnever");
   in.tableCMtoRTmeanlog = TableDD(as<DataFrame>(otherParameters("cure_m_CM_to_RT")), "age", "meanlog");
   in.tableCMtoRTsdlog = TableDD(as<DataFrame>(otherParameters("cure_m_CM_to_RT")), "age", "sdlog");
-  in.tableSecularTrendTreatment2008OR = TableDD(as<DataFrame>(tables("secularTrendTreatment2008OR")),"year","OR");
-  in.tableOpportunisticBiopsyCompliance = TableBiopsyCompliance(as<DataFrame>(tables("biopsyOpportunisticComplianceTable")),
+  in.tableSecularTrendTreatment2008OR = TableDD(as<DataFrame>(otherParameters("secularTrendTreatment2008OR")),"year","OR");
+  in.tableOpportunisticBiopsyCompliance = TableBiopsyCompliance(as<DataFrame>(otherParameters("biopsyOpportunisticComplianceTable")),
 						"psa","age","compliance");
-  in.tableFormalBiopsyCompliance = TableBiopsyCompliance(as<DataFrame>(tables("biopsyFormalComplianceTable")),
+  in.tableFormalBiopsyCompliance = TableBiopsyCompliance(as<DataFrame>(otherParameters("biopsyFormalComplianceTable")),
 						"psa","age","compliance");
-  in.rescreen_shape = TableDDD(as<DataFrame>(tables("rescreening")), "age5", "total", "shape");
-  in.rescreen_scale = TableDDD(as<DataFrame>(tables("rescreening")), "age5", "total", "scale");
-  in.rescreen_cure  = TableDDD(as<DataFrame>(tables("rescreening")), "age5", "total", "cure");
+  in.rescreen_shape = TableDDD(as<DataFrame>(otherParameters("rescreening")), "age5", "total", "shape");
+  in.rescreen_scale = TableDDD(as<DataFrame>(otherParameters("rescreening")), "age5", "total", "scale");
+  in.rescreen_cure  = TableDDD(as<DataFrame>(otherParameters("rescreening")), "age5", "total", "cure");
 
   in.H_dist.clear();
-  DataFrame df_survival_dist = as<DataFrame>(tables("survival_dist")); // Grade,Time,Survival
-  DataFrame df_survival_local = as<DataFrame>(tables("survival_local")); // Age,Grade,Time,Survival
+  DataFrame df_survival_dist = as<DataFrame>(otherParameters("survival_dist")); // Grade,Time,Survival
+  DataFrame df_survival_local = as<DataFrame>(otherParameters("survival_local")); // Age,Grade,Time,Survival
   // extract the columns from the survival_dist data-frame
   IntegerVector sd_grades = df_survival_dist("Grade");
   NumericVector
@@ -1697,7 +1696,7 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
 
   // setup for cap_control and cap_study
   // if (in.screen == cap_control || in.screen == cap_study) {
-  //   DataFrame uk_screen_uptake = as<DataFrame>(tables("uk_screen_uptake")); // age,H
+  //   DataFrame uk_screen_uptake = as<DataFrame>(otherParameters("uk_screen_uptake")); // age,H
   //   in.H_screen_uptake = NumericInterpolate(uk_screen_uptake);
   // }
   if (in.screen == cap_study) {

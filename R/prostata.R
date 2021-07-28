@@ -1027,29 +1027,6 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
   if (!is.null(tables))
       for (name  in names(tables))
           fhcrcData[[name]] <- tables[[name]]
-  fhcrcData$rescreening$total <- fhcrcData$rescreening$total_cat
-  fhcrcData$prtx$Age <- as.double(fhcrcData$prtx$Age)
-  fhcrcData$prtx$DxY <- as.double(fhcrcData$prtx$DxY)
-  fhcrcData$prtx$G <- fhcrcData$prtx$G - 1L
-  fhcrcData$pradt$Grade <- fhcrcData$pradt$Grade - 1L
-  fhcrcData$biopsy_sensitivity$Year <- as.double(fhcrcData$biopsy_sensitivity$Year)
-  fhcrcData$neg_biopsy_to_psa$age <- as.double(fhcrcData$neg_biopsy_to_psa$age)
-  fhcrcData$neg_biopsy_to_biopsy$age <- as.double(fhcrcData$neg_biopsy_to_biopsy$age)
-  fhcrcData$cure_m_CM_to_RP$age <- as.double(fhcrcData$cure_m_CM_to_RP$age)
-  fhcrcData$cure_m_CM_to_RT$age <- as.double(fhcrcData$cure_m_CM_to_RT$age)
-  fhcrcData$pradt$Age <- as.double(fhcrcData$pradt$Age)
-  fhcrcData$pradt$DxY <- as.double(fhcrcData$pradt$DxY)
-  ## fhcrcData$biopsyComplianceTable <-
-  ##     data.frame(expand.grid(psa=c(4,7,10),age=seq(55,75,by=5)),
-  ##                compliance=unlist(fhcrcData$biopsy_frequency[,-(1:2),]))
-  fhcrcData$survival_local <-
-      with(fhcrcData$survival_local,
-           data.frame(Age=as.double(AgeLow),Grade=Grade,Time=as.double(Time),
-                      Survival=Survival))
-  fhcrcData$survival_dist <-
-      with(fhcrcData$survival_dist,
-           data.frame(Grade=Grade,Time=as.double(Time),
-                      Survival=Survival))
   updateParameters <- parms
   updateParameters$nLifeHistories <- as.integer(nLifeHistories)
   updateParameters$screen <- as.integer(screenIndex)
@@ -1063,18 +1040,45 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                                      values = parameter$currency_rate * parameter$production$values)
   if (parameter$stockholmTreatment)
       fhcrcData$prtx <- stockholmTreatment
-  ## table checks
-  .xtabsDFCheck(fhcrcData$prtx,c("Age","DxY","G"))
-  .xtabsDFCheck(fhcrcData$pradt,c("Tx","Age","DxY","Grade"))
-  .xtabsDFCheck(parameter$hr_locoregional,c("age","ext_grade","psa10")) # should this be in fhcrcData?
-  .xtabsDFCheck(fhcrcData$biopsyOpportunisticComplianceTable, c("psa","age"))
-  .xtabsDFCheck(fhcrcData$rescreening,c("age5","total"))
-  .xtabsDFCheck(fhcrcData$survival_dist,c("Grade","Time"))
-    .xtabsDFCheck(fhcrcData$survival_local,c("Age","Grade","Time"))
   if (any(.intersection <- (names(parameter) %in% names(fhcrcData))))
       warning("The following tables are being over-written by values from parms: ",
               paste0(names(parameter)[.intersection], collapse=", "))
-  parameter <- modifyList(fhcrcData, parameter)
+    temp <- parameter
+    parameter <- fhcrcData
+    for (name in names(temp))
+        parameter[[name]] <- temp[[name]]
+  ## table checks
+  parameter$rescreening$total <- parameter$rescreening$total_cat
+  parameter$prtx$Age <- as.double(parameter$prtx$Age)
+  parameter$prtx$DxY <- as.double(parameter$prtx$DxY)
+  parameter$prtx$G <- parameter$prtx$G - 1L
+  parameter$pradt$Grade <- parameter$pradt$Grade - 1L
+  parameter$biopsy_sensitivity$Year <- as.double(parameter$biopsy_sensitivity$Year)
+  parameter$neg_biopsy_to_psa$age <- as.double(parameter$neg_biopsy_to_psa$age)
+  parameter$neg_biopsy_to_biopsy$age <- as.double(parameter$neg_biopsy_to_biopsy$age)
+  parameter$cure_m_CM_to_RP$age <- as.double(parameter$cure_m_CM_to_RP$age)
+  parameter$cure_m_CM_to_RT$age <- as.double(parameter$cure_m_CM_to_RT$age)
+  parameter$pradt$Age <- as.double(parameter$pradt$Age)
+  parameter$pradt$DxY <- as.double(parameter$pradt$DxY)
+  ## parameter$biopsyComplianceTable <-
+  ##     data.frame(expand.grid(psa=c(4,7,10),age=seq(55,75,by=5)),
+  ##                compliance=unlist(parameter$biopsy_frequency[,-(1:2),]))
+  parameter$survival_local <-
+      with(parameter$survival_local,
+           data.frame(Age=as.double(AgeLow),Grade=Grade,Time=as.double(Time),
+                      Survival=Survival))
+  parameter$survival_dist <-
+      with(parameter$survival_dist,
+           data.frame(Grade=Grade,Time=as.double(Time),
+                      Survival=Survival))
+  .xtabsDFCheck(parameter$prtx,c("Age","DxY","G"))
+  .xtabsDFCheck(parameter$pradt,c("Tx","Age","DxY","Grade"))
+  .xtabsDFCheck(parameter$hr_locoregional,c("age","ext_grade","psa10")) # should this be in fhcrcData?
+  .xtabsDFCheck(parameter$biopsyOpportunisticComplianceTable, c("psa","age"))
+  .xtabsDFCheck(parameter$rescreening,c("age5","total_cat"))
+  .xtabsDFCheck(parameter$survival_dist,c("Grade","Time"))
+  .xtabsDFCheck(parameter$survival_local,c("Age","Grade","Time"))
+  ## parameter <- modifyList(fhcrcData, parameter)
   pind <- sapply(parameter,class)=="numeric" & sapply(parameter,length)==1
   bInd <- sapply(parameter,class)=="logical" & sapply(parameter,length)==1
   ## check some parameters for sanity

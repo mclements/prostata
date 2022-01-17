@@ -19,7 +19,8 @@ Base <-
                     ##gc=0.001615, beta7=0.069848, beta8=0.224633,
                     ##g0=0.000422, gc= 0.003450, beta7=0.089526, beta8=0.158090,
                     ##beta7=0.055989, beta8=0.257808, #with frailty
-                    beta7=0.059567, beta8=0.249589, #with frailty, new onset
+                    ## beta7=0.059567, beta8=0.249589, #with frailty, new onset
+                    beta7 = 0.039052, beta8 = 0.245344, # with frailty 2021-07-28
                     ## beta7=0.022520, beta8=0.223489, #without frailty
                     ## screening parameters
                     fullUptakePortion = 0.6,

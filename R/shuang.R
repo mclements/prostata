@@ -336,7 +336,7 @@ ShuangParameters <- function(year=2018) {
                                              + 3580.15*0.33                            # MRI cost
                                              + 3058.47*1.5*0.33                        # Biopsy cost (SBx|TBx)
                                              + 4335.30*0.33,                           # Pathology of biopsy
-                                             "ADT+chemo" = 148271,                     # Drug treatment for metastasis
+                                             "ADT+chemo" = 145216,                     # Drug treatment for metastasis
                                              "Post-Tx follow-up - yearly first" = 1493.43 # Urologist and nurse consultation
                                              + 363.96                                  # PSA test sampling
                                              + 58.71,                                  # PSA analysis

@@ -4,7 +4,7 @@
 ## PURPOSE: To provide input data as parameters for the simulation
 ## AUTHOR: Shuang Hao
 
-## UPDATED: 2022-01-11
+## UPDATED: 2022-01-27
 
 ShuangParameters <- function(year=2018) {
 
@@ -311,38 +311,38 @@ ShuangParameters <- function(year=2018) {
                                              "Opportunistic panel" = 58.71             # PSA analysis not included in panel price
                                              + 2300                                    # From BergusMedical (official lab for Sthlm3)
                                              + 0.2 * 1527.63,                          # GP primary care
-                                             "Biopsy" = 3078.93                        # Systematic biopsy cost (SBx)
+                                             "Biopsy" = 3010                           # Systematic biopsy cost (SBx)
                                              + 4335.30,                                # Pathology of biopsy
-                                             "MRI" = 3580.15,                          # MRI cost
-                                             "Combined biopsy" = 3078.93*1.5           # Biopsy cost (SBx|TBx) ?Double the price
+                                             "MRI" = 3500,                             # MRI cost
+                                             "Combined biopsy" = 3010*1.5              # Biopsy cost (SBx|TBx) ?Double the price
                                              + 4335.30,                                # Pathology of biopsy
-                                             "Assessment" = 1493.43,                   # Urologist and nurse consultation
+                                             "Assessment" = 1460,                      # Urologist and nurse consultation
                                              "Prostatectomy" = 118009.91               # Robot assisted surgery
                                              + 6446.51*20*0.25                         # Radiation therapy
-                                             + 1493.43*1,                              # Urology and nurse visit
+                                             + 1460*1,                                 # Urology and nurse visit
                                              "Radiation therapy" = 6446.51*20          # Radiation therapy
                                              + 3992.65*1                               # Oncologist new visit
                                              + 1721.90*1                               # Oncologist further visit
-                                             + 409.16*20                               # Nurse visit
+                                             + 400*20                                  # Nurse visit
                                              + 69035.66*0.2,                           # Hormone therapy
-                                             "Active surveillance - yearly - w/o MRI" = 1493.43    # Urology visit and nurse visit
+                                             "Active surveillance - yearly - w/o MRI" = 1460    # Urology visit and nurse visit
                                              + 363.96*3                                # PSA sampling
                                              + 58.71*3                                 # PSA analysis
-                                             + 3078.93*0.33                            # Systematic biopsy (SBx)
+                                             + 3010*0.33                               # Systematic biopsy (SBx)
                                              + 4335.30*0.33,                           # Pathology of biopsy
                                              "Active surveillance - yearly - with MRI" = 1493.43   # Urology visit and nurse visit
                                              + 363.96*3                                # PSA sampling
                                              + 58.71*3                                 # PSA analysis
-                                             + 3580.15*0.33                            # MRI cost
-                                             + 3058.47*1.5*0.33                        # Biopsy cost (SBx|TBx)
+                                             + 3500*0.33                               # MRI cost
+                                             + 3010*1.5*0.33                           # Biopsy cost (SBx|TBx)
                                              + 4335.30*0.33,                           # Pathology of biopsy
                                              "ADT+chemo" = 145216,                     # Drug treatment for metastasis
-                                             "Post-Tx follow-up - yearly first" = 1493.43 # Urologist and nurse consultation
+                                             "Post-Tx follow-up - yearly first" = 1460 # Urologist and nurse consultation
                                              + 363.96                                  # PSA test sampling
                                              + 58.71,                                  # PSA analysis
                                              "Post-Tx follow-up - yearly after" = 363.96  # PSA test sampling
                                              + 58.71                                   # PSA analysis,
-                                             + 149.34,                                 # Telefollow-up by urologist
+                                             + 146,                                    # Telefollow-up by urologist
                                              "Palliative therapy - yearly" = 165293.35,# Palliative care cost
                                              "Terminal illness" = 165293.35*0.5),      # Terminal illness cost
 

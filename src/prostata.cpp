@@ -27,7 +27,7 @@
 
 #include <microsimulation.h>
 
-#include <boost/algorithm/cxx11/iota.hpp>
+#include <numeric>
 
 namespace fhcrc_example {
 
@@ -75,12 +75,12 @@ namespace fhcrc_example {
   enum utility_scale_t {UtilityAdditive, UtilityMultiplicative, UtilityMinimum};
 
   namespace FullState {
-    typedef boost::tuple<short,short,short,bool,double> Type;
+    typedef std::tuple<short,short,short,bool,double> Type;
     enum Fields {ext_state, ext_grade, dx, psa_ge_3, cohort};
     // string names[5] = {"ext_state","ext_grade","dx","psa_ge_3","cohort"};
   }
   namespace LifeHistory {
-    typedef boost::tuple<int, short, short, int, short, double, double, double, double, double> Type;
+    typedef std::tuple<int, short, short, int, short, double, double, double, double, double> Type;
     enum Fields {id, ext_state, ext_grade, dx, event, begin, end, year, psa, utility};
   }
 
@@ -94,7 +94,7 @@ namespace fhcrc_example {
   }
 
   typedef std::pair<int,string> CostKey; // (cost_type,cost_name)
-  // typedef boost::tuple<int,string,double> CostKey; // (cost_type,cost_name,cohort)
+  // typedef std::tuple<int,string,double> CostKey; // (cost_type,cost_name,cohort)
   class SimOutput {
   public:
     EventReport<FullState::Type,short,double> report;
@@ -179,7 +179,7 @@ namespace fhcrc_example {
   };
   class Utilities {
   public:
-    typedef boost::unordered_map<int,double> UMap;
+    typedef std::unordered_map<int,double> UMap;
     UMap umap;
     int counter;
     utility_scale_t scale;
@@ -1688,10 +1688,10 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
 
   // set up the parameters
   double ages0[mu0.size()];
-  boost::algorithm::iota(ages0, ages0+mu0.size(), 0.0);
+  std::iota(ages0, ages0+mu0.size(), 0.0);
   in.rmu0 = Rpexp(&mu0[0], ages0, mu0.size());
   vector<double> ages(101);
-  boost::algorithm::iota(ages.begin(), ages.end(), 0.0);
+  std::iota(ages.begin(), ages.end(), 0.0);
   ages.push_back(1.0e+6);
 
   // setup for cap_control and cap_study

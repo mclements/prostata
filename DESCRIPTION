@@ -17,7 +17,7 @@ Description: Microsimulation using discrete event simulation in R and C++. This 
 License: GPL (>= 3)
 Depends: microsimulation (>= 1.4.0)
 Imports: Rcpp, graphics, utils, parallel, stats
-LinkingTo: microsimulation, Rcpp
+LinkingTo: microsimulation, Rcpp, RcppArmadillo
 Suggests: testthat
 LazyData: true
 Encoding: UTF-8

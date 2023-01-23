@@ -55,14 +55,14 @@ namespace fhcrc_example {
                 toScreenDiagnosis, toOverDiagnosis, toOrganised, toTreatment,
                 toCM, toRP, toRT, toADT, toUtilityChange, toUtilityRemove,
                 toSTHLM3, toOpportunistic, toT3plus, toCancelScreens,
-                toYearlyActiveSurveillance, toYearlyPostTxFollowUp, toMRI, toPalliative, toTerminal};
+                toYearlyActiveSurveillance, toYearlyPostTxFollowUp, toMRI, toPalliative, toTerminal, toDRE};
 
   enum screen_t {noScreening, randomScreen50to70, twoYearlyScreen50to70, fourYearlyScreen50to70,
 		 screen50, screen60, screen70, screenUptake, stockholm3_goteborg, stockholm3_risk_stratified,
 		 goteborg, risk_stratified, mixed_screening, regular_screen, single_screen,
                  introduced_screening_only, introduced_screening_preference, introduced_screening,
 		 stopped_screening, cap_control, cap_study, sthlm3_mri_arm,
-		 grs_stratified, grs_stratified_age};
+		 grs_stratified, grs_stratified_age, germany_2018};
 
   enum treatment_t {no_treatment, CM, RP, RT};
 
@@ -128,7 +128,8 @@ namespace fhcrc_example {
     TableDD tableBiopsySensitivity, tableSecularTrendTreatment2008OR,
       tableNegBiopsyToPSAmeanlog, tableNegBiopsyToPSAsdlog, tableNegBiopsyToBiopsymeanlog,
       tableNegBiopsyToBiopsysdlog, tableCMtoRPpnever, tableCMtoRPmeanlog, tableCMtoRPsdlog,
-      tableCMtoRTpnever, tableCMtoRTmeanlog, tableCMtoRTsdlog;
+      tableCMtoRTpnever, tableCMtoRTmeanlog, tableCMtoRTsdlog,
+      dre_sensitivity, dre_specificity;
     TablePrtx prtxCM, prtxRP;
     TablePradt pradt;
     TableBiopsyCompliance tableOpportunisticBiopsyCompliance, tableFormalBiopsyCompliance;
@@ -515,6 +516,20 @@ namespace fhcrc_example {
             scheduleAt(now() + in->parameter("risk_upper_interval"), toScreen);
         }
         break;
+      case germany_2018:
+        if (now() >= in->parameter("start_screening")) {
+          if (psa < in->parameter("risk_psa_threshold_lower") &&
+	      now()+in->parameter("risk_lower_interval") <= in->parameter("stop_screening"))
+            scheduleAt(now() + in->parameter("risk_lower_interval"), toDRE);
+          else if (psa >= in->parameter("risk_psa_threshold_lower") &&
+	      psa < in->parameter("risk_psa_threshold_moderate") &&
+	      now()+in->parameter("risk_moderate_interval") <= in->parameter("stop_screening"))
+            scheduleAt(now() + in->parameter("risk_moderate_interval"), toDRE);
+          else if (psa >= in->parameter("risk_psa_threshold_moderate") &&
+	      now()+in->parameter("risk_upper_interval") <= in->parameter("stop_screening"))
+            scheduleAt(now() + in->parameter("risk_upper_interval"), toDRE);
+        }
+        break;
       case regular_screen:
         if (in->parameter("start_screening") <= now() &&
             now() + in->parameter("screening_interval") <= in->parameter("stop_screening"))
@@ -759,6 +774,9 @@ void FhcrcPerson::init() {
       if (startAge != R_PosInf)
 	scheduleAt(startAge,toScreen);
     } break;
+    case germany_2018:
+      scheduleAt(in->parameter("start_screening"), toDRE);
+      break;
     case mixed_screening:
     case introduced_screening:
     case introduced_screening_preference:
@@ -1153,6 +1171,22 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     }
     break;
 
+  case toDRE: {
+    add_costs("Opportunistic DRE");
+    scheduleUtilityChange(now(), "Opportunistic PSA"); // working assumption:)
+    in->rngNh->set();
+    bool dre_result;
+    double u;
+    u = R::runif(0.0,1.0);
+    if (detectable)
+      dre_result = (u < in->dre_sensitivity(psa));
+    else dre_result = u < (1.0 - in->dre_specificity(psa));
+    if (dre_result && in->screen == germany_2018)
+      scheduleAt(now(), toMRI); // add PSA costs
+    if (!dre_result && in->screen == germany_2018)
+      scheduleAt(now(), toScreen); // add costs for blood draw and PSA analysis
+  } break;
+    
   case toOverDiagnosis:
     // only for recording
     break;
@@ -1622,6 +1656,8 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   in.rescreen_shape = TableDDD(as<DataFrame>(otherParameters("rescreening")), "age5", "total", "shape");
   in.rescreen_scale = TableDDD(as<DataFrame>(otherParameters("rescreening")), "age5", "total", "scale");
   in.rescreen_cure  = TableDDD(as<DataFrame>(otherParameters("rescreening")), "age5", "total", "cure");
+  in.dre_sensitivity = TableDD(as<DataFrame>(otherParameters("newdre")), "psa", "sensitivity");
+  in.dre_specificity = TableDD(as<DataFrame>(otherParameters("newdre")), "psa", "specificity");
 
   in.H_dist.clear();
   DataFrame df_survival_dist = as<DataFrame>(otherParameters("survival_dist")); // Grade,Time,Survival

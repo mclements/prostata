@@ -62,7 +62,7 @@ namespace fhcrc_example {
 		 goteborg, risk_stratified, mixed_screening, regular_screen, single_screen,
                  introduced_screening_only, introduced_screening_preference, introduced_screening,
 		 stopped_screening, cap_control, cap_study, sthlm3_mri_arm,
-		 grs_stratified, grs_stratified_age, germany_2018};
+		 grs_stratified, grs_stratified_age, germany_2018, germany_observed};
 
   enum treatment_t {no_treatment, CM, RP, RT};
 
@@ -247,7 +247,8 @@ namespace fhcrc_example {
     double txhaz, psa_last_screen;
     int id, index;
     double cohort, rescreening_frailty, ageEntry, grs_frailty, other_frailty, ageFirstScreen;
-    bool everPSA, previousNegativeBiopsy, organised, previousFollowup, MRIpos, everGRS;
+    bool everPSA, previousNegativeBiopsy, organised, previousFollowup, MRIpos, everGRS,
+      dre_annual, dre_2_3;
     FhcrcPerson(SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950, const int index = 0) :
       in(in), out(out), utilities(utilities), id(id), index(index), cohort(cohort) { };
     double utility() { return utilities->utility(); }
@@ -328,19 +329,19 @@ namespace fhcrc_example {
     double pCM, pRP, pRT;
     // treatment probabilities in 2008
     if (in->bparameter("stockholmTreatment")) {
-       pCM = in->prtxCM(bounds<double>(age,50.0,85.0),
-		    bounds<double>(year,2008.0,2012.0),
-		    int(ext_grade));
-       pRP = in->prtxRP(bounds<double>(age,50.0,85.0),
-		    bounds<double>(year,2008.0,2012.0),
-		    int(ext_grade));
+      pCM = in->prtxCM(bounds<double>(age,50.0,85.0),
+		       bounds<double>(year,2008.0,2012.0),
+		       int(ext_grade));
+      pRP = in->prtxRP(bounds<double>(age,50.0,85.0),
+		       bounds<double>(year,2008.0,2012.0),
+		       int(ext_grade));
     } else { // original FHCRC table prtx
-       pCM = in->prtxCM(bounds<double>(age,50.0,79.0),
-		    bounds<double>(year,1973.0,2004.0),
-		    int(grade));
-       pRP = in->prtxRP(bounds<double>(age,50.0,79.0),
-		    bounds<double>(year,1973.0,2004.0),
-		    int(grade));
+      pCM = in->prtxCM(bounds<double>(age,50.0,79.0),
+		       bounds<double>(year,1973.0,2004.0),
+		       int(grade));
+      pRP = in->prtxRP(bounds<double>(age,50.0,79.0),
+		       bounds<double>(year,1973.0,2004.0),
+		       int(grade));
     }
     pRT = 1.0 - pCM - pRP;
     // adjust for secular trend in odds of RP or RT
@@ -530,6 +531,12 @@ namespace fhcrc_example {
             scheduleAt(now() + in->parameter("risk_upper_interval"), toDRE);
         }
         break;
+      case germany_observed:
+	if (dre_annual && now() + 1.0 < in->parameter("stop_screening"))
+	  scheduleAt(now() + 1.0, toDRE);
+	else if (dre_2_3 && now() + 2.5 < in->parameter("stop_screening"))
+	  scheduleAt(now() + 2.5, toDRE);
+	break;
       case regular_screen:
         if (in->parameter("start_screening") <= now() &&
             now() + in->parameter("screening_interval") <= in->parameter("stop_screening"))
@@ -657,7 +664,8 @@ void FhcrcPerson::init() {
   ext_grade = ext::Healthy;
   dx = NotDiagnosed;
   ageFirstScreen = -1.0;
-  everPSA = previousNegativeBiopsy = organised = adt = previousFollowup = MRIpos = everGRS = false;
+  everPSA = previousNegativeBiopsy = organised = adt = previousFollowup = MRIpos = everGRS =
+    dre_annual = dre_2_3 = false;
   in->rngNh->set();
   // https://journals.plos.org/plosmedicine/article/file?id=10.1371/journal.pmed.1002998&type=printable
   // genetic risk score with T ~ LogNormal(mu,sigma^2) with mean(T) =1 and sigma^2=0.68
@@ -776,6 +784,19 @@ void FhcrcPerson::init() {
     } break;
     case germany_2018:
       scheduleAt(in->parameter("start_screening"), toDRE);
+      dre_annual=true;
+      break;
+    case germany_observed:
+      if (u1<0.350) scheduleAt(45, toDRE);
+      else if (u1<0.489) scheduleAt(50, toDRE);
+      else if (u1<0.622) scheduleAt(55, toDRE);
+      else if (u1<0.713) scheduleAt(60, toDRE);
+      else if (u1<0.782) scheduleAt(65, toDRE);
+      else if (u1<0.819) scheduleAt(70, toDRE);
+      // else do nothing
+      // 0.350 0.489 0.622 0.713 0.782 0.819
+      dre_annual = (u2<0.383);
+      dre_2_3 = (0.383<=u2 && u2<0.383+0.281);
       break;
     case mixed_screening:
     case introduced_screening:
@@ -1181,10 +1202,15 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (detectable)
       dre_result = (u < in->dre_sensitivity(psa));
     else dre_result = u < (1.0 - in->dre_specificity(psa));
-    if (dre_result && in->screen == germany_2018)
-      scheduleAt(now(), toMRI); // add PSA costs
-    if (!dre_result && in->screen == germany_2018)
-      scheduleAt(now(), toScreen); // add costs for blood draw and PSA analysis
+    if (dre_result)
+      scheduleAt(now(), toScreen); // assumes all DRE+ then have an immediate PSA test
+    else {
+      if (dre_annual && now()+1.0 < in->parameter("stop_screening"))
+	scheduleAt(now()+1.0, toDRE);
+      else if (dre_2_3 && now()+2.5 < in->parameter("stop_screening"))
+	scheduleAt(now()+2.5, toDRE);
+      // else no repeat DRE (strong assumption)
+    }
   } break;
     
   case toOverDiagnosis:

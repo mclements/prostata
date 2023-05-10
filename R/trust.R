@@ -5,7 +5,7 @@
 TrustParameters <- function(year=2020) {
     modifyList(ShuangParameters(year),
                list(start_screening = 45,
-                    stop_screening = 70,
+                    stop_screening = 75,
                     ## PSA<1 => 4-yearly; 1<=PSA<2 => 2-yearly; PSA>=2 => 1-yearly
                     risk_psa_threshold_lower = 1,
                     risk_psa_threshold_moderate = 2,

@@ -2,6 +2,166 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
+## Trust: extend the model to include DRE
+library(prostata)
+germany_2018_tables =
+    list(prtx =
+             data.frame(DxY=2008,
+                        Age=c(50,50,50,75,75,75),
+                        G=as.integer(c(6,7,8,6,7,8)-6),
+                        CM=c(1,0,0,1,1,1),
+                        RP=c(0,0.5,0.5,0,0,0),
+                        RT=c(0,0.5,0.5,0,0,0)))
+germany_observed_tables = 
+    list(prtx = data.frame(DxY = 2008,
+                           Age = c(50L, 
+                                   50L, 50L, 60L, 60L, 60L, 70L, 70L, 70L, 80L, 80L, 80L),
+                           G = c(0L, 1L, 2L, 0L, 1L, 2L, 0L, 1L, 2L, 0L, 1L, 2L),
+                           CM = c(0.18333333, 0.11052632, 0.325, 0.26923077, 0.12541806, 0.375, 0.3625498,
+                                  0.31076389, 0.53040541, 0.53932584, 0.56737589, 0.73188406), 
+                           RP = c(0.65, 0.81578947, 0.65, 0.50480769, 0.77926421, 0.5625, 
+                                  0.39043825, 0.50694444, 0.39527027, 0.3258427, 0.25531915, 
+                                  0.20289855),
+                           RT = c(0.16666667, 0.07368421, 0.025, 0.22596154, 
+                                  0.09531773, 0.0625, 0.24701195, 0.18229167, 0.07432432, 0.13483146, 
+                                  0.17730496, 0.06521739)))
+## Germany cancer incidence 2014-2019
+rates=read.table(text="Age	Cases	Rate	Pop
+40	323	2.15	14992758
+45	2944	15.72	18731382
+50	11492	55.10	20856325
+55	28090	150.84	18622558
+60	48318	310.57	15557976
+65	67263	524.08	12834517
+70	73839	676.33	10917643
+75	77804	703.38	11061437
+80	39854	596.25	6684070
+85	25127	606.40	4143644", sep="\t", header=TRUE)
+## Saarland cancer incidence by Gleason, 2014-2019
+gleason=read.table(text="Age	GS6	GS7	GS8plus
+40	2	0	1
+45	8	19	4
+50	28	80	25
+55	103	208	74
+60	170	359	129
+65	191	444	223
+70	211	430	260
+75	255	462	334
+80	114	193	238
+85	26	44	102", sep="\t", header=TRUE) |> subset(Age>=45)
+
+set.seed(12345)
+sim1 = callFhcrc(1e5, screen="germany_2018",
+                 pop=1950,
+                 parm=modifyList(c(germany_2018_tables,
+                                   prostata:::TrustParameters()),
+                                 list(stop_screening=75,
+                                      weibull_onset=TRUE,
+                                      weibull_onset_shape=exp(-0.0196249235171755),
+                                      weibull_onset_scale=exp(5.00818763736169))),
+                 mc.cores=6)
+set.seed(12345)
+sim2 = callFhcrc(1e5, screen="germany_observed",
+                 pop=1950,
+                 parm=modifyList(c(germany_observed_tables,
+                                   prostata:::TrustParameters()),
+                                 list(MRI_screen=FALSE,
+                                      stop_screening=75,
+                                      weibull_onset=TRUE,
+                                      weibull_onset_shape=exp(-0.0196249235171755),
+                                      weibull_onset_scale=exp(5.00818763736169))),
+                 mc.cores=6)
+plot(sim1)
+plot(sim2, add=TRUE, col=2)
+with(rates, lines(Age+2.5-0.5, Rate, lty=2))
+legend("topleft", legend=c("Germany 2018 guidelines","Germany observed"),
+       lty=1, col=1:2, bty="n")
+
+
+table(sim2$summary$events$grade)
+table(sim2$summary$events$event)
+
+plnorm(exp(1),2,3)
+pnorm(1,2,3)
+plnorm(10,2,3)
+pnorm(log(10),2,3)
+dlnorm(10,2,3)
+dnorm(log(10),2,3)/10
+
+
+
+library(minqa)
+library(dplyr)
+Base = modifyList(c(germany_observed_tables,
+                    prostata:::TrustParameters()),
+                  list(MRI_screen=FALSE, stop_screening=75,
+                       weibull_onset=TRUE))
+mc.cores=3
+theta=log(c(1,80,0.06840404,0.1989443))
+nsim=1e4
+negll = function(theta=log(c(1,80,0.06840404,0.1989443))) {
+    set.seed(12345)
+    base = data.frame(age=seq(45,85,by=5))
+    sim2 <- callFhcrc(n=nsim,screen="germany_observed",pop=1950,
+                             parms=modifyList(Base, list(weibull_onset_shape = exp(theta[1]),
+                                                         weibull_onset_scale= exp(theta[2]),
+                                                         beta7 = exp(theta[3]),
+                                                         beta8 = exp(theta[4]))),
+                             mc.cores=mc.cores, print.timing=FALSE)
+    pred = predict(sim2) |>
+        subset(age>=40) |>
+        transform(age5=pmin(85,floor(age/5)*5)) |>
+        group_by(age5) |>
+        summarise(mu = sum(rate*pt)/sum(pt)) |> data.frame() |> mutate(age=age5, age5=NULL)
+    pred = merge(pred, base, all=TRUE, by="age") |> mutate(mu=ifelse(is.na(mu), 1e-5, mu))
+    ons2 = subset(rates, Age>=35)
+    library(dplyr)
+    gs6 = sim2$summary$events |>
+        filter(grade=="Gleason_le_6" & event %in% c("toClinicalDiagnosis","toScreenDiagnosis")) |>
+        mutate(age = pmin(85,floor(age/5)*5)) |>
+        group_by(age) |>
+        summarise(Freq6 = sum(n))
+    gs7 = sim2$summary$events |>
+        filter(grade=="Gleason_7" & event %in% c("toClinicalDiagnosis","toScreenDiagnosis")) |>
+        mutate(age = pmin(85,floor(age/5)*5)) |>
+        group_by(age) |>
+        summarise(Freq7 = sum(n))
+    gs8 = sim2$summary$events |>
+        filter(grade=="Gleason_ge_8" & event %in% c("toClinicalDiagnosis","toScreenDiagnosis")) |>
+        mutate(age = pmin(85,floor(age/5)*5)) |>
+        group_by(age) |>
+        summarise(Freq8 = sum(n))
+    mu = merge(merge(merge(base,gs6,all=TRUE,by="age"),
+                     gs7,all=TRUE,by="age"),
+               gs8, all=TRUE, by="age") |>
+        filter(age>=45) |>
+        mutate(Freq6=ifelse(is.na(Freq6),1,Freq6),
+               Freq7=ifelse(is.na(Freq7),1,Freq7),
+               Freq8=ifelse(is.na(Freq8),1,Freq8))
+    ## log-likelihood           
+    ll1 = sum(sapply(1:nrow(gleason), function(i)
+        dmultinom(unlist(gleason[i,-1]), prob=unlist(mu[i,-1]), log=TRUE)))
+    val = -sum(dpois(x=ons2$Cases, lambda=ons2$Pop*pred$mu, log=TRUE)) - ll1
+    print(theta)
+    print(val)
+    val
+}
+## optim(log(c(1,80)), negll)
+nsim=1e5
+negll()
+bobyqa(c(0.143657727284436, 5.29666758041499, -2.9240240511791, -2.54198318725383), negll) # n=1e3
+bobyqa(c(-0.0851374969515032, 5.27047615268318, -3.21044004054539, -1.35280299939307), negll) # n=1e4
+bobyqa(c(-0.0851374969515032, 5.27047615268318, -3.21044004054539, -1.35280299939307), negll) # n=1e5
+
+
+## set.seed(12345)
+## sim3 = callFhcrc(1e4, screen="regular_screen",
+##                  parm=modifyList(c(germany_2018_tables,
+##                                    prostata:::TrustParameters()),
+##                                  list(MRI_screen=TRUE, screening_interval=2)),
+##                  mc.cores=6)
+## plot(sim3, add=TRUE, col=3)
+
 ## Edna: calibration to ONS data
 ## 2017
 library(prostata)

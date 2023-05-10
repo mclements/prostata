@@ -355,7 +355,6 @@ FhcrcParameters <- list(
     frailty = FALSE,              # assume a frailty distribution on the onset distribution?
     grs_variance = 0.68,          # Callender et al (2019)
     other_variance = 1.14,        # total variance = 1.82 from Kicinski et al (2011; https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0027130)
-    grs_risk_threshold = 0.04     # ten-year risk threshold for GRS-based risk stratified screening
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]
@@ -999,7 +998,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                  "introduced_screening_only", "introduced_screening_preference",
                  "introduced_screening", "stopped_screening",
                  "cap_control", "cap_study", "sthlm3_mri_arm", "grs_stratified", "grs_stratified_age",
-                 "germany_2018")
+                 "germany_2018", "germany_observed")
     screen <- match.arg(screen, screenT)
     stopifnot(is.na(n) || is.integer(as.integer(n)))
     stopifnot(is.integer(as.integer(nLifeHistories)))

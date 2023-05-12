@@ -2,7 +2,7 @@
 
 ## Strategies
 
-TrustParameters <- function(year=2020, MRI_screen=TRUE) {
+TrustParameters <- function(year=2020, MRI_screen=TRUE, DRE=FALSE) {
     modifyList(ShuangParameters(year),
                list(start_screening = 45,
                     stop_screening = 75,
@@ -19,8 +19,8 @@ TrustParameters <- function(year=2020, MRI_screen=TRUE) {
                     cost_parameters =  c("Invitation" = 0,                         # Invitation letter
                                          "Formal PSA" = 29.15,                        # 
                                          "Formal panel" =  29.15,                     # 
-                                         "Opportunistic DRE" = 29.15,              # Cost for DRE alone
-                                         "Opportunistic PSA" = 43.95-29.15,        # NB: PSA analysis *less* the cost for DRE
+                                         "Opportunistic DRE" = 0.2*12.60+16.55,              # Cost for DRE alone
+                                         "Opportunistic PSA" = if (DRE) 4.80+10 else 0.2*12.60+4.80+10,
                                          "Opportunistic panel" = 29.15,               # 
                                          "Biopsy" = 358.11,                        # Systematic biopsy
                                          "MRI" = 121.01,                           # MRI cost
@@ -49,6 +49,7 @@ TrustParameters <- function(year=2020, MRI_screen=TRUE) {
                                    CM=c(1,0,0,1,1,1),
                                    RP=c(0,0.5,0.5,0,0,0),
                                    RT=c(0,0.5,0.5,0,0,0)),
+                    currency_rate = 1,
                     weibull_onset = TRUE,
                     ## fitted parameters
                     weibull_onset_shape=exp(-0.0754039582652198),

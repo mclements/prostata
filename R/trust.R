@@ -23,7 +23,7 @@ TrustParameters <- function(year=2020, MRI_screen=TRUE, DRE=FALSE) {
                                          "Opportunistic PSA" = if (DRE) 4.80+10 else 0.2*12.60+4.80+10,
                                          "Opportunistic panel" = 29.15,               # 
                                          "Biopsy" = 358.11,                        # Systematic biopsy
-                                         "MRI" = 121.01,                           # MRI cost
+                                         "MRI" = 121.01+12.6,                      # MRI cost
                                          "Combined biopsy" = 472.18 - 121.01,      # Biopsy cost (NB: assumes a preceding MRI)
                                          "Assessment" = 19.54,                     # Urologist consultation
                                          "Prostatectomy" = 10927.37,               # Robot assisted surgery

@@ -539,9 +539,9 @@ namespace fhcrc_example {
       case germany_2021:
         if (now() >= in->parameter("start_screening")) {
 	  if (neg_mri && now()+1.0 <= in->parameter("stop_screening"))
-	    scheduleAt(now() + 1.0, toScreen);
+	    scheduleAt(now() + 1.0, toDRE);
 	  else if (neg_bx && now()+1.0 <= in->parameter("stop_screening"))
-	    scheduleAt(now() + 1.0, toScreen);
+	    scheduleAt(now() + 1.0, toDRE);
           else if (psa < in->parameter("risk_psa_threshold_lower") &&
 	      now()+in->parameter("risk_lower_interval") <= in->parameter("stop_screening"))
             scheduleAt(now() + in->parameter("risk_lower_interval"), toDRE);

@@ -2,9 +2,154 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
-## Trust: extend the model to include DRE
+
 library(prostata)
-germany_2018_tables =
+
+## Probase
+set.seed(12345)
+parm = modifyList(prostata:::TrustParameters(MRI_screen=FALSE), # or TRUE
+                  list(start_screening=45, # or 50
+                       stop_screening=60,
+                       psaThreshold=3, # for referral
+                       risk_psa_threshold=1.5, # rescreening
+                       risk_lower_interval=5,  # rescreening
+                       risk_upper_interval=2)) # rescreening
+sim1 = callFhcrc(1e5, screen="probase",
+                 pop=1950,
+                 parm=parm,
+                 mc.cores=5)
+
+## Germany 2021 guidelines
+set.seed(12345)
+parm = modifyList(prostata:::TrustParameters(MRI_screen=TRUE), # or FALSE
+                  list(start_screening=45, # or 50?
+                       stop_screening=70, # or 75
+                       risk_psa_threshold_lower=1.5, # rescreening
+                       risk_psa_threshold_moderate=2, # rescreening
+                       psaThreshold=4, # for referral
+                       risk_lower_interval=5, # rescreening
+                       risk_upper_interval=2)) # rescreening
+sim1 = callFhcrc(1e5, screen="germany_2021",
+                 pop=1950,
+                 parm=parm,
+                 mc.cores=5)
+
+
+## Trust: model extensions to include DRE
+if (FALSE)
+    save.image("~/Downloads/trust_20230511.RData")
+load("~/Downloads/trust_20230511.RData")
+library(prostata)
+mortality_1990_2021 =
+    data.frame(age=rep(seq(40,85,by=5),2021-1990+1),
+               year=rep(1990:2021,each=10),
+               rate = read.table(text="0.167662722959985	0.233291198350787	0.258712991568544	0.285536029650061	0.175569996773023	0.208606477439731	0.172109811567294	0.203127486195795	0.500093850946028	0.294173597723489	0.12733127650878	0.216672449757528	0.090273402025374	0.293283514240381	0.25679757446131	0.139944772195101	0.332710978963239	0.24930879137591	0.167655882947133	0.0855974085669881	0.0294501278282798	0.184113575982752	0.289002584646449	0.101694673944841	0.144674303782039	0.114892169868839	0.0794026380732474	0	0.124418034642958	0.0410011160503789	0	0
+0.832281999335561	0.962394622600798	1.25197028824112	1.05635528693145	1.06710375236363	1.0942037920895	1.0159865483381	1.1928339012341	1.41579915690975	1.32340517158127	0.886825148232823	1.05610970022678	0.901032652730233	0.612865685037429	1.26621251844339	0.875325450865551	0.788241455383799	0.79769160322206	0.598646818730941	0.961356106402894	0.973003168556201	0.764811206353712	0.620679051094582	0.594053524222532	0.803296960238235	0.440632678024415	0.726712277955334	0.379417486656361	0.500128866537945	0.462268736729776	0.641766140418431	0.514591030757502
+3.31231297141909	4.46330676695523	4.20459160515062	4.33401928149781	3.63728704189548	3.90605303283712	3.52181228503095	3.99954241794272	3.67352989925344	3.48566267521522	4.21111308401518	3.83108079225138	4.07277511211658	3.51088448891233	2.75678739435072	3.937549014282	4.16166211718589	2.81640229918249	2.87305477549004	3.73653262798567	3.3360856039566	3.17784175256027	3.17877359767301	2.99569689538812	2.60596119546101	3.15502702902972	2.70591515902094	2.66571986346977	2.16032511756006	2.67994381915624	2.86662424850854	2.17449162070373
+9.81706499074708	11.7080752267421	13.154357809971	11.6807293107016	11.7486783643374	11.9628248263391	12.5561154004627	11.0176089266526	12.1268936348797	11.5304504386331	10.634658575402	10.949849688427	12.524389897773	11.2889462934093	11.2701453848755	11.1148512033182	10.8238638508958	11.5950790484518	10.1472044451754	9.6419175478308	9.87728611686653	9.79887064247049	10.1580277707133	9.14875881838697	8.84651995597972	8.9171402182573	8.79670677854307	7.69788971532946	8.22827937605239	7.39915467690257	6.94281670667193	8.25980544350469
+29.4632462655976	30.4893341424481	32.3284025281776	30.6172996408244	32.6537016108669	30.1474213682629	31.5843736196245	27.3825687131334	29.3115481271955	28.4975714859442	30.1320453185962	28.870487997535	28.519706905166	27.7960625389635	26.9143537965005	25.4906555373304	24.8616052030085	26.7176268223868	26.500641364146	25.3265189677537	26.6771200033778	25.8589994659071	23.9796469568938	26.0220114151534	24.26119415939	24.9787281151371	22.9711638749388	21.916045226324	21.9939954109414	20.1059084290868	21.047306790221	19.6751438396043
+68.9927674414609	69.5976844440987	74.1020437060462	73.2864169977584	75.2539821898909	75.1600593707095	74.5602763583261	69.3304734513035	67.9478294834072	63.5018196878773	63.0605043877595	58.2326468768182	61.123266551947	60.0795745027968	59.7327121473333	53.5469665623051	56.3004136565683	54.6078886741615	57.514531343833	54.1482258456866	53.3088680361238	52.7255185721177	54.2849230823995	52.8808413082477	51.8115461181155	50.0527267053623	50.424886147433	49.7574325164822	50.4406676106531	48.7861499698469	48.1291677891761	48.5048342008786
+159.280451532216	160.395383433096	154.887498160389	154.857837011207	157.318404640256	146.578499231165	145.310133809478	133.758468357085	132.468368534429	134.007435716842	124.29077256349	126.124321244305	126.880100535433	121.742762240448	109.132560327127	107.127522141656	114.05151405756	106.359208115476	102.725661194949	102.880207610604	103.91412973073	99.8880043587493	97.2314776871651	92.870512226908	96.7984054343742	98.7445748740206	97.2192375002098	92.5624840789006	97.7742844727075	93.04202785189	97.1902134692832	90.5358492845026
+285.681850495369	295.200880456509	296.967193309275	295.259234640585	300.49056911453	320.708453519073	298.750085802897	281.03254647846	274.95098383739	257.418814710988	242.247222174071	234.567364715684	222.508176505281	224.618856954913	216.866809233975	210.52451339215	204.081298657515	192.599575018773	201.016496669277	199.990092380561	187.719241834749	194.565222118963	170.462488073733	179.038917573188	171.622372306523	164.172883872802	168.971391285987	171.856547952017	172.836951128588	168.676324062533	162.086057367732	159.313488456058
+492.278382781842	511.330244405365	531.422444421839	531.553114289592	534.393510681469	515.624010210147	509.718431880322	489.796710117939	470.020039312774	462.945240777575	483.195119282599	443.558058073315	439.132806427169	424.991272435846	404.858807792068	380.985003071229	365.530942723605	353.878820733979	371.003580792062	343.552804300173	352.328247686054	354.823813585864	324.033969247384	330.585205515462	321.761284250258	309.393752577648	310.747569587151	289.848218483895	299.072445644068	297.251857629879	293.076648008816	287.99470508644
+765.081359599392	792.235618390735	809.614876518796	851.349400452916	892.17007055141	926.436550190985	920.441264318856	909.250709507018	872.911809989451	822.274506498673	789.711854853391	793.194178499023	796.556517459719	813.45638197511	744.125924941651	762.014639925632	718.107091232786	650.25563174523	668.225927868333	655.213054808512	663.79224162755	696.339180905129	660.114560044299	648.815176275806	653.950644029284	629.666196816807	636.562416490574	608.971936564805	618.425655814135	618.813241295458	612.639109203823	592.447564012749", sep="\t") |> unlist() |> "names<-"(NULL))
+
+incidence_1999_2019 =
+    data.frame(age=rep(seq(40,85,by=5),21),
+           year=rep(1999:2019,each=10),
+           rate=read.table(text="1.8	2	1.9	2.3	2.6	2.2	2.2	2.6	2.9	2.4	2.5	3	3	3	2.3	2.5	2.1	2.3	1.7	2.3	2
+13.3	13.4	13.8	16	18.4	17.1	16.9	18.6	19.1	17.9	17.8	20	19.9	18.1	17.9	16.3	14.9	15.4	15.5	16	16.3
+47.2	48.1	49.2	57.3	65	61.7	61.3	66.8	70.3	68.3	64.9	67.1	68	63.7	60.2	56.7	54.2	52.3	54.6	55.6	57.3
+135.6	137.1	140.2	162.9	190.9	177	171.3	187	200	187.8	184.1	187.9	184.1	174.6	158.5	153.8	144.7	144.6	150.9	152.7	157.6
+261.3	264.1	276.1	341.6	421.8	401.4	395	432.1	448.9	403.6	400.7	389.6	387.7	364.5	323	307.6	296.5	299.7	310.7	311.9	334.9
+416.9	441	472.2	527.6	652.6	619.2	580	639	695.1	657.1	655.7	657.3	650.2	615.5	534.8	517.7	493	506.6	518.3	535.7	566.7
+587.1	598.4	600.2	725.7	834.7	738.4	758.2	800.5	840.5	789.2	763.9	788.7	780.1	731.8	673.3	640.5	653.5	656.9	698.2	701.8	720.4
+743.1	717.8	738.2	788.2	934	793.9	803.5	857.7	881.7	821.6	775.1	767.7	782.1	737.4	669.3	644.1	663.1	679.2	716.7	733.1	784.7
+842.4	863	756.7	894	911.5	846.6	791.8	806.1	853.9	813.4	747.7	725.8	749.5	671.2	623.1	591.2	590.5	584.8	580.3	603.9	619.8
+1151	1090.5	1043.1	1117.7	1094.5	901	914.1	874.4	903.9	840.9	839.3	789.2	844.2	739.7	720.9	698.3	663.5	610.4	591.7	548.2	550.2", sep="\t") |> unlist()) |> "rownames<-"(NULL)
+
+if (FALSE) {
+    set.seed(12345)
+    parm = prostata:::TrustParameters(MRI_screen=FALSE)
+    parm$prtx = prostata:::germany_observed_tables$prtx
+    sim1 = callFhcrc(1e6, screen="germany_observed",
+                     pop=1950,
+                     parm=parm,
+                     mc.cores=5)
+    set.seed(12345)
+    sim2 = callFhcrc(1e6, screen="germany_2021",
+                     pop=1950,
+                     parm=prostata:::TrustParameters(),
+                     mc.cores=5)
+    set.seed(12345)
+    sim0 = callFhcrc(1e6, screen="noScreening",
+                     pop=1950,
+                     parm=parm,
+                     mc.cores=5)
+    set.seed(12345)
+    sim3 = callFhcrc(1e6, screen="regular_screen",
+                     pop=1950,
+                     parm=modifyList(prostata:::TrustParameters(),
+                                     list(start_screening=50, stop_screening=75, screening_interval=2)),
+                     mc.cores=5)
+}
+
+## The fit for mortality is okay...
+library(dplyr)
+pred1 = predict(sim1, type="pc.mortality.rate") |> mutate(age=pmin(85,age)) |>
+    group_by(age) |>
+    summarise(rate = sum(n)/sum(pt)*1e5)
+with(pred1, plot(age+0.5, rate, lty=1, type="l", xlab="Age (years)", ylab="Rate per 100,000",
+                 log="y"))
+pred2 = predict(sim2, type="pc.mortality.rate") |> mutate(age=pmin(85,age)) |>
+    group_by(age) |>
+    summarise(rate = sum(n)/sum(pt)*1e5)
+with(pred2, lines(age+0.5, rate, lty=2))
+pred0 = predict(sim0, type="pc.mortality.rate") |> mutate(age=pmin(85,age)) |>
+    group_by(age) |>
+    summarise(rate = sum(n)/sum(pt)*1e5)
+with(pred0, lines(age+0.5, rate, lty=3))
+pred3 = predict(sim3, type="pc.mortality.rate") |> mutate(age=pmin(85,age)) |>
+    group_by(age) |>
+    summarise(rate = sum(n)/sum(pt)*1e5)
+with(pred3, lines(age+0.5, rate, lty=4))
+years = unique(mortality_1990_2021$year)
+years = seq(1990,2020,by=5)
+for (i in 1:length(years))
+    with(subset(mortality_1990_2021, year==years[i]),
+         lines(age+2.5, rate, col=i+1))
+
+library(dplyr)
+pred1 = predict(sim1) |> mutate(age=pmin(85,age)) |>
+    group_by(age) |>
+    summarise(rate = sum(n)/sum(pt)*1e5)
+with(pred1, plot(age+0.5, rate, lty=1, type="l", xlab="Age (years)", ylab="Rate per 100,000",
+                 log="y"))
+pred2 = predict(sim2) |> mutate(age=pmin(85,age)) |>
+    group_by(age) |>
+    summarise(rate = sum(n)/sum(pt)*1e5)
+with(pred2, lines(age+0.5, rate, lty=2))
+pred0 = predict(sim0) |> mutate(age=pmin(85,age)) |>
+    group_by(age) |>
+    summarise(rate = sum(n)/sum(pt)*1e5)
+with(pred0, lines(age+0.5, rate, lty=3))
+pred3 = predict(sim3) |> mutate(age=pmin(85,age)) |>
+    group_by(age) |>
+    summarise(rate = sum(n)/sum(pt)*1e5)
+with(pred3, lines(age+0.5, rate, lty=4))
+years = unique(incidence_1999_2019$year)
+for (i in 1:length(years))
+    with(subset(incidence_1999_2019, year==years[i]),
+         lines(age+2.5, rate, col=i+1))
+
+
+
+library(prostata)
+fitted = list(weibull_onset_shape=exp(-0.0754039582652198),
+              weibull_onset_scale=exp(5.2319848747848),
+              beta7=exp(-2.35969408469582),
+              beta8=exp(-1.30383055358671))
+germany_2021_tables =
     list(prtx =
              data.frame(DxY=2008,
                         Age=c(50,50,50,75,75,75),
@@ -12,19 +157,6 @@ germany_2018_tables =
                         CM=c(1,0,0,1,1,1),
                         RP=c(0,0.5,0.5,0,0,0),
                         RT=c(0,0.5,0.5,0,0,0)))
-germany_observed_tables = 
-    list(prtx = data.frame(DxY = 2008,
-                           Age = c(50L, 
-                                   50L, 50L, 60L, 60L, 60L, 70L, 70L, 70L, 80L, 80L, 80L),
-                           G = c(0L, 1L, 2L, 0L, 1L, 2L, 0L, 1L, 2L, 0L, 1L, 2L),
-                           CM = c(0.18333333, 0.11052632, 0.325, 0.26923077, 0.12541806, 0.375, 0.3625498,
-                                  0.31076389, 0.53040541, 0.53932584, 0.56737589, 0.73188406), 
-                           RP = c(0.65, 0.81578947, 0.65, 0.50480769, 0.77926421, 0.5625, 
-                                  0.39043825, 0.50694444, 0.39527027, 0.3258427, 0.25531915, 
-                                  0.20289855),
-                           RT = c(0.16666667, 0.07368421, 0.025, 0.22596154, 
-                                  0.09531773, 0.0625, 0.24701195, 0.18229167, 0.07432432, 0.13483146, 
-                                  0.17730496, 0.06521739)))
 ## Germany cancer incidence 2014-2019
 rates=read.table(text="Age	Cases	Rate	Pop
 40	323	2.15	14992758
@@ -49,27 +181,38 @@ gleason=read.table(text="Age	GS6	GS7	GS8plus
 75	255	462	334
 80	114	193	238
 85	26	44	102", sep="\t", header=TRUE) |> subset(Age>=45)
+## Germany prostate cancer mortality rates (for validation)
+mortality_2014_2019_mean =
+    data.frame(age=seq(40,85,by=5),
+               rate=c(0.0840647104029104,0.552076167690344,2.66214869728296,
+                      8.31428178684408,22.704505869303,50.2122348446488,96.0235023686838,
+                      169.689411768075,304.679188028816,627.731681835177))
 
 set.seed(12345)
-sim1 = callFhcrc(1e5, screen="germany_2018",
+sim1 = callFhcrc(1e5, screen="germany_observed",
                  pop=1950,
-                 parm=modifyList(c(germany_2018_tables,
-                                   prostata:::TrustParameters()),
+                 parm=modifyList(prostata:::TrustParameters(MRI_screen=FALSE),
+                                            prostata:::germany_2021_tables) |> modifyList(fitted),
+                 mc.cores=6)
+
+
+
+
+set.seed(12345)
+sim1 = callFhcrc(1e5, screen="germany_2021",
+                 pop=1950,
+                 parm=modifyList(modifyList(prostata:::TrustParameters(MRI_screen=TRUE),
+                                            germany_2021_tables),
                                  list(stop_screening=75,
-                                      weibull_onset=TRUE,
-                                      weibull_onset_shape=exp(-0.0196249235171755),
-                                      weibull_onset_scale=exp(5.00818763736169))),
+                                      weibull_onset=TRUE)) |> modifyList(fitted),
                  mc.cores=6)
 set.seed(12345)
 sim2 = callFhcrc(1e5, screen="germany_observed",
                  pop=1950,
-                 parm=modifyList(c(germany_observed_tables,
-                                   prostata:::TrustParameters()),
-                                 list(MRI_screen=FALSE,
-                                      stop_screening=75,
-                                      weibull_onset=TRUE,
-                                      weibull_onset_shape=exp(-0.0196249235171755),
-                                      weibull_onset_scale=exp(5.00818763736169))),
+                 parm=modifyList(modifyList(prostata:::TrustParameters(MRI_screen=FALSE),
+                                            prostata:::germany_observed_tables),
+                                 list(stop_screening=75,
+                                      weibull_onset=TRUE)) |> modifyList(fitted),
                  mc.cores=6)
 plot(sim1)
 plot(sim2, add=TRUE, col=2)
@@ -77,25 +220,12 @@ with(rates, lines(Age+2.5-0.5, Rate, lty=2))
 legend("topleft", legend=c("Germany 2018 guidelines","Germany observed"),
        lty=1, col=1:2, bty="n")
 
-
-table(sim2$summary$events$grade)
-table(sim2$summary$events$event)
-
-plnorm(exp(1),2,3)
-pnorm(1,2,3)
-plnorm(10,2,3)
-pnorm(log(10),2,3)
-dlnorm(10,2,3)
-dnorm(log(10),2,3)/10
-
-
-
+## Optimisation code:)
 library(minqa)
 library(dplyr)
-Base = modifyList(c(germany_observed_tables,
-                    prostata:::TrustParameters()),
-                  list(MRI_screen=FALSE, stop_screening=75,
-                       weibull_onset=TRUE))
+Base = modifyList(modifyList(prostata:::TrustParameters(MRI_screen=FALSE),
+                             germany_observed_tables),
+                  list(stop_screening=75, weibull_onset=TRUE))
 mc.cores=3
 theta=log(c(1,80,0.06840404,0.1989443))
 nsim=1e4
@@ -151,12 +281,12 @@ nsim=1e5
 negll()
 bobyqa(c(0.143657727284436, 5.29666758041499, -2.9240240511791, -2.54198318725383), negll) # n=1e3
 bobyqa(c(-0.0851374969515032, 5.27047615268318, -3.21044004054539, -1.35280299939307), negll) # n=1e4
-bobyqa(c(-0.0851374969515032, 5.27047615268318, -3.21044004054539, -1.35280299939307), negll) # n=1e5
+bobyqa(c(-0.0754039582652198, 5.2319848747848, -2.35969408469582, -1.30383055358671), negll) # n=1e5
 
 
 ## set.seed(12345)
 ## sim3 = callFhcrc(1e4, screen="regular_screen",
-##                  parm=modifyList(c(germany_2018_tables,
+##                  parm=modifyList(c(germany_2021_tables,
 ##                                    prostata:::TrustParameters()),
 ##                                  list(MRI_screen=TRUE, screening_interval=2)),
 ##                  mc.cores=6)

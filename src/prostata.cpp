@@ -62,7 +62,8 @@ namespace fhcrc_example {
 		 goteborg, risk_stratified, mixed_screening, regular_screen, single_screen,
                  introduced_screening_only, introduced_screening_preference, introduced_screening,
 		 stopped_screening, cap_control, cap_study, sthlm3_mri_arm,
-		 grs_stratified, grs_stratified_age, germany_2018, germany_observed};
+		 grs_stratified, grs_stratified_age, germany_2021, germany_observed,
+		 probase};
 
   enum treatment_t {no_treatment, CM, RP, RT};
 
@@ -246,7 +247,8 @@ namespace fhcrc_example {
     bool adt;
     double txhaz, psa_last_screen;
     int id, index;
-    double cohort, rescreening_frailty, ageEntry, grs_frailty, other_frailty, ageFirstScreen;
+    double cohort, rescreening_frailty, ageEntry, grs_frailty, other_frailty, ageFirstScreen,
+      age_dx;
     bool everPSA, previousNegativeBiopsy, organised, previousFollowup, MRIpos, everGRS,
       dre_annual, dre_2_3;
     FhcrcPerson(SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950, const int index = 0) :
@@ -263,7 +265,8 @@ namespace fhcrc_example {
     bool screening_preference();
     double callenderStartAge(double frailty, double threshold=0.04);
     void cancel_events_after_diagnosis();
-    void rescreening_schedules(double psa, bool organised, bool mixed_programs);
+    void rescreening_schedules(double psa, bool organised, bool mixed_programs, bool neg_mri,
+			       bool neg_bx);
     bool detectable(double now, double year);
     void init();
     void add_costs(string item, cost_t cost_type = Direct, double weight=1.0);
@@ -445,6 +448,7 @@ namespace fhcrc_example {
     RemoveKind(toClinicalDiagnosis);
     RemoveKind(toClinicalDiagnosticBiopsy);
     RemoveKind(toMRI);
+    RemoveKind(toDRE);
   }
 
   void FhcrcPerson::opportunistic_uptake_if_ever() {
@@ -482,7 +486,8 @@ namespace fhcrc_example {
     return (uscreening<pscreening);
   }
 
-  void FhcrcPerson::rescreening_schedules(double psa, bool organised, bool mixed_programs) {
+  void FhcrcPerson::rescreening_schedules(double psa, bool organised, bool mixed_programs,
+					  bool neg_mri, bool neg_bx) {
     // Check for organised screens - opportunistic screens are described later
     if (R::runif(0.0,1.0) < in->parameter("rescreeningParticipation")) {
       switch (in->screen) {
@@ -517,9 +522,27 @@ namespace fhcrc_example {
             scheduleAt(now() + in->parameter("risk_upper_interval"), toScreen);
         }
         break;
-      case germany_2018:
+      case probase:
         if (now() >= in->parameter("start_screening")) {
-          if (psa < in->parameter("risk_psa_threshold_lower") &&
+	  if (neg_mri && now()+1.0 <= in->parameter("stop_screening"))
+	    scheduleAt(now() + 1.0, toScreen);
+	  else if (neg_bx && now()+1.0 <= in->parameter("stop_screening"))
+	    scheduleAt(now() + 1.0, toScreen);
+          else if (psa < in->parameter("risk_psa_threshold") &&
+	      now()+in->parameter("risk_lower_interval") <= in->parameter("stop_screening"))
+            scheduleAt(now() + in->parameter("risk_lower_interval"), toScreen);
+          if (psa >= in->parameter("risk_psa_threshold") &&
+	      now()+in->parameter("risk_upper_interval") <= in->parameter("stop_screening"))
+            scheduleAt(now() + in->parameter("risk_upper_interval"), toScreen);
+        }
+        break;
+      case germany_2021:
+        if (now() >= in->parameter("start_screening")) {
+	  if (neg_mri && now()+1.0 <= in->parameter("stop_screening"))
+	    scheduleAt(now() + 1.0, toScreen);
+	  else if (neg_bx && now()+1.0 <= in->parameter("stop_screening"))
+	    scheduleAt(now() + 1.0, toScreen);
+          else if (psa < in->parameter("risk_psa_threshold_lower") &&
 	      now()+in->parameter("risk_lower_interval") <= in->parameter("stop_screening"))
             scheduleAt(now() + in->parameter("risk_lower_interval"), toDRE);
           else if (psa >= in->parameter("risk_psa_threshold_lower") &&
@@ -666,6 +689,7 @@ void FhcrcPerson::init() {
   ageFirstScreen = -1.0;
   everPSA = previousNegativeBiopsy = organised = adt = previousFollowup = MRIpos = everGRS =
     dre_annual = dre_2_3 = false;
+  age_dx = -1.0;
   in->rngNh->set();
   // https://journals.plos.org/plosmedicine/article/file?id=10.1371/journal.pmed.1002998&type=printable
   // genetic risk score with T ~ LogNormal(mu,sigma^2) with mean(T) =1 and sigma^2=0.68
@@ -763,6 +787,7 @@ void FhcrcPerson::init() {
     case regular_screen:
     case goteborg:
     case risk_stratified:
+    case probase:
       scheduleAt(in->parameter("start_screening"),toScreen);
       break;
     case fourYearlyScreen50to70: // 50,54,58,62,66,70
@@ -782,7 +807,7 @@ void FhcrcPerson::init() {
       if (startAge != R_PosInf)
 	scheduleAt(startAge,toScreen);
     } break;
-    case germany_2018:
+    case germany_2021:
       scheduleAt(in->parameter("start_screening"), toDRE);
       dre_annual=true;
       break;
@@ -1162,7 +1187,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
           in->rngScreen->set();
 	  if ((in->screen == cap_study || in->screen == sthlm3_mri_arm) && organised)
 	    organised = false;
-	  rescreening_schedules(psa, organised, mixed_programs);
+	  rescreening_schedules(psa, organised, mixed_programs, false, false);
     }
     in->rngNh->set();
   } break;
@@ -1170,6 +1195,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   case toClinicalDiagnosis:
     scheduleUtilityChange(now(), "Cancer diagnosis");
     dx = ClinicalDiagnosis;
+    age_dx = now();
     cancel_events_after_diagnosis();
     scheduleAt(now()+1.0/12.0, toTreatment);
     if (id < in->nLifeHistories) {
@@ -1182,6 +1208,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     // add cost for half a subsequent consultation
     add_costs("Assessment", Direct, 0.5);
     dx = ScreenDiagnosis;
+    age_dx = now();
     cancel_events_after_diagnosis();
     scheduleAt(now()+1.0/12.0, toTreatment); // treatment one month after the diagnosis
     if (aoc < (35.0 + min(tc,tmc))) {
@@ -1231,7 +1258,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     } else {
       if ((in->screen == cap_study || in->screen == sthlm3_mri_arm) && organised)
 	organised = false;
-      rescreening_schedules(psa, organised, mixed_programs);
+      rescreening_schedules(psa, organised, mixed_programs, true, false);
     }
     in->rngNh->set();
   } break;
@@ -1342,7 +1369,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       if (previousNegativeBiopsy || (in->bparameter("MRI_screen") && !this->MRIpos && in->bparameter("rescreenDoubleNeg"))) { // first negative biopsy and not MRI-
 	if ((in->screen == cap_study || in->screen == sthlm3_mri_arm) && organised)
 	  organised = false;
-        rescreening_schedules(psa_last_screen, organised, mixed_programs);
+        rescreening_schedules(psa_last_screen, organised, mixed_programs, false, true);
         previousNegativeBiopsy = false; // if going to rescreening, should their previous negative Bx be forgotten? (Currently only used here)
       } else {
         previousNegativeBiopsy=true;
@@ -1545,14 +1572,17 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toYearlyActiveSurveillance:
     if (in->bparameter("Andreas")) {
-      add_costs("Active surveillance - yearly");
+      add_costs("Active surveillance - yearly", Direct,
+		(now() < age_dx + 2.0) ? in->parameter("active_surveillance_cost_scale_first_two_years") : 1.0);
       lost_productivity("Active surveillance - yearly");
     } else {
       if (in->bparameter("MRI_screen") || in->bparameter("MRI_clinical")) {
-	add_costs("Active surveillance - yearly - with MRI");
+	add_costs("Active surveillance - yearly - with MRI", Direct,
+		  (now() < age_dx + 2.0) ? in->parameter("active_surveillance_cost_scale_first_two_years") : 1.0);
 	lost_productivity("Active surveillance - yearly - with MRI");
       } else {
-	add_costs("Active surveillance - yearly - w/o MRI");
+	add_costs("Active surveillance - yearly - w/o MRI", Direct,
+		  (now() < age_dx + 2.0) ? in->parameter("active_surveillance_cost_scale_first_two_years") : 1.0);
 	lost_productivity("Active surveillance - yearly - w/o MRI");
       }
     }

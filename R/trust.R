@@ -2,7 +2,7 @@
 
 ## Strategies
 
-TrustParameters <- function(year=2020) {
+TrustParameters <- function(year=2020, MRI_screen=TRUE) {
     modifyList(ShuangParameters(year),
                list(start_screening = 45,
                     stop_screening = 75,
@@ -14,59 +14,66 @@ TrustParameters <- function(year=2020) {
                     risk_upper_interval = 1,
                     psaThreshold = 4,
                     psaThresholdBiopsyFollowUp = 4, # is this correct??
-                    MRI_screen = TRUE,
-                    cost_parameters =  c("Invitation" = 7.16                      # Invitation letter
-                                         + 7.16,                                   # Results letter
-                                         "Formal PSA" = 363.96                     # test sampling, primary care
-                                         + 58.71                                   # PSA analysis
-                                         + 0 * 1527.63,                            # No GP primary care
-                                         "Formal panel" =  363.96                  # test sampling, primary care
-                                         + 58.71                                   # PSA analysis not included in panel price
-                                         + 2300                                    # From A23 Lab (Ola Steinberg (list price from A23 Lab)
-                                         + 0 * 1527.63,                            # No GP for formal
-                                         "Opportunistic PSA" = 58.71               # PSA analysis
-                                         + 0.2 * 1527.63,                          # GP primary care
-                                         "Opportunistic panel" = 58.71             # PSA analysis not included in panel price
-                                         + 2300                                    # From BergusMedical (official lab for Sthlm3)
-                                         + 0.2 * 1527.63,                          # GP primary care
-                                         "Biopsy" = 3010                           # Systematic biopsy cost (SBx)
-                                         + 4335.30,                                # Pathology of biopsy
-                                         "MRI" = 3500,                             # MRI cost
-                                         "Combined biopsy" = 3010*1.5              # Biopsy cost (SBx|TBx) ?Double the price
-                                         + 4335.30,                                # Pathology of biopsy
-                                         "Assessment" = 1460,                      # Urologist and nurse consultation
-                                         "Prostatectomy" = 118009.91               # Robot assisted surgery
-                                         + 6446.51*20*0.25                         # Radiation therapy
-                                         + 1460*1,                                 # Urology and nurse visit
-                                         "Radiation therapy" = 6446.51*20          # Radiation therapy
-                                         + 3992.65*1                               # Oncologist new visit
-                                         + 1721.90*1                               # Oncologist further visit
-                                         + 400*20                                  # Nurse visit
-                                         + 69035.66*0.2,                           # Hormone therapy
-                                         "Active surveillance - yearly - w/o MRI" = 1460    # Urology visit and nurse visit
-                                         + 363.96*3                                # PSA sampling
-                                         + 58.71*3                                 # PSA analysis
-                                         + 3010*0.33                               # Systematic biopsy (SBx)
-                                         + 4335.30*0.33,                           # Pathology of biopsy
-                                         "Active surveillance - yearly - with MRI" = 1493.43   # Urology visit and nurse visit
-                                         + 363.96*3                                # PSA sampling
-                                         + 58.71*3                                 # PSA analysis
-                                         + 3500*0.33                               # MRI cost
-                                         + 3010*1.5*0.33                           # Biopsy cost (SBx|TBx)
-                                         + 4335.30*0.33,                           # Pathology of biopsy
-                                         "ADT+chemo" = 145216,                     # Drug treatment for metastasis
-                                         "Post-Tx follow-up - yearly first" = 1460 # Urologist and nurse consultation
-                                         + 363.96                                  # PSA test sampling
-                                         + 58.71,                                  # PSA analysis
-                                         "Post-Tx follow-up - yearly after" = 363.96  # PSA test sampling
-                                         + 58.71                                   # PSA analysis,
-                                         + 146,                                    # Telefollow-up by urologist
-                                         "Palliative therapy - yearly" = 165293.35,# Palliative care cost
-                                         "Terminal illness" = 165293.35*0.5,       # Terminal illness cost
-                                         "Opportunistic DRE" = 349                 # test sampling, primary care
-                                         + 0.2 * 1539                              # GP primary care
-                                         )))
+                    MRI_screen = MRI_screen,
+                    active_surveillance_cost_scale_first_two_years = if (MRI_screen) 1214.41/455.83 else 693.40/283.49,
+                    cost_parameters =  c("Invitation" = 0,                         # Invitation letter
+                                         "Formal PSA" = 29.15,                        # 
+                                         "Formal panel" =  29.15,                     # 
+                                         "Opportunistic DRE" = 29.15,              # Cost for DRE alone
+                                         "Opportunistic PSA" = 43.95-29.15,        # NB: PSA analysis *less* the cost for DRE
+                                         "Opportunistic panel" = 29.15,               # 
+                                         "Biopsy" = 358.11,                        # Systematic biopsy
+                                         "MRI" = 121.01,                           # MRI cost
+                                         "Combined biopsy" = 472.18 - 121.01,      # Biopsy cost (NB: assumes a preceding MRI)
+                                         "Assessment" = 19.54,                     # Urologist consultation
+                                         "Prostatectomy" = 10927.37,               # Robot assisted surgery
+                                         "Radiation therapy" = 8872.83,            # Radiation therapy
+                                         "Active surveillance - yearly - w/o MRI" = 283.49, # Urology visit and nurse visit
+                                         "Active surveillance - yearly - with MRI" = 455.83, # Urology visit and nurse visit
+                                         "ADT+chemo" = 145216/10,                  # Drug treatment for metastasis
+                                         "Post-Tx follow-up - yearly first" = 2*410.14 - 144.57, # Urologist and nurse consultation (double counts for costs in the first two years and adjusts)
+                                         "Post-Tx follow-up - yearly after" = 144.57,  # PSA test sampling
+                                         "Palliative therapy - yearly" = 165293.35/10, # Palliative care cost
+                                         "Terminal illness" = 165293.35*0.5/10       # Terminal illness cost
+                                         ),
+                    ## Jansen et al 2014 (TTO)
+                    background_utilities =
+                        data.frame(lower = c(0, 18, 25, 35, 45, 55, 65, 75),
+                                   upper = c(18, 25, 35, 45, 55, 65, 75, 1.0e55),
+                                   utility = c(1, 0.972, 0.973, 0.966, 0.945, 0.922, 0.891, 0.839)),
+                    ## default treatment assignment: 2021 guidelines (assuming CM from age 75)
+                    prtx =
+                        data.frame(DxY=2008,
+                                   Age=c(0,0,0,75,75,75),
+                                   G=as.integer(c(6,7,8,6,7,8)-6),
+                                   CM=c(1,0,0,1,1,1),
+                                   RP=c(0,0.5,0.5,0,0,0),
+                                   RT=c(0,0.5,0.5,0,0,0)),
+                    weibull_onset = TRUE,
+                    ## fitted parameters
+                    weibull_onset_shape=exp(-0.0754039582652198),
+                    weibull_onset_scale=exp(5.2319848747848),
+                    beta7=exp(-2.35969408469582),
+                    beta8=exp(-1.30383055358671)))
 }
+
+## read_string = function(string, header=TRUE, sep="\t", ...)
+##     read.table(text=string, header=header, sep=sep, ...)
+
+germany_observed_tables = 
+    list(prtx = data.frame(DxY = 2008,
+                           Age = c(50L, 
+                                   50L, 50L, 60L, 60L, 60L, 70L, 70L, 70L, 80L, 80L, 80L),
+                           G = c(0L, 1L, 2L, 0L, 1L, 2L, 0L, 1L, 2L, 0L, 1L, 2L),
+                           CM = c(0.18333333, 0.11052632, 0.325, 0.26923077, 0.12541806, 0.375, 0.3625498,
+                                  0.31076389, 0.53040541, 0.53932584, 0.56737589, 0.73188406), 
+                           RP = c(0.65, 0.81578947, 0.65, 0.50480769, 0.77926421, 0.5625, 
+                                  0.39043825, 0.50694444, 0.39527027, 0.3258427, 0.25531915, 
+                                  0.20289855),
+                           RT = c(0.16666667, 0.07368421, 0.025, 0.22596154, 
+                                  0.09531773, 0.0625, 0.24701195, 0.18229167, 0.07432432, 0.13483146, 
+                                  0.17730496, 0.06521739)))
+
 
 if (FALSE) {
     library(prostata)

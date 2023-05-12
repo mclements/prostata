@@ -231,9 +231,7 @@ FhcrcParameters <- list(
                                .Names = c("age", "pnever", "meanlog", "sdlog"),
                                row.names = c(NA, -4L), class = "data.frame"),
     currency_rate = 0.750/9.077, # PPP EU19@2017/Swe@2016 https://data.oecd.org/conversion/purchasing-power-parities-ppp.htm
-
     ## Should we add cost and dis-utilities for using test characteristics based on prostate volume 7% from supplement
-
     ## Swedish governmental report on organised PSA testing (p.22):
     ## https://www.socialstyrelsen.se/SiteCollectionDocuments/2018-2-13-halsoekonomisk-analys.pdf
     ## Based on the Swedish south region 2017:
@@ -277,7 +275,7 @@ FhcrcParameters <- list(
                         "Polygenic risk stratification" = 250*12, # Callender et al (2021) with exchange rate of approximately 12
                         "Opportunistic DRE" = 349                 # DRE procedure in primary care
                         + 0.2 * 1539),                            # part of primary care visit
-
+    active_surveillance_cost_scale_first_two_years = 1.0,         # cost scale for AS first two years (Trust: you owe me:)
     ## Swedish governmental report on organised PSA testing (p.23):
     ## https://www.socialstyrelsen.se/SiteCollectionDocuments/2018-2-13-halsoekonomisk-analys.pdf
     production = data.frame(ages = c(0, 54, 64, 74),
@@ -302,7 +300,6 @@ FhcrcParameters <- list(
                              + 0.5 * 2/24/365.25,              # Biopsy
                              "Metastatic cancer"=6/12,
                              "Terminal illness" = 6/12),        # NOTE: potentially add follow-up Tx production losses
-
     ## Heijnsdijk 2012
     utility_estimates = c("Invitation" = 1,
                           "Formal PSA" = 0.99,
@@ -354,7 +351,7 @@ FhcrcParameters <- list(
     weibull_onset_scale= 40,      # scale; values (0,Inf)
     frailty = FALSE,              # assume a frailty distribution on the onset distribution?
     grs_variance = 0.68,          # Callender et al (2019)
-    other_variance = 1.14,        # total variance = 1.82 from Kicinski et al (2011; https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0027130)
+    other_variance = 1.14         # total variance = 1.82 from Kicinski et al (2011; https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0027130)
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]
@@ -998,7 +995,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                  "introduced_screening_only", "introduced_screening_preference",
                  "introduced_screening", "stopped_screening",
                  "cap_control", "cap_study", "sthlm3_mri_arm", "grs_stratified", "grs_stratified_age",
-                 "germany_2018", "germany_observed")
+                 "germany_2021", "germany_observed", "probase")
     screen <- match.arg(screen, screenT)
     stopifnot(is.na(n) || is.integer(as.integer(n)))
     stopifnot(is.integer(as.integer(nLifeHistories)))

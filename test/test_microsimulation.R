@@ -5,6 +5,9 @@
 
 ## Base strategies
 library(prostata)
+if (FALSE)
+    save.image("~/Downloads/trust_20230512.RData")
+load("~/Downloads/trust_20230512.RData")
 n = 1e6
 ## Probase
 parm = modifyList(prostata:::TrustParameters(MRI_screen=FALSE), # or TRUE
@@ -85,10 +88,24 @@ strategies = list(strategy1,
 
 d = t(sapply(lapply(strategies, summary),
              function(object) c(object$QALE, object$healthsector.costs)))
-plot(d,
-     ylab="Life-time discounted costs (€)",
-     xlab="Life-time discounted utilities (QALYs)")
-text(d, labels=1:7,pos=1)
+d = data.frame(QALE=d[,1], Costs=d[,2],
+               labels=c("ProBase SBx, 45 years",
+                        "ProBase SBx, 50 years",
+                        "ProBase MRI, 45 years",
+                        "ProBase MRI, 50 years",
+                        "2021 Guidelines, MRI",
+                        "2021 Guidelines, SBx",
+                        "No screening"),
+               pos=c(4,4,3,2,2,2,1))
+with(d, {
+    plot(QALE, Costs,
+         xlim=c(min(QALE)-0.0002,max(QALE)+0.0009),
+         ylim=c(240,325),
+         ylab="Life-time discounted costs (€)",
+         xlab="Life-time discounted utilities (QALYs)")
+    text(QALE, Costs, labels=labels,pos=pos)
+    })
+with(d[c(7,2,6), ], lines(QALE, Costs))
 
 ICER(strategy2, strategy7, perspective="healthsector.costs")
 ICER(strategy6, strategy2, perspective="healthsector.costs")
@@ -97,9 +114,6 @@ ICER(strategy6, strategy2, perspective="healthsector.costs", from=35)
 
 
 ## Trust: model extensions to include DRE
-if (FALSE)
-    save.image("~/Downloads/trust_20230511.RData")
-load("~/Downloads/trust_20230511.RData")
 library(prostata)
 mortality_1990_2021 =
     data.frame(age=rep(seq(40,85,by=5),2021-1990+1),

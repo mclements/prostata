@@ -3,10 +3,9 @@
 ## microsimulation:::.testPackage()
 
 
-library(prostata)
-
 ## Base strategies
-n = 1e5
+library(prostata)
+n = 1e6
 ## Probase
 parm = modifyList(prostata:::TrustParameters(MRI_screen=FALSE), # or TRUE
                   list(start_screening=45, # or 50
@@ -43,7 +42,7 @@ strategy4 = callFhcrc(n, screen="probase",
                       parm=modifyList(parm,list(start_screening=50)),
                       mc.cores=5)
 ## Germany 2021 guidelines
-parm = modifyList(prostata:::TrustParameters(MRI_screen=TRUE), # or FALSE
+parm = modifyList(prostata:::TrustParameters(MRI_screen=TRUE, DRE=TRUE), # or FALSE
                   list(start_screening=45, # or 50?
                        stop_screening=70, # or 75
                        risk_psa_threshold_lower=1.5, # rescreening
@@ -56,7 +55,7 @@ strategy5 = callFhcrc(n, screen="germany_2021",
                       pop=1950,
                       parm=parm,
                       mc.cores=5)
-parm = modifyList(prostata:::TrustParameters(MRI_screen=FALSE),
+parm = modifyList(prostata:::TrustParameters(MRI_screen=FALSE, DRE=TRUE),
                   list(start_screening=45, # or 50?
                        stop_screening=70, # or 75
                        risk_psa_threshold_lower=1.5, # rescreening
@@ -74,6 +73,27 @@ strategy7 = callFhcrc(n, screen="noScreening",
                       pop=1950,
                       parm=parm,
                       mc.cores=5)
+
+## Quick plot of the cost-efficiency frontier
+strategies = list(strategy1,
+                  strategy2,
+                  strategy3,
+                  strategy4,
+                  strategy5,
+                  strategy6,
+                  strategy7)
+
+d = t(sapply(lapply(strategies, summary),
+             function(object) c(object$QALE, object$healthsector.costs)))
+plot(d,
+     ylab="Life-time discounted costs (€)",
+     xlab="Life-time discounted utilities (QALYs)")
+text(d, labels=1:7,pos=1)
+
+ICER(strategy2, strategy7, perspective="healthsector.costs")
+ICER(strategy6, strategy2, perspective="healthsector.costs")
+ICER(strategy2, strategy7, perspective="healthsector.costs", from=35)
+ICER(strategy6, strategy2, perspective="healthsector.costs", from=35)
 
 
 ## Trust: model extensions to include DRE

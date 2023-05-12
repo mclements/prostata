@@ -5,8 +5,9 @@
 
 library(prostata)
 
+## Base strategies
+n = 1e5
 ## Probase
-set.seed(12345)
 parm = modifyList(prostata:::TrustParameters(MRI_screen=FALSE), # or TRUE
                   list(start_screening=45, # or 50
                        stop_screening=60,
@@ -14,13 +15,34 @@ parm = modifyList(prostata:::TrustParameters(MRI_screen=FALSE), # or TRUE
                        risk_psa_threshold=1.5, # rescreening
                        risk_lower_interval=5,  # rescreening
                        risk_upper_interval=2)) # rescreening
-sim1 = callFhcrc(1e5, screen="probase",
-                 pop=1950,
-                 parm=parm,
-                 mc.cores=5)
-
-## Germany 2021 guidelines
 set.seed(12345)
+strategy1 = callFhcrc(n, screen="probase",
+                      pop=1950,
+                      parm=parm,
+                      mc.cores=5)
+set.seed(12345)
+strategy2 = callFhcrc(n, screen="probase",
+                      pop=1950,
+                      parm=modifyList(parm,list(start_screening=50)),
+                      mc.cores=5)
+parm = modifyList(prostata:::TrustParameters(MRI_screen=TRUE),
+                  list(start_screening=45, # or 50
+                       stop_screening=60,
+                       psaThreshold=3, # for referral
+                       risk_psa_threshold=1.5, # rescreening
+                       risk_lower_interval=5,  # rescreening
+                       risk_upper_interval=2)) # rescreening
+set.seed(12345)
+strategy3 = callFhcrc(n, screen="probase",
+                      pop=1950,
+                      parm=parm,
+                      mc.cores=5)
+set.seed(12345)
+strategy4 = callFhcrc(n, screen="probase",
+                      pop=1950,
+                      parm=modifyList(parm,list(start_screening=50)),
+                      mc.cores=5)
+## Germany 2021 guidelines
 parm = modifyList(prostata:::TrustParameters(MRI_screen=TRUE), # or FALSE
                   list(start_screening=45, # or 50?
                        stop_screening=70, # or 75
@@ -29,10 +51,29 @@ parm = modifyList(prostata:::TrustParameters(MRI_screen=TRUE), # or FALSE
                        psaThreshold=4, # for referral
                        risk_lower_interval=5, # rescreening
                        risk_upper_interval=2)) # rescreening
-sim1 = callFhcrc(1e5, screen="germany_2021",
-                 pop=1950,
-                 parm=parm,
-                 mc.cores=5)
+set.seed(12345)
+strategy5 = callFhcrc(n, screen="germany_2021",
+                      pop=1950,
+                      parm=parm,
+                      mc.cores=5)
+parm = modifyList(prostata:::TrustParameters(MRI_screen=FALSE),
+                  list(start_screening=45, # or 50?
+                       stop_screening=70, # or 75
+                       risk_psa_threshold_lower=1.5, # rescreening
+                       risk_psa_threshold_moderate=2, # rescreening
+                       psaThreshold=4, # for referral
+                       risk_lower_interval=5, # rescreening
+                       risk_upper_interval=2)) # rescreening
+set.seed(12345)
+strategy6 = callFhcrc(n, screen="germany_2021",
+                      pop=1950,
+                      parm=parm,
+                      mc.cores=5)
+set.seed(12345)
+strategy7 = callFhcrc(n, screen="noScreening",
+                      pop=1950,
+                      parm=parm,
+                      mc.cores=5)
 
 
 ## Trust: model extensions to include DRE
@@ -53,7 +94,6 @@ mortality_1990_2021 =
 285.681850495369	295.200880456509	296.967193309275	295.259234640585	300.49056911453	320.708453519073	298.750085802897	281.03254647846	274.95098383739	257.418814710988	242.247222174071	234.567364715684	222.508176505281	224.618856954913	216.866809233975	210.52451339215	204.081298657515	192.599575018773	201.016496669277	199.990092380561	187.719241834749	194.565222118963	170.462488073733	179.038917573188	171.622372306523	164.172883872802	168.971391285987	171.856547952017	172.836951128588	168.676324062533	162.086057367732	159.313488456058
 492.278382781842	511.330244405365	531.422444421839	531.553114289592	534.393510681469	515.624010210147	509.718431880322	489.796710117939	470.020039312774	462.945240777575	483.195119282599	443.558058073315	439.132806427169	424.991272435846	404.858807792068	380.985003071229	365.530942723605	353.878820733979	371.003580792062	343.552804300173	352.328247686054	354.823813585864	324.033969247384	330.585205515462	321.761284250258	309.393752577648	310.747569587151	289.848218483895	299.072445644068	297.251857629879	293.076648008816	287.99470508644
 765.081359599392	792.235618390735	809.614876518796	851.349400452916	892.17007055141	926.436550190985	920.441264318856	909.250709507018	872.911809989451	822.274506498673	789.711854853391	793.194178499023	796.556517459719	813.45638197511	744.125924941651	762.014639925632	718.107091232786	650.25563174523	668.225927868333	655.213054808512	663.79224162755	696.339180905129	660.114560044299	648.815176275806	653.950644029284	629.666196816807	636.562416490574	608.971936564805	618.425655814135	618.813241295458	612.639109203823	592.447564012749", sep="\t") |> unlist() |> "names<-"(NULL))
-
 incidence_1999_2019 =
     data.frame(age=rep(seq(40,85,by=5),21),
            year=rep(1999:2019,each=10),
@@ -69,25 +109,26 @@ incidence_1999_2019 =
 1151	1090.5	1043.1	1117.7	1094.5	901	914.1	874.4	903.9	840.9	839.3	789.2	844.2	739.7	720.9	698.3	663.5	610.4	591.7	548.2	550.2", sep="\t") |> unlist()) |> "rownames<-"(NULL)
 
 if (FALSE) {
+    n = 1e5
     set.seed(12345)
     parm = prostata:::TrustParameters(MRI_screen=FALSE)
     parm$prtx = prostata:::germany_observed_tables$prtx
-    sim1 = callFhcrc(1e6, screen="germany_observed",
+    sim1 = callFhcrc(n, screen="germany_observed",
                      pop=1950,
                      parm=parm,
                      mc.cores=5)
     set.seed(12345)
-    sim2 = callFhcrc(1e6, screen="germany_2021",
+    sim2 = callFhcrc(n, screen="germany_2021",
                      pop=1950,
                      parm=prostata:::TrustParameters(),
                      mc.cores=5)
     set.seed(12345)
-    sim0 = callFhcrc(1e6, screen="noScreening",
+    sim0 = callFhcrc(n, screen="noScreening",
                      pop=1950,
                      parm=parm,
                      mc.cores=5)
     set.seed(12345)
-    sim3 = callFhcrc(1e6, screen="regular_screen",
+    sim3 = callFhcrc(n, screen="regular_screen",
                      pop=1950,
                      parm=modifyList(prostata:::TrustParameters(),
                                      list(start_screening=50, stop_screening=75, screening_interval=2)),
@@ -119,6 +160,7 @@ for (i in 1:length(years))
     with(subset(mortality_1990_2021, year==years[i]),
          lines(age+2.5, rate, col=i+1))
 
+## Incidence has been calibrated
 library(dplyr)
 pred1 = predict(sim1) |> mutate(age=pmin(85,age)) |>
     group_by(age) |>

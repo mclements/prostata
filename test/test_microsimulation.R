@@ -10,7 +10,7 @@ if (FALSE)
 load("~/Downloads/trust_20230512.RData")
 n = 1e6
 ## Probase
-parm = modifyList(prostata:::TrustParameters(MRI_screen=FALSE), # or TRUE
+parm = modifyList(prostata:::TrustParameters(MRI_diagnostics=FALSE), # or TRUE
                   list(start_screening=45, # or 50
                        stop_screening=60,
                        psaThreshold=3, # for referral
@@ -27,7 +27,7 @@ strategy2 = callFhcrc(n, screen="probase",
                       pop=1950,
                       parm=modifyList(parm,list(start_screening=50)),
                       mc.cores=5)
-parm = modifyList(prostata:::TrustParameters(MRI_screen=TRUE),
+parm = modifyList(prostata:::TrustParameters(MRI_diagnostics=TRUE),
                   list(start_screening=45, # or 50
                        stop_screening=60,
                        psaThreshold=3, # for referral
@@ -45,9 +45,9 @@ strategy4 = callFhcrc(n, screen="probase",
                       parm=modifyList(parm,list(start_screening=50)),
                       mc.cores=5)
 ## Germany 2021 guidelines
-parm = modifyList(prostata:::TrustParameters(MRI_screen=TRUE, DRE=TRUE), # or FALSE
-                  list(start_screening=45, # or 50?
-                       stop_screening=70, # or 75
+parm = modifyList(prostata:::TrustParameters(MRI_diagnostics=FALSE, DRE=TRUE), # or FALSE
+                  list(start_screening=45,
+                       stop_screening=75,
                        risk_psa_threshold_lower=1.5, # rescreening
                        risk_psa_threshold_moderate=2, # rescreening
                        psaThreshold=4, # for referral
@@ -58,9 +58,9 @@ strategy5 = callFhcrc(n, screen="germany_2021",
                       pop=1950,
                       parm=parm,
                       mc.cores=5)
-parm = modifyList(prostata:::TrustParameters(MRI_screen=FALSE, DRE=TRUE),
-                  list(start_screening=45, # or 50?
-                       stop_screening=70, # or 75
+parm = modifyList(prostata:::TrustParameters(MRI_diagnostics=TRUE, DRE=TRUE),
+                  list(start_screening=45,
+                       stop_screening=75,
                        risk_psa_threshold_lower=1.5, # rescreening
                        risk_psa_threshold_moderate=2, # rescreening
                        psaThreshold=4, # for referral
@@ -93,22 +93,22 @@ d = data.frame(QALE=d[,1], Costs=d[,2],
                         "ProBase SBx, 50 years",
                         "ProBase MRI, 45 years",
                         "ProBase MRI, 50 years",
-                        "2021 Guidelines, MRI",
                         "2021 Guidelines, SBx",
+                        "2021 Guidelines, MRI",
                         "No screening"),
                pos=c(4,4,3,2,2,2,1))
 with(d, {
     plot(QALE, Costs,
          xlim=c(min(QALE)-0.0002,max(QALE)+0.0009),
-         ylim=c(240,325),
+         ## ylim=c(240,325),
          ylab="Life-time discounted costs (€)",
          xlab="Life-time discounted utilities (QALYs)")
     text(QALE, Costs, labels=labels,pos=pos)
     })
-with(d[c(7,2,6), ], lines(QALE, Costs))
+with(d[c(7,2,5), ], lines(QALE, Costs))
 
 ICER(strategy2, strategy7, perspective="healthsector.costs")
-ICER(strategy6, strategy2, perspective="healthsector.costs")
+ICER(strategy2, strategy5, perspective="healthsector.costs")
 ICER(strategy2, strategy7, perspective="healthsector.costs", from=35)
 ICER(strategy6, strategy2, perspective="healthsector.costs", from=35)
 

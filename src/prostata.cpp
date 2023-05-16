@@ -538,10 +538,10 @@ namespace fhcrc_example {
         break;
       case germany_2021:
         if (now() >= in->parameter("start_screening")) {
-	  if (neg_mri && now()+1.0 <= in->parameter("stop_screening"))
-	    scheduleAt(now() + 1.0, toDRE);
-	  else if (neg_bx && now()+1.0 <= in->parameter("stop_screening"))
-	    scheduleAt(now() + 1.0, toDRE);
+	  if (neg_mri && now()+in->parameter("germany_neg_mri_interval") <= in->parameter("stop_screening"))
+	    scheduleAt(now() + in->parameter("germany_neg_mri_interval"), toDRE);
+	  else if (neg_bx && now()+in->parameter("germany_neg_bx_interval") <= in->parameter("stop_screening"))
+	    scheduleAt(now() + in->parameter("germany_neg_bx_interval"), toDRE);
           else if (psa < in->parameter("risk_psa_threshold_lower") &&
 	      now()+in->parameter("risk_lower_interval") <= in->parameter("stop_screening"))
             scheduleAt(now() + in->parameter("risk_lower_interval"), toDRE);
@@ -1232,8 +1232,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (dre_result)
       scheduleAt(now(), toScreen); // assumes all DRE+ then have an immediate PSA test
     else {
-      if (dre_annual && now()+1.0 < in->parameter("stop_screening"))
-	scheduleAt(now()+1.0, toDRE);
+      if (dre_annual && now() + in->parameter("dre_annual_interval") < in->parameter("stop_screening"))
+	scheduleAt(now()+in->parameter("dre_annual_interval"), toDRE);
       else if (dre_2_3 && now()+2.5 < in->parameter("stop_screening"))
 	scheduleAt(now()+2.5, toDRE);
       // else no repeat DRE (strong assumption)

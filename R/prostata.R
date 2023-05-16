@@ -345,13 +345,16 @@ FhcrcParameters <- list(
     MRInegSBx=FALSE,              # No SBx for MRI- (by default)
     rescreenDoubleNeg = FALSE,    # defines whether MRI-/Bx- men should move to rescreening (cf. repeat PSA and Bx within ~12 months)
     indiv_reports = FALSE,        # should the cost and standard reports include individual values?
-    startReportAge = 0.0,          # Age to start reporting (currently only means_utilities and means_costs)
+    startReportAge = 0.0,         # Age to start reporting (currently only means_utilities and means_costs)
     weibull_onset = FALSE,        # flag to use Weibull-distributed onset
     weibull_onset_shape = 2,      # shape; values (0,Inf)
     weibull_onset_scale= 40,      # scale; values (0,Inf)
     frailty = FALSE,              # assume a frailty distribution on the onset distribution?
     grs_variance = 0.68,          # Callender et al (2019)
-    other_variance = 1.14         # total variance = 1.82 from Kicinski et al (2011; https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0027130)
+    other_variance = 1.14,        # total variance = 1.82 from Kicinski et al (2011; https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0027130)
+    dre_annual_interval = 1,      # rescreening interval if dre_annual (allow for longer interval under germany_2021)
+    germany_neg_mri_interval = 1, # rescreening interval for negative MRI (currently only for germany_2021)
+    germany_neg_bx_interval = 1 # rescreening interval for negative Bx (currently only for germany_2021)
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]

@@ -2,7 +2,7 @@
 
 ## Strategies
 
-TrustParameters <- function(year=2020, MRI_screen=TRUE, DRE=FALSE) {
+TrustParameters <- function(year=2020, MRI_diagnostics=TRUE, DRE=FALSE, MRI_patient=TRUE) {
     modifyList(ShuangParameters(year),
                list(start_screening = 45,
                     stop_screening = 75,
@@ -14,8 +14,9 @@ TrustParameters <- function(year=2020, MRI_screen=TRUE, DRE=FALSE) {
                     risk_upper_interval = 1,
                     psaThreshold = 4,
                     psaThresholdBiopsyFollowUp = 4, # is this correct??
-                    MRI_screen = MRI_screen,
-                    active_surveillance_cost_scale_first_two_years = if (MRI_screen) 1214.41/455.83 else 693.40/283.49,
+                    MRI_screen = MRI_diagnostics,
+                    MRI_clinical = MRI_diagnostics,
+                    active_surveillance_cost_scale_first_two_years = if (MRI_patient) 1214.41/455.83 else 693.40/283.49,
                     cost_parameters =  c("Invitation" = 0,                         # Invitation letter
                                          "Formal PSA" = 29.15,                        # 
                                          "Formal panel" =  29.15,                     # 
@@ -28,8 +29,8 @@ TrustParameters <- function(year=2020, MRI_screen=TRUE, DRE=FALSE) {
                                          "Assessment" = 19.54,                     # Urologist consultation
                                          "Prostatectomy" = 10927.37,               # Robot assisted surgery
                                          "Radiation therapy" = 8872.83,            # Radiation therapy
-                                         "Active surveillance - yearly - w/o MRI" = 283.49, # Urology visit and nurse visit
-                                         "Active surveillance - yearly - with MRI" = 455.83, # Urology visit and nurse visit
+                                         "Active surveillance - yearly - w/o MRI"  = if (MRI_patient) 455.83 else 283.49, # Urology visit and nurse visit
+                                         "Active surveillance - yearly - with MRI" = if (MRI_patient) 455.83 else 283.49, # Urology visit and nurse visit
                                          "ADT+chemo" = 145216/10,                  # Drug treatment for metastasis
                                          "Post-Tx follow-up - yearly first" = 2*410.14 - 144.57, # Urologist and nurse consultation (double counts for costs in the first two years and adjusts)
                                          "Post-Tx follow-up - yearly after" = 144.57,  # PSA test sampling

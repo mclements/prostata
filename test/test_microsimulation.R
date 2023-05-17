@@ -3,6 +3,19 @@
 ## microsimulation:::.testPackage()
 
 
+## Trust: probabilistic analysis
+4/19
+set.seed(12345)
+sims1 = rbinom(1e5,19,4/19)/19
+##
+library(boot)
+y=c(rep(1,4),rep(0,19-4))
+boot1 = boot(y, function(y,i) sum(y[i])/length(y), R=100000)
+##
+par(mfrow=1:2)
+plot(table(boot1$t[,1]))
+plot(table(sims1))
+
 ## Base strategies
 library(prostata)
 if (FALSE)
@@ -145,7 +158,7 @@ incidence_1999_2019 =
 if (FALSE) {
     n = 1e5
     set.seed(12345)
-    parm = prostata:::TrustParameters(MRI_screen=FALSE)
+    parm = prostata:::TrustParameters(MRI_diagnostics=FALSE)
     parm$prtx = prostata:::germany_observed_tables$prtx
     sim1 = callFhcrc(n, screen="germany_observed",
                      pop=1950,
@@ -267,7 +280,7 @@ mortality_2014_2019_mean =
 set.seed(12345)
 sim1 = callFhcrc(1e5, screen="germany_observed",
                  pop=1950,
-                 parm=modifyList(prostata:::TrustParameters(MRI_screen=FALSE),
+                 parm=modifyList(prostata:::TrustParameters(MRI_diagnostics=FALSE),
                                             prostata:::germany_2021_tables) |> modifyList(fitted),
                  mc.cores=6)
 
@@ -277,7 +290,7 @@ sim1 = callFhcrc(1e5, screen="germany_observed",
 set.seed(12345)
 sim1 = callFhcrc(1e5, screen="germany_2021",
                  pop=1950,
-                 parm=modifyList(modifyList(prostata:::TrustParameters(MRI_screen=TRUE),
+                 parm=modifyList(modifyList(prostata:::TrustParameters(MRI_diagnostics=TRUE),
                                             germany_2021_tables),
                                  list(stop_screening=75,
                                       weibull_onset=TRUE)) |> modifyList(fitted),
@@ -285,7 +298,7 @@ sim1 = callFhcrc(1e5, screen="germany_2021",
 set.seed(12345)
 sim2 = callFhcrc(1e5, screen="germany_observed",
                  pop=1950,
-                 parm=modifyList(modifyList(prostata:::TrustParameters(MRI_screen=FALSE),
+                 parm=modifyList(modifyList(prostata:::TrustParameters(MRI_diagnostics=FALSE),
                                             prostata:::germany_observed_tables),
                                  list(stop_screening=75,
                                       weibull_onset=TRUE)) |> modifyList(fitted),
@@ -299,7 +312,7 @@ legend("topleft", legend=c("Germany 2018 guidelines","Germany observed"),
 ## Optimisation code:)
 library(minqa)
 library(dplyr)
-Base = modifyList(modifyList(prostata:::TrustParameters(MRI_screen=FALSE),
+Base = modifyList(modifyList(prostata:::TrustParameters(MRI_diagnostics=FALSE),
                              germany_observed_tables),
                   list(stop_screening=75, weibull_onset=TRUE))
 mc.cores=3

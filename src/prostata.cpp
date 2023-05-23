@@ -1301,6 +1301,18 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	  lost_productivity("Biopsy");
 	}
       }
+      else if (in->bparameter("AI_assisted_pathology")) {
+	// reduced costs from AI that depends on ISUP grade
+	if (this->ext_grade == ext::Healthy)
+	  add_costs("Combined biopsy", Direct, 1-in->parameter("reduced_bx_cost_neg"));
+	else if (this->ext_grade == ext::Gleason_le_6)
+	  add_costs("Combined biopsy", Direct, 1-in->parameter("reduced_bx_cost_1"));
+	else if (this->ext_grade == ext::Gleason_7)
+	  add_costs("Combined biopsy", Direct, 1-in->parameter("reduced_bx_cost_2"));
+	else if (this->ext_grade == ext::Gleason_ge_8)
+	  add_costs("Combined biopsy", Direct, 1-in->parameter("reduced_bx_cost_4"));
+	lost_productivity("Combined biopsy");
+      }
       else { // general case
 	add_costs("Combined biopsy");
 	lost_productivity("Combined biopsy");
@@ -1342,8 +1354,11 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	if (this->ext_grade == ext::Gleason_le_6) {
 	  Bx_missed = (u2 < in->parameter("pTBxG0ifG1_MRIpos"));
 	}
-	if (this->ext_grade == ext::Gleason_7) {
+	else if (this->ext_grade == ext::Gleason_7) {
 	  Bx_missed = (u2 < in->parameter("pTBxG0ifG2_MRIpos"));
+	}
+	else if (this->ext_grade == ext::Gleason_ge_8) {
+	  Bx_missed = (u2 < in->parameter("pTBxG0ifG4plus_MRIpos"));
 	}
       } else { // SBx compared with MRI
 	if (this->ext_grade == ext::Gleason_le_6) {

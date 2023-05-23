@@ -354,7 +354,15 @@ FhcrcParameters <- list(
     other_variance = 1.14,        # total variance = 1.82 from Kicinski et al (2011; https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0027130)
     dre_annual_interval = 1,      # rescreening interval if dre_annual (allow for longer interval under germany_2021)
     germany_neg_mri_interval = 1, # rescreening interval for negative MRI (currently only for germany_2021)
-    germany_neg_bx_interval = 1 # rescreening interval for negative Bx (currently only for germany_2021)
+    germany_neg_bx_interval = 1,  # rescreening interval for negative Bx (currently only for germany_2021)
+    AI_assisted_pathology = FALSE, # self-explanatory? 
+    pTBxG0ifG1_MRIpos=0,          # Pr(TBx gives ISUP 0 | ISUP 1, MRI+)
+    pTBxG0ifG2_MRIpos=0,          # Pr(TBx gives ISUP 0 | ISUP 2-3, MRI+) -- NB: actually G2 and G3
+    pTBxG0ifG4plus_MRIpos=0,      # Pr(TBx gives ISUP 0 | ISUP 4+, MRI+)
+    reduced_bx_cost_neg=0,        # reduction in biopsy costs for a man who is negative
+    reduced_bx_cost_1=0,          # reduction in biopsy costs for a man who is ISUP 1
+    reduced_bx_cost_2=0,          # reduction in biopsy costs for a man who is ISUP 2-3
+    reduced_bx_cost_4=0           # reduction in biopsy costs for a man who is ISUP 4+
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]

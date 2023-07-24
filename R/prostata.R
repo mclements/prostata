@@ -355,6 +355,7 @@ FhcrcParameters <- list(
     frailty = FALSE,              # assume a frailty distribution on the onset distribution?
     grs_variance = 0.68,          # Callender et al (2019)
     other_variance = 1.14,        # total variance = 1.82 from Kicinski et al (2011; https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0027130)
+    grs_risk_threshold = 0.075,   # GRS ten-year risk threshold
     dre_annual_interval = 1,      # rescreening interval if dre_annual (allow for longer interval under germany_2021)
     germany_neg_mri_interval = 1, # rescreening interval for negative MRI (currently only for germany_2021)
     germany_neg_bx_interval = 1,  # rescreening interval for negative Bx (currently only for germany_2021)

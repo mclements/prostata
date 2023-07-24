@@ -63,7 +63,7 @@ namespace fhcrc_example {
                  introduced_screening_only, introduced_screening_preference, introduced_screening,
 		 stopped_screening, cap_control, cap_study, sthlm3_mri_arm,
 		 grs_stratified, grs_stratified_age, germany_2021, germany_observed,
-		 probase};
+		 probase, grs_stratified_ancestry};
 
   enum treatment_t {no_treatment, CM, RP, RT};
 
@@ -248,7 +248,7 @@ namespace fhcrc_example {
     double txhaz, psa_last_screen;
     int id, index;
     double cohort, rescreening_frailty, ageEntry, grs_frailty, other_frailty, ageFirstScreen,
-      age_dx;
+      age_dx, rr_ancestry;
     bool everPSA, previousNegativeBiopsy, organised, previousFollowup, MRIpos, everGRS,
       dre_annual, dre_2_3;
     FhcrcPerson(SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950, const int index = 0) :
@@ -566,6 +566,7 @@ namespace fhcrc_example {
           scheduleAt(now() + in->parameter("screening_interval"), toScreen);
         break;
       case grs_stratified:
+      case grs_stratified_ancestry:
         if (now() + in->parameter("screening_interval") <= in->parameter("stop_screening"))
           scheduleAt(now() + in->parameter("screening_interval"), toScreen);
         break;
@@ -702,19 +703,26 @@ void FhcrcPerson::init() {
     double grs_log_sd = std::sqrt(in->parameter("grs_variance"));
     double other_log_mean = -in->parameter("other_variance")/2;
     double other_log_sd = std::sqrt(in->parameter("other_variance"));
-    grs_frailty = R::rlnorm(grs_log_mean, grs_log_sd);
-    other_frailty = R::rlnorm(other_log_mean, other_log_sd);
+    grs_frailty = R::rlnorm(grs_log_mean, std::max(1.0e-100,grs_log_sd));
+    other_frailty = R::rlnorm(other_log_mean, std::max(1.0e-100,other_log_sd));
   } else {
     grs_frailty = 1.0;
     other_frailty = 1.0;
   }
+  if (in->bparameter("ancestry")) {
+    double u = R::runif(0.0, 1.0);
+    if (u<in->parameter("p_black")) rr_ancestry=in->parameter("rr_black");
+    else if (u<in->parameter("p_black")+in->parameter("p_asian"))
+      rr_ancestry=in->parameter("rr_asian");
+    else rr_ancestry=1.0; // White
+  } else rr_ancestry=1.0;
   if (R::runif(0.0, 1.0) <= in->parameter("susceptible")) { // portion susceptible
     if (in->bparameter("weibull_onset")) {
       t0 = rweibull_frailty(in->parameter("weibull_onset_shape"),
 			    in->parameter("weibull_onset_scale"),
-			    grs_frailty*other_frailty);
+			    rr_ancestry*grs_frailty*other_frailty);
     } else {
-      t0 = sqrt(2*R::rexp(1.0)/(in->parameter("g0")*grs_frailty*other_frailty)); // is susceptible
+      t0 = sqrt(2*R::rexp(1.0)/(in->parameter("g0")*grs_frailty*other_frailty*rr_ancestry)); // is susceptible
     }
   }
   else
@@ -801,6 +809,12 @@ void FhcrcPerson::init() {
     case screen70:
       scheduleAt(70.0,toScreen);
       break;
+    case grs_stratified_ancestry: {
+      double startAge = callenderStartAge(grs_frailty*rr_ancestry,
+					  in->parameter("grs_risk_threshold"));
+      if (startAge != R_PosInf)
+	scheduleAt(startAge,toScreen);
+    } break;
     case grs_stratified_age:
     case grs_stratified: {
       double startAge = callenderStartAge(grs_frailty, in->parameter("grs_risk_threshold"));
@@ -1113,7 +1127,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       out->psarecord.record("onset",double(onset_p()));
       out->psarecord.record("detectable",double(detectable));
     }
-    if ((in->screen==grs_stratified || in->screen==grs_stratified_age) && !everGRS) {
+    if ((in->screen==grs_stratified || in->screen==grs_stratified_age ||
+	 in->screen==grs_stratified_ancestry) && !everGRS) {
       add_costs("Polygenic risk stratification"); // once-only cost
       everGRS = true;
     }
@@ -1304,16 +1319,16 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       else if (in->bparameter("AI_assisted_pathology")) {
 	// reduced costs from AI that depends on ISUP grade
 	if (this->ext_grade == ext::Healthy)
-	  add_costs("Combined biopsy", Direct, 1-in->parameter("reduced_bx_cost_neg"));
+	  add_costs("Biopsy", Direct, 1.0-in->parameter("pReducedBxCostG0"));
 	else if (this->ext_grade == ext::Gleason_le_6)
-	  add_costs("Combined biopsy", Direct, 1-in->parameter("reduced_bx_cost_1"));
+	  add_costs("Biopsy", Direct, 1.0-in->parameter("pReducedBxCostG1"));
 	else if (this->ext_grade == ext::Gleason_7)
-	  add_costs("Combined biopsy", Direct, 1-in->parameter("reduced_bx_cost_2"));
+	  add_costs("Biopsy", Direct, 1.0-in->parameter("pReducedBxCostG2"));
 	else if (this->ext_grade == ext::Gleason_ge_8)
-	  add_costs("Combined biopsy", Direct, 1-in->parameter("reduced_bx_cost_4"));
-	lost_productivity("Combined biopsy");
+	  add_costs("Biopsy", Direct, 1.0-in->parameter("pReducedBxCostG4plus"));
+	lost_productivity("Biopsy");
       }
-      else { // general case
+      else { // general case -- it may *not* be a combined biopsy:(
 	add_costs("Combined biopsy");
 	lost_productivity("Combined biopsy");
       }
@@ -1364,9 +1379,19 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	if (this->ext_grade == ext::Gleason_le_6) {
 	  Bx_missed = (u2 < in->parameter("pSBxG0ifG1"));
 	}
-	if (this->ext_grade == ext::Gleason_7) {
+	else if (this->ext_grade == ext::Gleason_7) {
 	  Bx_missed = (u2 < in->parameter("pSBxG0ifG2"));
 	}
+	else if (this->ext_grade == ext::Gleason_ge_8) {
+	  Bx_missed = (u2 < in->parameter("pSBxG0ifG4plus"));
+	}
+      }
+      if (in->bparameter("AI_assisted_pathology")) {
+	double pAIpos =
+	  (this->ext_grade == ext::Gleason_le_6) ? in->parameter("AIposG1") :
+	  (this->ext_grade == ext::Gleason_7)    ? in->parameter("AIposG2") :
+	  in->parameter("AIposG4plus");
+	Bx_missed = Bx_missed || (R::runif(0.0,1.0) < 1.0-pAIpos);
       }
       if (!Bx_missed)
 	scheduleAt(now()+3.0/52.0, toScreenDiagnosis); // diagnosis three weeks after biopsy

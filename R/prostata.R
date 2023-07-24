@@ -362,7 +362,12 @@ FhcrcParameters <- list(
     reduced_bx_cost_neg=0,        # reduction in biopsy costs for a man who is negative
     reduced_bx_cost_1=0,          # reduction in biopsy costs for a man who is ISUP 1
     reduced_bx_cost_2=0,          # reduction in biopsy costs for a man who is ISUP 2-3
-    reduced_bx_cost_4=0           # reduction in biopsy costs for a man who is ISUP 4+
+    reduced_bx_cost_4=0,          # reduction in biopsy costs for a man who is ISUP 4+
+    ancestry = FALSE,             # include ancestry in natural history
+    p_black = 0.05,               # proportion Black by ancestry
+    p_asian = 0.05,               # proportion Asian by ancestry
+    rr_black = 2.62,              # proportion Black by ancestry (95% CI: 2.51, 2.73)
+    rr_asian = 0.497              # proportion Asian by ancestry (95% CI: 0.470, 0.524)
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]
@@ -1006,7 +1011,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                  "introduced_screening_only", "introduced_screening_preference",
                  "introduced_screening", "stopped_screening",
                  "cap_control", "cap_study", "sthlm3_mri_arm", "grs_stratified", "grs_stratified_age",
-                 "germany_2021", "germany_observed", "probase")
+                 "germany_2021", "germany_observed", "probase", "grs_stratified_ancestry")
     screen <- match.arg(screen, screenT)
     stopifnot(is.na(n) || is.integer(as.integer(n)))
     stopifnot(is.integer(as.integer(nLifeHistories)))

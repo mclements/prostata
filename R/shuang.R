@@ -157,12 +157,16 @@ ShuangParameters <- function(year=2018) {
         pMRIposG0=0.4515496,          # Pr(MRI+ | ISUP 0 || undetectable) 2020-03-23
         pMRIposG1=0.7145305,          # Pr(MRI+ | ISUP 1 && detectable) 2020-03-23
         pMRIposG2=0.9305352,          # Pr(MRI+ | ISUP 2+ && detectable) 2020-03-23
+        ## pMRIposG4plus=1,          # Pr(MRI+ | ISUP 4+ && detectable)
         pSBxG0ifG1=0.1402583,         # Pr(SBx gives ISUP 0 | ISUP 1) 2020-03-23
-        pSBxG0ifG2=0.1032593,         # Pr(SBx gives ISUP 0 | ISUP 2) 2020-03-23
+        pSBxG0ifG2=0.1032593,         # Pr(SBx gives ISUP 0 | ISUP 2-3) 2020-03-23
+        pSBxG0ifG4plus=0,             # Pr(SBx gives ISUP 0 | ISUP >= 4)
         pSBxG1ifG2=0.119,             # Pr(SBx gives ISUP 1 | ISUP 2) (not used)
         pTBxG0ifG1_MRIpos=0,          # Pr(TBx gives ISUP 0 | ISUP 1, MRI+) #Updated 2020-03-24 from Bx -> TBx
         pTBxG0ifG2_MRIpos=0,          # Pr(TBx gives ISUP 0 | ISUP 2, MRI+) #Updated 2020-03-24 from Bx -> TBx
-        pTBxG1ifG2_MRIpos=0,          # Pr(TBx gives ISUP 1 | ISUP 2, MRI+) (not used) #Updated 2020-03-24 from Bx -> TBx
+        pTBxG0ifG4plus_MRIpos=0,          # Pr(TBx gives ISUP 0 | ISUP >=4, MRI+) 
+        pTBxG1ifG2_MRIpos=0,          # Pr(TBx gives ISUP 1 | ISUP 2-3, MRI+) (not used) #Updated 2020-03-24 from Bx -> TBx
+        pTBxG1ifG4plus_MRIpos=0,          # Pr(TBx gives ISUP 1 | ISUP >=4, MRI+) (not used) #Updated 2020-03-24 from Bx -> TBx
         currency_rate = 1/10.2567,    # Riksbanken 2018
 
         mu0=c(0.002644, 0.000207, 9.5e-05, 0.00014, 0.000114, 5.6e-05, 6.4e-05, 9e-05, 5.5e-05, 6.4e-05,

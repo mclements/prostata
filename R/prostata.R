@@ -255,6 +255,7 @@ FhcrcParameters <- list(
                         + 2300                                    # From KUL price list
                         + 0.2 * 1539,                             # GP primary care
                         "Biopsy" = 4733,                          # Biopsy cost
+                        "Combined biopsy" = 4733,                 # NB: Biopsy cost *under MRI* (see shuang.R)
                         "Assessment" = 1794,                      # Urology assessment
                         "Prostatectomy" = 80000                   # Surgery
                         + 100000 * 0.25                           # Radiation therapy
@@ -277,7 +278,7 @@ FhcrcParameters <- list(
                         + 0.2 * 1539),                            # part of primary care visit
     active_surveillance_cost_scale_first_two_years = 1.0,         # cost scale for AS first two years (Trust: you owe me:)
     ## Swedish governmental report on organised PSA testing (p.23):
-    ## https://www.socialstyrelsen.se/SiteCollectionDocuments/2018-2-13-halsoekonomisk-analys.pdf
+    ## https://www.socialstyrelsen.se/globalassets/sharepoint-dokument/artikelkatalog/nationella-screeningprogram/2018-10-15-halsoekonomisk-analys.pdf
     production = data.frame(ages = c(0, 54, 64, 74),
                             values=apply(
                                 rbind(0.878, 0.756, 0.158, 0), # employment portion, full time
@@ -307,6 +308,7 @@ FhcrcParameters <- list(
                           "Opportunistic PSA" = 0.99,
                           "Opportunistic panel" = 0.99,
                           "Biopsy" = 0.90,
+                          "Combined biopsy" = 0.90, # assumed as per "Biopsy"
                           "Cancer diagnosis" = 0.80,
                           "Prostatectomy part 1" = 0.67,
                           "Prostatectomy part 2" = 0.77,
@@ -324,6 +326,7 @@ FhcrcParameters <- list(
                          "Opportunistic PSA" = 1/52,
                          "Opportunistic panel" = 1/52,
                          "Biopsy" = 3/52,
+                         "Combined biopsy" = 3/52, # assumed as per "Biopsy"
                          "Cancer diagnosis" = 1/12,
                          "Prostatectomy part 1" = 2/12,
                          "Prostatectomy part 2" = 10/12,

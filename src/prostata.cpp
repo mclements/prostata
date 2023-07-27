@@ -94,6 +94,10 @@ namespace fhcrc_example {
     return wrap(R::rllogis_trunc(as<double>(shape),as<double>(scale),as<double>(left)));
   }
 
+  // forward declaration: see util.cpp
+  void binorm_total(const double k, const double mu1, const double sd1,
+		    const double mu2, const double sd2, double *mean, double *sd);
+  
   typedef std::pair<int,string> CostKey; // (cost_type,cost_name)
   // typedef std::tuple<int,string,double> CostKey; // (cost_type,cost_name,cohort)
   class SimOutput {
@@ -110,7 +114,6 @@ namespace fhcrc_example {
   // SimOutput * out; // in callFhcrc
   // &out in the Person object
   // out->report etc
-
 
   typedef std::pair<double,double> Double;
   typedef Table<double,double,int,double> TablePrtx; // Age, DxY, G
@@ -703,8 +706,28 @@ void FhcrcPerson::init() {
     double grs_log_sd = std::sqrt(in->parameter("grs_variance"));
     double other_log_mean = -in->parameter("other_variance")/2;
     double other_log_sd = std::sqrt(in->parameter("other_variance"));
-    grs_frailty = R::rlnorm(grs_log_mean, std::max(1.0e-100,grs_log_sd));
-    other_frailty = R::rlnorm(other_log_mean, std::max(1.0e-100,other_log_sd));
+    if (in->parameter("grs_version")==1) {
+      grs_frailty = R::rlnorm(grs_log_mean, std::max(1.0e-100,grs_log_sd));
+      other_frailty = R::rlnorm(other_log_mean, std::max(1.0e-100,other_log_sd));
+    } else {
+      double total_frailty = R::rlnorm(other_log_mean+grs_log_mean,
+				       std::max(1.0e-100,std::sqrt(grs_log_sd*grs_log_sd+other_log_sd*other_log_sd)));
+      if (fabs(grs_log_sd)<1.0e-10) {
+	R::rlnorm(other_log_mean, other_log_sd); // For common random numbers
+	grs_frailty = 1.0;
+	other_frailty = total_frailty;
+      } else if (fabs(other_log_sd)<1.0e-10) {
+	R::rlnorm(grs_log_mean, grs_log_sd); // For common random numbers
+	grs_frailty = total_frailty;
+	other_frailty = 1.0;
+      } else {
+	double mean, sd;
+	binorm_total(log(total_frailty), grs_log_mean, grs_log_sd, other_log_mean,
+		     other_log_sd, &mean, &sd);
+	grs_frailty = R::rlnorm(mean, std::max(1.0e-100,sd));
+	other_frailty = total_frailty/grs_frailty;
+      }
+    }
   } else {
     grs_frailty = 1.0;
     other_frailty = 1.0;

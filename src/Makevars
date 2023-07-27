@@ -3,7 +3,7 @@ PKG_LIBS = `$(R_HOME)/bin/Rscript -e "microsimulation:::LdFlags()"`
 PKG_CXXFLAGS = -I. -DBOOST_NO_AUTO_PTR
 PKG_CFLAGS = -I.
 
-OBJECTS = prostata.o prostata-init.o
+OBJECTS = prostata.o prostata-init.o utils.o
 
 strippedLib: $(SHLIB)
 	if test -e "/usr/bin/strip"; then /usr/bin/strip --strip-debug $(SHLIB); fi

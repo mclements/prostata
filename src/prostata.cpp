@@ -1411,9 +1411,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       }
       if (in->bparameter("AI_assisted_pathology")) {
 	double pAIpos =
-	  (this->ext_grade == ext::Gleason_le_6) ? in->parameter("AIposG1") :
-	  (this->ext_grade == ext::Gleason_7)    ? in->parameter("AIposG2") :
-	  in->parameter("AIposG4plus");
+	  (this->ext_grade == ext::Gleason_le_6) ? in->parameter("pAIposG1") :
+	  (this->ext_grade == ext::Gleason_7)    ? in->parameter("pAIposG2") :
+	  in->parameter("pAIposG4plus");
 	Bx_missed = Bx_missed || (R::runif(0.0,1.0) < 1.0-pAIpos);
       }
       if (!Bx_missed)

@@ -16,7 +16,7 @@ namespace fhcrc_example {
     for (int i=0; i<n; ++i) 
       x[i] = x[i]*R::dnorm(x[i], p->mu1, p->sd1, 0)*R::dnorm(p->k-x[i], p->mu2, p->sd2, 0)/p->norm;
   }
-  void binorm_total_sd(double *x, int n, void *ex) {
+  void binorm_total_var(double *x, int n, void *ex) {
     sbinorm_total *p = (sbinorm_total *) ex;
     for (int i=0; i<n; ++i) 
       x[i] = (x[i]-p->mean)*(x[i]-p->mean)*R::dnorm(x[i], p->mu1, p->sd1, 0)*R::dnorm(p->k-x[i], p->mu2, p->sd2, 0)/p->norm;
@@ -42,13 +42,13 @@ namespace fhcrc_example {
 	   &limit, &lenw, &last,
 	   iwork, work);
     p.mean = result;
-    Rdqagi(binorm_total_sd, (void *) &p, &bound, &inf,
+    Rdqagi(binorm_total_var, (void *) &p, &bound, &inf,
 	   &epsabs, &epsrel,
 	   &result, &abserr, &neval, &ier,
 	   &limit, &lenw, &last,
 	   iwork, work);
     *mean = p.mean;
-    *sd = result;
+    *sd = std::sqrt(result);
   }
 
 }

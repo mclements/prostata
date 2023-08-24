@@ -63,7 +63,8 @@ namespace fhcrc_example {
                  introduced_screening_only, introduced_screening_preference, introduced_screening,
 		 stopped_screening, cap_control, cap_study, sthlm3_mri_arm,
 		 grs_stratified, grs_stratified_age, germany_2021, germany_observed,
-		 probase, grs_stratified_ancestry};
+		 probase, grs_stratified_ancestry, grs_stratified_p,
+		 grs_stratified_ancestry_p};
 
   enum treatment_t {no_treatment, CM, RP, RT};
 
@@ -251,7 +252,7 @@ namespace fhcrc_example {
     double txhaz, psa_last_screen;
     int id, index;
     double cohort, rescreening_frailty, ageEntry, grs_frailty, other_frailty, ageFirstScreen,
-      age_dx, rr_ancestry;
+      age_dx, rr_ancestry, grs_p, grs_ancestry_p;
     bool everPSA, previousNegativeBiopsy, organised, previousFollowup, MRIpos, everGRS,
       dre_annual, dre_2_3;
     FhcrcPerson(SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950, const int index = 0) :
@@ -570,6 +571,8 @@ namespace fhcrc_example {
         break;
       case grs_stratified:
       case grs_stratified_ancestry:
+      case grs_stratified_p:
+      case grs_stratified_ancestry_p:
         if (now() + in->parameter("screening_interval") <= in->parameter("stop_screening"))
           scheduleAt(now() + in->parameter("screening_interval"), toScreen);
         break;
@@ -701,10 +704,18 @@ void FhcrcPerson::init() {
   // => mu=-sigma^2/2 , sd=sqrt(sigma^2)
   // R: local({y=rlnorm(1e5,-1.68/2,sqrt(1.68)); c(mean(y), var(y))})
   // R: local({y=rlnorm(1e5,-1.68/2,sqrt(1.68)); plot(density(y,from=0),xlim=c(0,5))})
+  if (in->bparameter("ancestry")) {
+    double u = R::runif(0.0, 1.0);
+    if (u<in->parameter("p_black")) rr_ancestry=in->parameter("rr_black");
+    else if (u<in->parameter("p_black")+in->parameter("p_asian"))
+      rr_ancestry=in->parameter("rr_asian");
+    else rr_ancestry=1.0; // White
+  } else rr_ancestry=1.0;
   if (in->bparameter("frailty")) {
-    double grs_log_mean = -in->parameter("grs_variance")/2;
+    // ancestry-specific results
+    double grs_log_mean = -in->parameter("grs_variance")/2 + std::log(rr_ancestry);
     double grs_log_sd = std::sqrt(in->parameter("grs_variance"));
-    double other_log_mean = -in->parameter("other_variance")/2;
+    double other_log_mean = -in->parameter("other_variance")/2 + std::log(rr_ancestry);
     double other_log_sd = std::sqrt(in->parameter("other_variance"));
     if (in->parameter("grs_version")==1) {
       grs_frailty = R::rlnorm(grs_log_mean, std::max(1.0e-100,grs_log_sd));
@@ -718,34 +729,35 @@ void FhcrcPerson::init() {
 	other_frailty = total_frailty;
       } else if (fabs(other_log_sd)<1.0e-10) {
 	R::rlnorm(grs_log_mean, grs_log_sd); // For common random numbers
-	grs_frailty = total_frailty;
 	other_frailty = 1.0;
+	grs_frailty = total_frailty;
       } else {
 	double mean, sd;
+	// for code, see utils.cpp
 	binorm_total(log(total_frailty), grs_log_mean, grs_log_sd, other_log_mean,
 		     other_log_sd, &mean, &sd);
 	grs_frailty = R::rlnorm(mean, std::max(1.0e-100,sd));
 	other_frailty = total_frailty/grs_frailty;
       }
     }
+    // ignoring ancestry -- assumes a mean frailty of 1
+    grs_p = (grs_frailty < 1.0e-10) ? 0.0 :
+      R::pnorm(log(grs_frailty), grs_log_mean-log(rr_ancestry), grs_log_sd, 1, 0);
+    // accounting for ancestry
+    grs_ancestry_p = grs_frailty < 1.0e-10 ? 0.0 :
+      R::pnorm(log(grs_frailty), grs_log_mean, grs_log_sd, 1, 0);
   } else {
     grs_frailty = 1.0;
     other_frailty = 1.0;
+    grs_ancestry_p = grs_p = 0.5;
   }
-  if (in->bparameter("ancestry")) {
-    double u = R::runif(0.0, 1.0);
-    if (u<in->parameter("p_black")) rr_ancestry=in->parameter("rr_black");
-    else if (u<in->parameter("p_black")+in->parameter("p_asian"))
-      rr_ancestry=in->parameter("rr_asian");
-    else rr_ancestry=1.0; // White
-  } else rr_ancestry=1.0;
   if (R::runif(0.0, 1.0) <= in->parameter("susceptible")) { // portion susceptible
     if (in->bparameter("weibull_onset")) {
       t0 = rweibull_frailty(in->parameter("weibull_onset_shape"),
 			    in->parameter("weibull_onset_scale"),
-			    rr_ancestry*grs_frailty*other_frailty);
+			    grs_frailty*other_frailty);
     } else {
-      t0 = sqrt(2*R::rexp(1.0)/(in->parameter("g0")*grs_frailty*other_frailty*rr_ancestry)); // is susceptible
+      t0 = sqrt(2*R::rexp(1.0)/(in->parameter("g0")*grs_frailty*other_frailty)); // is susceptible
     }
   }
   else
@@ -832,16 +844,25 @@ void FhcrcPerson::init() {
     case screen70:
       scheduleAt(70.0,toScreen);
       break;
+    case grs_stratified_p:
+      if (grs_p > 1-in->parameter("grs_p_threshold"))
+	scheduleAt(in->parameter("start_screening"),toScreen);
+      break;
+    case grs_stratified_ancestry_p:
+      if (grs_ancestry_p > 1-in->parameter("grs_p_threshold"))
+	scheduleAt(in->parameter("start_screening"),toScreen);
+      break;
     case grs_stratified_ancestry: {
-      double startAge = callenderStartAge(grs_frailty*rr_ancestry,
+      double startAge = callenderStartAge(grs_frailty,
 					  in->parameter("grs_risk_threshold"));
-      if (startAge != R_PosInf)
+      if (startAge != R_PosInf && startAge < in->parameter("stop_screening"))
 	scheduleAt(startAge,toScreen);
     } break;
     case grs_stratified_age:
     case grs_stratified: {
-      double startAge = callenderStartAge(grs_frailty, in->parameter("grs_risk_threshold"));
-      if (startAge != R_PosInf)
+      // start age is not adjusted for ancestry -- hence the division
+      double startAge = callenderStartAge(grs_frailty/rr_ancestry, in->parameter("grs_risk_threshold"));
+      if (startAge != R_PosInf && startAge < in->parameter("stop_screening"))
 	scheduleAt(startAge,toScreen);
     } break;
     case germany_2021:
@@ -877,6 +898,23 @@ void FhcrcPerson::init() {
       REprintf("Screening not matched: %i\n",in->screen);
       break;
     }
+
+    // GRS-related costs
+    switch(in->screen) {
+    case grs_stratified_p:
+    case grs_stratified_ancestry_p:
+    case grs_stratified_ancestry:
+    case grs_stratified_age:
+    case grs_stratified: 
+      if (in->parameter("grs_version")!=1) {
+	add_costs("Polygenic risk stratification");
+	everGRS=true;
+      }
+      break;
+    default:
+      break;
+    }
+    
   }
 
   // schedule screening events that already incorporate screening participation
@@ -1151,8 +1189,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       out->psarecord.record("detectable",double(detectable));
     }
     if ((in->screen==grs_stratified || in->screen==grs_stratified_age ||
-	 in->screen==grs_stratified_ancestry) && !everGRS) {
-      add_costs("Polygenic risk stratification"); // once-only cost
+	 in->screen==grs_stratified_ancestry) && !everGRS && in->parameter("grs_version")==1) {
+      add_costs("Polygenic risk stratification"); // once-only cost (this should be for everyone:()
       everGRS = true;
     }
     if (!everPSA) {

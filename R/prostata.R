@@ -353,9 +353,10 @@ FhcrcParameters <- list(
     weibull_onset_shape = 2,      # shape; values (0,Inf)
     weibull_onset_scale= 40,      # scale; values (0,Inf)
     frailty = FALSE,              # assume a frailty distribution on the onset distribution?
-    grs_variance = 0.68,          # Callender et al (2019)
-    other_variance = 1.14,        # total variance = 1.82 from Kicinski et al (2011; https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0027130)
+    grs_variance = 0.68,          # Callender et al (2019) -- variance on the log-frailty scale
+    other_variance = 1.14,        # total variance = 1.82 from Kicinski et al (2011; https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0027130) -- variance on the log-frailty scale
     grs_risk_threshold = 0.075,   # GRS ten-year risk threshold
+    grs_p_threshold = 0.9,        # GRS probability threshold -- *include* this proportion from testing
     grs_version = 1,              # Edna is version 1; Padraig is version != 1
     dre_annual_interval = 1,      # rescreening interval if dre_annual (allow for longer interval under germany_2021)
     germany_neg_mri_interval = 1, # rescreening interval for negative MRI (currently only for germany_2021)
@@ -1016,7 +1017,8 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                  "introduced_screening_only", "introduced_screening_preference",
                  "introduced_screening", "stopped_screening",
                  "cap_control", "cap_study", "sthlm3_mri_arm", "grs_stratified", "grs_stratified_age",
-                 "germany_2021", "germany_observed", "probase", "grs_stratified_ancestry")
+                 "germany_2021", "germany_observed", "probase", "grs_stratified_ancestry",
+                 "grs_stratified_p", "grs_stratified_ancestry_p")
     screen <- match.arg(screen, screenT)
     stopifnot(is.na(n) || is.integer(as.integer(n)))
     stopifnot(is.integer(as.integer(nLifeHistories)))

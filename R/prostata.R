@@ -373,7 +373,8 @@ FhcrcParameters <- list(
     p_black = 0.05,               # proportion Black by ancestry
     p_asian = 0.05,               # proportion Asian by ancestry
     rr_black = 2.62,              # proportion Black by ancestry (95% CI: 2.51, 2.73)
-    rr_asian = 0.497              # proportion Asian by ancestry (95% CI: 0.470, 0.524)
+    rr_asian = 0.497,             # proportion Asian by ancestry (95% CI: 0.470, 0.524)
+    negbx_to_regular = FALSE      # flag for whether to return to regular screening after a negative biopsy
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]

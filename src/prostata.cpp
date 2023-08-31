@@ -1472,7 +1472,11 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	  organised = false;
         rescreening_schedules(psa_last_screen, organised, mixed_programs, false, true);
         previousNegativeBiopsy = false; // if going to rescreening, should their previous negative Bx be forgotten? (Currently only used here)
+      } else if (in->bparameter("negbx_to_regular")) {
+	// return to regular screening -- *not* current practice
+        rescreening_schedules(psa_last_screen, organised, mixed_programs, false, true);
       } else {
+	// negative biopsy in Stockholm - current practice
         previousNegativeBiopsy=true;
         // Competing risk for event following a negative biopsy
         double timeToPSA = R::rlnorm(in->tableNegBiopsyToPSAmeanlog(age),

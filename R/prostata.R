@@ -275,7 +275,8 @@ FhcrcParameters <- list(
                         + 68000 * 3,                              # Drugs for spread disease
                         "Polygenic risk stratification" = 250*12, # Callender et al (2021) with exchange rate of approximately 12
                         "Opportunistic DRE" = 349                 # DRE procedure in primary care
-                        + 0.2 * 1539),                            # part of primary care visit
+                        + 0.2 * 1539,                             # part of primary care visit
+                        "AI pathology" = 1000),                   # AI pathology costs
     active_surveillance_cost_scale_first_two_years = 1.0,         # cost scale for AS first two years (Trust: you owe me:)
     ## Swedish governmental report on organised PSA testing (p.23):
     ## https://www.socialstyrelsen.se/globalassets/sharepoint-dokument/artikelkatalog/nationella-screeningprogram/2018-10-15-halsoekonomisk-analys.pdf
@@ -374,7 +375,10 @@ FhcrcParameters <- list(
     p_asian = 0.05,               # proportion Asian by ancestry
     rr_black = 2.62,              # proportion Black by ancestry (95% CI: 2.51, 2.73)
     rr_asian = 0.497,             # proportion Asian by ancestry (95% CI: 0.470, 0.524)
-    negbx_to_regular = FALSE      # flag for whether to return to regular screening after a negative biopsy
+    negbx_to_regular = FALSE,     # flag for whether to return to regular screening after a negative biopsy
+    pAIposG1=0.992,               # Pr(AI+ | ISUP 1, sensitivity = 0.99) Henrik's data output
+    pAIposG2=1,                   # Pr(AI+ | ISUP 2-3, sensitivity = 0.99) Henrik's data output
+    pAIposG4plus=1                # Pr(AI+ | ISUP 4+, sensitivity = 0.99) Henrik's data output
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]

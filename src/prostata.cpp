@@ -281,6 +281,7 @@ namespace fhcrc_example {
     void scheduleUtilityChange(double from, double to, double utility);
     bool onset_p();
     double onset();
+    void AI_assisted_pathology();
   };
 
   /**
@@ -291,7 +292,7 @@ namespace fhcrc_example {
     double yt = t<t0 ? exp(beta0+beta1*t) : exp(beta0+beta1*t+beta2*(t-t0));
     return yt;
   }
-
+ 
   /**
       Calculate the *measured* PSA value at a given age (** NB: this used to be t=age-35 **)
   */
@@ -628,6 +629,19 @@ namespace fhcrc_example {
           in->tableBiopsySensitivity(2000.0))));
   }
 
+  void FhcrcPerson::AI_assisted_pathology() {
+    if (this->ext_grade == ext::Healthy)
+      add_costs("Biopsy", Direct, 1.0-in->parameter("pReducedBxCostG0"));
+    else if (this->ext_grade == ext::Gleason_le_6)
+      add_costs("Biopsy", Direct, 1.0-in->parameter("pReducedBxCostG1"));
+    else if (this->ext_grade == ext::Gleason_7)
+      add_costs("Biopsy", Direct, 1.0-in->parameter("pReducedBxCostG2"));
+    else if (this->ext_grade == ext::Gleason_ge_8)
+      add_costs("Biopsy", Direct, 1.0-in->parameter("pReducedBxCostG4plus"));
+    add_costs("AI pathology");
+    lost_productivity("Biopsy");
+  }
+  
   double FhcrcPerson::callenderStartAge(double frailty, double threshold) {
     double tenYearRisk[] = {0.013, 0.015, 0.018, 0.02, 0.023, 0.026, 0.03, 0.033, 0.037,
 			    0.041, 0.045, 0.049, 0.052, 0.056, 0.059, 0.062, 0.065,
@@ -1378,24 +1392,19 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	}
       }
       else if (in->bparameter("AI_assisted_pathology")) {
-	// reduced costs from AI that depends on ISUP grade
-	if (this->ext_grade == ext::Healthy)
-	  add_costs("Biopsy", Direct, 1.0-in->parameter("pReducedBxCostG0"));
-	else if (this->ext_grade == ext::Gleason_le_6)
-	  add_costs("Biopsy", Direct, 1.0-in->parameter("pReducedBxCostG1"));
-	else if (this->ext_grade == ext::Gleason_7)
-	  add_costs("Biopsy", Direct, 1.0-in->parameter("pReducedBxCostG2"));
-	else if (this->ext_grade == ext::Gleason_ge_8)
-	  add_costs("Biopsy", Direct, 1.0-in->parameter("pReducedBxCostG4plus"));
-	lost_productivity("Biopsy");
+	AI_assisted_pathology();
       }
       else { // general case -- it may *not* be a combined biopsy:(
 	add_costs("Combined biopsy");
 	lost_productivity("Combined biopsy");
       }
-    } else {
-      add_costs("Biopsy");
-      lost_productivity("Biopsy");
+    } else { // no MRI
+      if (in->bparameter("AI_assisted_pathology")) {
+	AI_assisted_pathology();
+      }  else  {
+	add_costs("Biopsy");
+	lost_productivity("Biopsy");
+      }
     }
     // common values
     add_costs("Assessment");

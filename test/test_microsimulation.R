@@ -2,6 +2,56 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
+library(prostata)
+parms=modifyList(prostata:::XiaoyangParameters(2022),
+                 list(AI_assisted_pathology=TRUE,
+                      start_screening=50,
+                      stop_screening=70,
+                      screening_interval=4))
+set.seed(12345)
+sim = callFhcrc(1e4, screen="regular_screen",
+                nLifeHistories = 1e8,
+                mc.cores=6,
+                parms=parms)
+
+AIcost.Fun <- function(object,ratio=1) {
+    index = object$healthsector.costs$item == "AI pathology"
+    object$healthsector.costs$costs[index] = object$healthsector.costs$costs[index]*ratio
+    object
+}
+summary(AIcost.Fun(sim,ratio=1))
+summary(AIcost.Fun(sim,ratio=10))
+summary(AIcost.Fun(sim,ratio=20))
+
+
+AIcost.Fun <- function(object,per=1e4,subset=TRUE,from=50,ratio=1) {
+    n = sum(subset(object$summary$prev,age==from)$count) # number alive at 'from'
+    TotalCosts <- sum(subset(object$healthsector.costs,age>=from)$costs)
+    AIcosts <- sum(subset(object$healthsector.costs,age>=from & item == "AI pathology")$costs)
+    (TotalCosts + AIcosts*(ratio-1))/n
+}
+AIcost.Fun(sim,ratio=1)
+AIcost.Fun(sim,ratio=10)
+AIcost.Fun(sim,ratio=20)
+
+table(sim$healthsector.costs$item)
+table(sim$societal.costs$item)
+
+## table(sim$lifeHistories$event)
+## tmp = subset(sim$lifeHistories, event=="toScreenInitiatedBiopsy")
+tmp=subset(sim$summary$events, event=="toScreenInitiatedBiopsy")
+pReduced = unlist(sim$simulation.parameters[c("pReducedBxCostG1","pReducedBxCostG2","pReducedBxCostG4plus","pReducedBxCostG0")])
+tmp$pReduced = pReduced[tmp$grade]
+sum(tmp$n)
+table(sim$summary$events$grade)
+myreport3 <- function(object,names="toScreenInitiatedBiopsy",per=1e4,subset=TRUE,from=50) {
+    n = sum(subset(object$summary$prev,age==from)$count) # number alive at 'from'
+    pReduced = unlist(object$simulation.parameters[c("pReducedBxCostG1","pReducedBxCostG2","pReducedBxCostG4plus","pReducedBxCostG0")])
+    data = subset(object$summary$events, event %in% names & subset & age>=from)
+    list(men_biopsied=sum(data$n)/n*per, reduced_cores=12*sum(data$n*pReduced[data$grade])/n*per,
+         p_reduced_cores = sum(data$n*pReduced[data$grade])/sum(data$n))
+}
+myreport3(sim)
 
 ## Trust: probabilistic analysis
 4/19

@@ -378,7 +378,8 @@ FhcrcParameters <- list(
     negbx_to_regular = FALSE,     # flag for whether to return to regular screening after a negative biopsy
     pAIposG1=0.992,               # Pr(AI+ | ISUP 1, sensitivity = 0.99) Henrik's data output
     pAIposG2=1,                   # Pr(AI+ | ISUP 2-3, sensitivity = 0.99) Henrik's data output
-    pAIposG4plus=1                # Pr(AI+ | ISUP 4+, sensitivity = 0.99) Henrik's data output
+    pAIposG4plus=1,               # Pr(AI+ | ISUP 4+, sensitivity = 0.99) Henrik's data output
+    full_biopsy_compliance = FALSE # flag with whether to assume full biopsy compliance or not (default=not and use one of two lookup tables; see formal_compliance=1|0 and biopsyFormalComplianceTable and biopsyOpportunisticComplianceTable)
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]

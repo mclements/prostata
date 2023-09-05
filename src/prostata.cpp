@@ -1224,7 +1224,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       lost_productivity(in->panel && psa>=in->parameter("panelReflexThreshold") ? "Opportunistic panel" : "Opportunistic PSA");
       scheduleUtilityChange(now(), "Opportunistic PSA");
     }
-    compliance = formal_compliance ?
+    compliance = in->bparameter("full_biopsy_compliance") ? 1 :
+      formal_compliance ?
       in->tableFormalBiopsyCompliance(bounds<double>(psa,3.0,10.0),
 				  bounds<double>(age,40,80)) :
       in->tableOpportunisticBiopsyCompliance(bounds<double>(psa,3.0,10.0),

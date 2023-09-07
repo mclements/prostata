@@ -639,7 +639,11 @@ namespace fhcrc_example {
     else if (this->ext_grade == ext::Gleason_ge_8)
       add_costs("Biopsy", Direct, 1.0-in->parameter("pReducedBxCostG4plus"));
     add_costs("AI pathology");
-    lost_productivity("Biopsy");
+    if (in->bparameter("MRI_screen") && this->MRIpos) {
+      lost_productivity("Combined biopsy");
+    } else {
+      lost_productivity("Biopsy");
+    }
   }
   
   double FhcrcPerson::callenderStartAge(double frailty, double threshold) {

@@ -164,10 +164,10 @@ XiaoyangParameters <- function(year=2022, Biopsy_cost=3010 + 4543.81, Pathology_
             pAIposG1=0.992,                          # Pr(AI+ | ISUP 1, sensitivity = 0.99) Henrik's data output
             pAIposG2=1,                              # Pr(AI+ | ISUP 2-3, sensitivity = 0.99) Henrik's data output
             pAIposG4plus=1,                          # Pr(AI+ | ISUP 4+, sensitivity = 0.99) Henrik's data output
-            ## pAICorenegG0=pAICorenegG0,                   # Pr(Core- | AI assisted, ISUP 0) (used for cost reduction calculation)
-            ## pAICorenegG1=pAICorenegG1,                    # Pr(Core- | AI assisted, ISUP 1) (used for cost reduction calculation)
-            ## pAICorenegG2=pAICorenegG2,                   # Pr(Core- | AI assisted, ISUP 2-3) (used for cost reduction calculation)
-            ## pAICorenegG4plus=pAICorenegG4plus,               # Pr(Core- | AI assisted, ISUP 4+)  (used for cost reduction calculation)
+            pAICorenegG0=pAICorenegG0,                   # Pr(Core- | AI assisted, ISUP 0) (used for cost reduction calculation)
+            pAICorenegG1=pAICorenegG1,                    # Pr(Core- | AI assisted, ISUP 1) (used for cost reduction calculation)
+            pAICorenegG2=pAICorenegG2,                   # Pr(Core- | AI assisted, ISUP 2-3) (used for cost reduction calculation)
+            pAICorenegG4plus=pAICorenegG4plus,               # Pr(Core- | AI assisted, ISUP 4+)  (used for cost reduction calculation)
             pPathPath=pPathPath,                        # Proportion of pathology cost due to the pathologist
             pReducedBxCostG0=pAICorenegG0*pPathPath*Pathology_cost/Biopsy_cost,         # Proportional reduction in cost, Henrik's data output
             pReducedBxCostG1=pAICorenegG1*pPathPath*Pathology_cost/Biopsy_cost,         # Proportional reduction in cost, Henrik's data output

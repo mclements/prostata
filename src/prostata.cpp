@@ -1229,6 +1229,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       scheduleUtilityChange(now(), "Opportunistic PSA");
     }
     compliance = in->bparameter("full_biopsy_compliance") ? 1 :
+      in->bparameter("use_biopsyCompliance") ? in->parameter("biopsyCompliance") :
       formal_compliance ?
       in->tableFormalBiopsyCompliance(bounds<double>(psa,3.0,10.0),
 				  bounds<double>(age,40,80)) :

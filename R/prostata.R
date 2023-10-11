@@ -124,6 +124,7 @@ FhcrcParameters <- list(
     screeningParticipation = 0.75, # probability of actually having the first PSA test
     rescreeningParticipation = 0.95, # probability of actually having the re-screening PSA tests
     biopsyCompliance = 0.856, # Formal biopsy compliance, Schroder ERSPC 2014
+    use_biopsyCompliance = FALSE, # 
     biopsySensitivityTimeProportionT1T2 = 0.5314886, # time portion when T1-T2 cancers are sensitivity to biopsies (expit from calibration). The remaining part, starting at onset, is not detectable.
     studyParticipation = 50.0/260.0, # observed fraction of population who participated in STHLM3 study
     nLifeHistories = 10L, screen = 0L, ## integers

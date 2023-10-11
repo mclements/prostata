@@ -42,7 +42,7 @@ XiaoyangParameters <- function(year=2022, Biopsy_cost=3010 + 4543.81, Pathology_
                                  + 61.54*3                                 # PSA test analysis (3 times per year)
                                  + 3010/3                                  # SBx cost (once every 2-3 year)
                                  + 4543.81/3,                              # Pathology of biopsy
-                                 + 1000,                                   # AI Pathology
+                                 ## + 1000,                                   # AI Pathology
                                  ## "Active surveillance - yearly - with MRI" = 1460*1  # Specialist and nurse consultation (not used)
                                  ## + 403*3                                # PSA test sampling (3 times per year) (not used)
                                  ## + 61.54*3                              # PSA test analysis (3 times per year) (not used)

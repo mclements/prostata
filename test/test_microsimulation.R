@@ -3,8 +3,27 @@
 ## microsimulation:::.testPackage()
 
 library(prostata)
+sim = callFhcrc(1e3, screen="germany_2021",
+                nLifeHistories = 1e8,
+                mc.cores=6,
+                parms=modifyList(prostata:::TrustParameters(),
+                                 list(MRI_screen=TRUE, MRI_interval=TRUE,
+                                      negbx_to_regular=TRUE)))
+table(sim$lifeHistories$event)
+
+library(prostata)
+sim = callFhcrc(1e3, screen="germany_2021",
+                nLifeHistories = 1e8,
+                mc.cores=6,
+                parms=modifyList(prostata:::TrustParameters(),
+                                 list(negbx_to_regular=TRUE, dre_to_biopsy=TRUE)))
+table(sim$lifeHistories$event) # no MRI and no PSA!
+
+
+library(prostata)
 parms=modifyList(prostata:::XiaoyangParameters(2022),
                  list(AI_assisted_pathology=TRUE,
+                      full_biopsy_compliance=TRUE,
                       start_screening=50,
                       stop_screening=70,
                       screening_interval=4))
@@ -17,11 +36,15 @@ sim = callFhcrc(1e4, screen="regular_screen",
 AIcost.Fun <- function(object,ratio=1) {
     index = object$healthsector.costs$item == "AI pathology"
     object$healthsector.costs$costs[index] = object$healthsector.costs$costs[index]*ratio
+    index = object$societal.costs$item == "AI pathology"
+    object$societal.costs$costs[index] = object$societal.costs$costs[index]*ratio
     object
 }
+summary(sim)
 summary(AIcost.Fun(sim,ratio=1))
 summary(AIcost.Fun(sim,ratio=10))
 summary(AIcost.Fun(sim,ratio=20))
+sim$simulation.parameters$discountRate.costs
 
 
 AIcost.Fun <- function(object,per=1e4,subset=TRUE,from=50,ratio=1) {

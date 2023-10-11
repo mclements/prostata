@@ -1325,7 +1325,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       dre_result = (u < in->dre_sensitivity(psa));
     else dre_result = u < (1.0 - in->dre_specificity(psa));
     if (dre_result)
-      scheduleAt(now(), toScreen); // assumes all DRE+ then have an immediate PSA test
+      scheduleAt(now(),
+		 in->bparameter("dre_to_biopsy") ? toScreenInitiatedBiopsy : toScreen); // assumes all DRE+ then have an immediate PSA test (or biopsy)
     else {
       if (dre_annual && now() + in->parameter("dre_annual_interval") < in->parameter("stop_screening"))
 	scheduleAt(now()+in->parameter("dre_annual_interval"), toDRE);
@@ -1360,7 +1361,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     
   // record additional biopsies for clinical diagnoses
   case toClinicalDiagnosticBiopsy:
-    if (in->bparameter("MRI_clinical")) {
+    if (in->bparameter("MRI_clinical") ||
+	(in->bparameter("MRI_interval") &&
+	 now()>=in->parameter("start_screening") && now()<in->parameter("stop_screening"))) {
       add_costs("MRI");
       lost_productivity("MRI");
       add_costs("Combined biopsy");

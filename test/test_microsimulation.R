@@ -3,6 +3,31 @@
 ## microsimulation:::.testPackage()
 
 library(prostata)
+parms=modifyList(prostata:::XiaoyangParameters(2022),
+                 list(AI_assisted_pathology=TRUE,
+                      full_biopsy_compliance=TRUE,
+                      start_screening=50,
+                      stop_screening=70,
+                      screening_interval=4))
+set.seed(12345)
+sim = callFhcrc(1e4, screen="regular_screen",
+                nLifeHistories = 1e3,
+                mc.cores=6,
+                parms=parms)
+summary(sim)
+##
+parms=modifyList(parms,
+                 list(AI_assisted_pathology_in_active_surveillance=TRUE))
+set.seed(12345)
+sim = callFhcrc(1e4, screen="regular_screen",
+                nLifeHistories = 1e3,
+                mc.cores=6,
+                parms=parms)
+summary(sim)
+
+
+
+library(prostata)
 sim = callFhcrc(1e3, screen="germany_2021",
                 nLifeHistories = 1e8,
                 mc.cores=6,
@@ -16,8 +41,19 @@ sim = callFhcrc(1e3, screen="germany_2021",
                 nLifeHistories = 1e8,
                 mc.cores=6,
                 parms=modifyList(prostata:::TrustParameters(),
+                                 list(MRI_screen=TRUE, MRI_interval=TRUE,
+                                      negbx_to_regular=TRUE,
+                                      use_biopsyCompliance=TRUE)))
+table(sim$lifeHistories$event)
+
+library(prostata)
+sim = callFhcrc(1e3, screen="germany_2021",
+                nLifeHistories = 1e8,
+                mc.cores=6,
+                parms=modifyList(prostata:::TrustParameters(),
                                  list(negbx_to_regular=TRUE, dre_to_biopsy=TRUE)))
 table(sim$lifeHistories$event) # no MRI and no PSA!
+
 
 
 library(prostata)

@@ -1699,13 +1699,44 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 		(now() < age_dx + 2.0) ? in->parameter("active_surveillance_cost_scale_first_two_years") : 1.0);
       lost_productivity("Active surveillance - yearly");
     } else {
-      if (in->bparameter("MRI_screen") || in->bparameter("MRI_clinical") || in->bparameter("MRI_active_surveillance")) {
-	add_costs("Active surveillance - yearly - with MRI", Direct,
-		  (now() < age_dx + 2.0) ? in->parameter("active_surveillance_cost_scale_first_two_years") : 1.0);
+      if ((in->bparameter("MRI_screen") || in->bparameter("MRI_clinical") || in->bparameter("MRI_active_surveillance"))
+	  && !in->bparameter("MRI_override_no_active_surveillance")) {
+	if (in->bparameter("AI_assisted_pathology_in_active_surveillance")) {
+	  // Gleason-specific cost weights
+	  // enum grade_t {Gleason_le_6,Gleason_7,Gleason_ge_8,Healthy};
+	  double pAICoreneg = 
+	    ext_grade == ext::Gleason_le_6 ? in->parameter("pAICorenegG1") :
+	    ext_grade == ext::Gleason_7 ? in->parameter("pAICorenegG2") :
+	      in->parameter("pAICorenegG4plus");
+	  double ratio =
+	    (in->cost_parameters("Active surveillance - yearly - with MRI") - pAICoreneg * in->parameter("pPathPath") *
+	     in->cost_parameters("Pathology")/in->cost_parameters("Biopsy") + in->cost_parameters("AI pathology")) /
+	    in->cost_parameters("Active surveillance - yearly - with MRI");
+	  add_costs("Active surveillance - yearly - with MRI", Direct,
+		    (now() < age_dx + 2.0) ? in->parameter("active_surveillance_cost_scale_first_two_years")*ratio : ratio);
+	} else {
+	  add_costs("Active surveillance - yearly - with MRI", Direct,
+		    (now() < age_dx + 2.0) ? in->parameter("active_surveillance_cost_scale_first_two_years") : 1.0);
+	}
 	lost_productivity("Active surveillance - yearly - with MRI");
       } else {
+	if (in->bparameter("AI_assisted_pathology_in_active_surveillance")) {
+	  // Gleason-specific cost weights
+	  // enum grade_t {Gleason_le_6,Gleason_7,Gleason_ge_8,Healthy};
+	  double pAICoreneg = 
+	    ext_grade == ext::Gleason_le_6 ? in->parameter("pAICorenegG1") :
+	    ext_grade == ext::Gleason_7 ? in->parameter("pAICorenegG2") :
+	      in->parameter("pAICorenegG4plus");
+	  double ratio =
+	    (in->cost_parameters("Active surveillance - yearly - w/o MRI") - pAICoreneg * in->parameter("pPathPath") *
+	     in->cost_parameters("Pathology")/in->cost_parameters("Biopsy") + in->cost_parameters("AI pathology")) /
+	    in->cost_parameters("Active surveillance - yearly - w/o MRI");
+	  add_costs("Active surveillance - yearly - w/o MRI", Direct,
+		    (now() < age_dx + 2.0) ? in->parameter("active_surveillance_cost_scale_first_two_years")*ratio : ratio);
+	} else {
 	add_costs("Active surveillance - yearly - w/o MRI", Direct,
 		  (now() < age_dx + 2.0) ? in->parameter("active_surveillance_cost_scale_first_two_years") : 1.0);
+	}
 	lost_productivity("Active surveillance - yearly - w/o MRI");
       }
     }

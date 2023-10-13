@@ -349,6 +349,7 @@ FhcrcParameters <- list(
     MRI_clinical = FALSE,         # defines whether MRI pathway is used for clinically detected cancers
     MRI_interval = FALSE,         # defines whether MRI pathway is used for clinically detected cancers during the screening ages ("interval cancers")
     MRI_active_surveillance = FALSE, # defines whether MRI pathway is used for active surveillance
+    MRI_override_no_active_surveillance=FALSE, # turn *off* MRI for active surveillance if MRI_screen or MRI_clinical (otherwise MRI_screen or MRI_clinical turn *on* MRI for active surveillance - old behaviour:()
     MRInegSBx=FALSE,              # No SBx for MRI- (by default)
     rescreenDoubleNeg = FALSE,    # defines whether MRI-/Bx- men should move to rescreening (cf. repeat PSA and Bx within ~12 months)
     indiv_reports = FALSE,        # should the cost and standard reports include individual values?
@@ -366,6 +367,7 @@ FhcrcParameters <- list(
     germany_neg_mri_interval = 1, # rescreening interval for negative MRI (currently only for germany_2021 and probase)
     germany_neg_bx_interval = 1,  # rescreening interval for negative Bx (currently only for germany_2021 and probase)
     AI_assisted_pathology = FALSE, # self-explanatory? 
+    AI_assisted_pathology_in_active_surveillance = FALSE, # should AI be used for active surveillance? This is just for costs:) 
     pTBxG0ifG1_MRIpos=0,          # Pr(TBx gives ISUP 0 | ISUP 1, MRI+)
     pTBxG0ifG2_MRIpos=0,          # Pr(TBx gives ISUP 0 | ISUP 2-3, MRI+) -- NB: actually G2 and G3
     pTBxG0ifG4plus_MRIpos=0,      # Pr(TBx gives ISUP 0 | ISUP 4+, MRI+)

@@ -1699,7 +1699,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 		(now() < age_dx + 2.0) ? in->parameter("active_surveillance_cost_scale_first_two_years") : 1.0);
       lost_productivity("Active surveillance - yearly");
     } else {
-      if (in->bparameter("MRI_screen") || in->bparameter("MRI_clinical")) {
+      if (in->bparameter("MRI_screen") || in->bparameter("MRI_clinical") || in->bparameter("MRI_active_surveillance")) {
 	add_costs("Active surveillance - yearly - with MRI", Direct,
 		  (now() < age_dx + 2.0) ? in->parameter("active_surveillance_cost_scale_first_two_years") : 1.0);
 	lost_productivity("Active surveillance - yearly - with MRI");

@@ -1145,11 +1145,11 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
     if (panel && parameter$rTPF>1) stop("Panel: rTPF>1 (not currently implemented)")
     if (panel && parameter$rFPF>1) stop("Panel: rFPF>1 (not currently implemented)")
     if (parameter$Andreas && parameter$MRI_screen)
-        stop("For 'MRI_screen=TRUE', use 'parms=c(prostata:::ShuangParameters, MRI_screen=TRUE)'")
+        stop("For 'MRI_screen=TRUE', use 'parms=c(prostata:::ShuangParameters(), MRI_screen=TRUE)'")
     ## if (panel && parameter$MRI_screen)
     ##     stop("Scenarios for 'panel=TRUE' and 'MRI_screen=TRUE' have not been defined")
-    if (parameter$MRI_clinical && !parameter$MRI_screen)
-        stop("Scenarios for 'MRI_clinical=TRUE' and 'MRI_screen=FALSE' have not been defined")
+    ## if (parameter$MRI_clinical && !parameter$MRI_screen)
+    ##     stop("Scenarios for 'MRI_clinical=TRUE' and 'MRI_screen=FALSE' have not been defined")
     ## now run the chunks separately
     step <- function(i) {
         chunk <- chunks[[i]]

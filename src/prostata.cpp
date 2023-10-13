@@ -529,10 +529,10 @@ namespace fhcrc_example {
         break;
       case probase:
         if (now() >= in->parameter("start_screening")) {
-	  if (neg_mri && now()+1.0 <= in->parameter("stop_screening"))
-	    scheduleAt(now() + 1.0, toScreen);
-	  else if (neg_bx && now()+1.0 <= in->parameter("stop_screening"))
-	    scheduleAt(now() + 1.0, toScreen);
+	  if (neg_mri && now()+in->parameter("germany_neg_mri_interval") <= in->parameter("stop_screening"))
+	    scheduleAt(now() + in->parameter("germany_neg_mri_interval"), toScreen);
+	  else if (neg_bx && now()+in->parameter("germany_neg_bx_interval") <= in->parameter("stop_screening"))
+	    scheduleAt(now() + in->parameter("germany_neg_bx_interval"), toScreen);
           else if (psa < in->parameter("risk_psa_threshold") &&
 	      now()+in->parameter("risk_lower_interval") <= in->parameter("stop_screening"))
             scheduleAt(now() + in->parameter("risk_lower_interval"), toScreen);

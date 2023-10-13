@@ -362,8 +362,8 @@ FhcrcParameters <- list(
     grs_p_threshold = 0.9,        # GRS probability threshold -- *include* this proportion from testing
     grs_version = 1,              # Edna is version 1; Padraig is version != 1
     dre_annual_interval = 1,      # rescreening interval if dre_annual (allow for longer interval under germany_2021)
-    germany_neg_mri_interval = 1, # rescreening interval for negative MRI (currently only for germany_2021)
-    germany_neg_bx_interval = 1,  # rescreening interval for negative Bx (currently only for germany_2021)
+    germany_neg_mri_interval = 1, # rescreening interval for negative MRI (currently only for germany_2021 and probase)
+    germany_neg_bx_interval = 1,  # rescreening interval for negative Bx (currently only for germany_2021 and probase)
     AI_assisted_pathology = FALSE, # self-explanatory? 
     pTBxG0ifG1_MRIpos=0,          # Pr(TBx gives ISUP 0 | ISUP 1, MRI+)
     pTBxG0ifG2_MRIpos=0,          # Pr(TBx gives ISUP 0 | ISUP 2-3, MRI+) -- NB: actually G2 and G3

@@ -1465,13 +1465,12 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	  Bx_missed = (u2 < in->parameter("pSBxG0ifG4plus"));
 	}
       }
-      if (in->bparameter("AI_assisted_pathology")) {
+      if (in->bparameter("AI_assisted_pathology") || in->bparameter("human_as_AI")) {
 	double pAIpos =
 	  (this->ext_grade == ext::Gleason_le_6) ? in->parameter("pAIposG1") :
 	  (this->ext_grade == ext::Gleason_7)    ? in->parameter("pAIposG2") :
 	  in->parameter("pAIposG4plus");
-	Bx_missed = (in->parameter("AIpos_alone") ? false : Bx_missed) ||
-	  (R::runif(0.0,1.0) < 1.0-pAIpos);
+	Bx_missed = Bx_missed || (R::runif(0.0,1.0) < 1.0-pAIpos);
       }
       if (!Bx_missed)
 	scheduleAt(now()+3.0/52.0, toScreenDiagnosis); // diagnosis three weeks after biopsy

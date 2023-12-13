@@ -384,7 +384,7 @@ FhcrcParameters <- list(
     pAIposG1=0.992,               # Pr(AI+ | ISUP 1, sensitivity = 0.99) Henrik's data output
     pAIposG2=1,                   # Pr(AI+ | ISUP 2-3, sensitivity = 0.99) Henrik's data output
     pAIposG4plus=1,               # Pr(AI+ | ISUP 4+, sensitivity = 0.99) Henrik's data output
-    AIpos_alone = FALSE,          # Should the AI test characteristics be considered alone?
+    human_as_AI = FALSE,          # Should the human pathologist have the same test characteristics as AI?
     full_biopsy_compliance = FALSE, # flag with whether to assume full biopsy compliance or not (default=not and use one of two lookup tables; see formal_compliance=1|0 and biopsyFormalComplianceTable and biopsyOpportunisticComplianceTable)
     dre_to_biopsy=FALSE           # flag for whether a DRE proceeds to biopsy - otherwise do a PSA test
 )

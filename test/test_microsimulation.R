@@ -2,6 +2,22 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
+library(microsimulation)
+library(parallel)
+compare_test_rstream3 = function() {
+    old = microsimulation:::RNGstate()
+    on.exit(old$reset())
+    RNGkind("L'Ecuyer-CMRG")
+    .Random.seed <<- stream1 <- c(10407L, 12345L, 12345L, 12345L, 12345L, 12345L, 12345L)
+    x1=rexp(1)
+    .Random.seed <<- parallel::nextRNGStream(stream1)
+    x2=rexp(1)
+    .Random.seed <<- parallel::nextRNGSubStream(stream1)
+    x3=rexp(1)
+    c(x1,x2,x3)
+}
+compare_test_rstream3()
+
 library(prostata)
 parms=modifyList(prostata:::XiaoyangParameters(2022),
                  list(AI_assisted_pathology=TRUE,

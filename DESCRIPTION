@@ -21,4 +21,4 @@ LinkingTo: microsimulation, Rcpp, RcppArmadillo
 Suggests: testthat
 LazyData: true
 Encoding: UTF-8
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.3

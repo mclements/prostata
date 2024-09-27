@@ -55,7 +55,8 @@ namespace fhcrc_example {
                 toScreenDiagnosis, toOverDiagnosis, toOrganised, toTreatment,
                 toCM, toRP, toRT, toADT, toUtilityChange, toUtilityRemove,
                 toSTHLM3, toOpportunistic, toT3plus, toCancelScreens,
-                toYearlyActiveSurveillance, toYearlyPostTxFollowUp, toMRI, toPalliative, toTerminal, toDRE};
+                toYearlyActiveSurveillance, toYearlyPostTxFollowUp, toMRI, toPalliative, toTerminal, toDRE,
+                toGRS};
 
   enum screen_t {noScreening, randomScreen50to70, twoYearlyScreen50to70, fourYearlyScreen50to70,
 		 screen50, screen60, screen70, screenUptake, stockholm3_goteborg, stockholm3_risk_stratified,
@@ -454,6 +455,7 @@ namespace fhcrc_example {
     RemoveKind(toClinicalDiagnosticBiopsy);
     RemoveKind(toMRI);
     RemoveKind(toDRE);
+    RemoveKind(toGRS);
   }
 
   void FhcrcPerson::opportunistic_uptake_if_ever() {
@@ -925,8 +927,8 @@ void FhcrcPerson::init() {
     case grs_stratified_age:
     case grs_stratified: 
       if (in->parameter("grs_version")!=1) {
-	add_costs("Polygenic risk stratification");
-	everGRS=true;
+	// for tied times, smaller priority values are *earlier*
+	scheduleAt(in->parameter("grs_age"), toGRS, -10);
       }
       break;
     default:
@@ -1184,6 +1186,11 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     RemoveKind(toScreen); // remove other screens
     break;
 
+  case toGRS:
+    add_costs("Polygenic risk stratification");
+    everGRS = true;
+    break;
+    
   case toScreen:
   case toBiopsyFollowUpScreen: {
     if (ageFirstScreen < 0.0) ageFirstScreen = now();

@@ -363,6 +363,7 @@ FhcrcParameters <- list(
     grs_risk_threshold = 0.075,   # GRS ten-year risk threshold
     grs_p_threshold = 0.9,        # GRS probability threshold -- *include* this proportion from testing
     grs_version = 1,              # Edna is version 1; Padraig is version != 1
+    grs_age = 50,                 # When is the GRS test scheduled? NB: this should be at or after the start of the intervention or it will be lost if e.g. summary(..., from=51)
     dre_annual_interval = 1,      # rescreening interval if dre_annual (allow for longer interval under germany_2021)
     germany_neg_mri_interval = 1, # rescreening interval for negative MRI (currently only for germany_2021 and probase)
     germany_neg_bx_interval = 1,  # rescreening interval for negative Bx (currently only for germany_2021 and probase)
@@ -1046,7 +1047,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                 "toCM","toRP", "toRT","toADT","toUtilityChange","toUtilityRemove",
                 "toSTHLM3", "toOpportunistic","toT3plus", "toCancelScreens",
                 "toYearlyActiveSurveillance", "toYearlyPostTxFollowUp", "toMRI",
-                "toPalliative", "toTerminal", "toDRE")
+                "toPalliative", "toTerminal", "toDRE", "toGRS")
     diagnosisT <- c("NotDiagnosed","ClinicalDiagnosis","ScreenDiagnosis")
     treatmentT <- c("no_treatment","CM","RP","RT")
     psaT <- c("PSA<3","PSA>=3") # not sure where to put this...

@@ -538,7 +538,7 @@ namespace fhcrc_example {
           else if (psa < in->parameter("risk_psa_threshold") &&
 	      now()+in->parameter("risk_lower_interval") <= in->parameter("stop_screening"))
             scheduleAt(now() + in->parameter("risk_lower_interval"), toScreen);
-          if (psa >= in->parameter("risk_psa_threshold") &&
+          else if (psa >= in->parameter("risk_psa_threshold") &&
 	      now()+in->parameter("risk_upper_interval") <= in->parameter("stop_screening"))
             scheduleAt(now() + in->parameter("risk_upper_interval"), toScreen);
         }

@@ -609,7 +609,7 @@ namespace fhcrc_example {
 	// case sthlm3_mri_arm:
         break;
       default:
-        REprintf("Screening not matched: %s\n",in->screen);
+        REprintf("Screening not matched: %i\n",in->screen);
         break;
       }
     } // rescreening participation

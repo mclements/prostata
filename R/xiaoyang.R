@@ -13,6 +13,8 @@
 ## R VERSION: RStudio 2022.12.0+353 
 ##==============================================================================
 
+#' @importFrom utils modifyList
+
 
 XiaoyangParameters <- function(year=2022, Biopsy_cost=3010 + 4543.81, Pathology_cost=4543.81, pPathPath=1/3, pAICorenegG0=0.809,
                                pAICorenegG1=0.51, pAICorenegG2=0.383, pAICorenegG4plus=0.216, ...) {

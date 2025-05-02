@@ -1,3 +1,5 @@
+#' @importFrom utils modifyList
+
 EdnaParameters <- function(base = ShuangParameters())
   modifyList(base,
              list(includeEventHistories=FALSE,

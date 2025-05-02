@@ -26,6 +26,8 @@
 
 \item{group}{PARAM_DESCRIPTION, Default: 'age'}
 
+\item{group.pt}{how to group the person-time, Default: group}
+
 \item{age.breaks}{PARAM_DESCRIPTION, Default: NULL}
 
 \item{year.breaks}{PARAM_DESCRIPTION, Default: NULL}

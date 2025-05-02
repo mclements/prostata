@@ -6,8 +6,6 @@
 \title{Initial values for the FHCRC model}
 \format{
 A list
-\describe{
-}
 }
 \usage{
 FhcrcParameters

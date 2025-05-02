@@ -26,7 +26,6 @@
 #' There are a number of available testing scenarios. They determine testing
 #' frequencies and re-testing intervals over calendar period and ages.
 #'
-#' @docType package
 #' @name prostata-package
 #' @aliases prostata
 #' @author Mark Clements \email{mark.clements@ki.se}
@@ -37,8 +36,10 @@
 #' @import microsimulation
 #' @importFrom Rcpp evalCpp compileAttributes
 #' @importFrom utils packageName
-NULL
+"_PACKAGE"
 
+#' Random numbers for Unix-like OSs
+#' @name internal
 if(.Platform$OS.type == "unix") {
     pkg <- packageName()
     ## http://r.789695.n4.nabble.com/How-to-construct-a-valid-seed-for-l-Ecuyer-s-method-with-given-Random-seed-td4656340.html
@@ -64,8 +65,6 @@ if(.Platform$OS.type == "unix") {
 #' @title Initial values for the FHCRC model
 #' @description Initial values for the FHCRC model
 #' @format A list
-#' \describe{
-#'}
 #' @details Currently, see the R documentation
 #' @examples
 #' \dontrun{
@@ -612,7 +611,7 @@ cap_control <- data.frame(cohort=c(1955,1950,1945,1940),
 #' @format A data frame with 14 rows and 3 variables:
 #' \describe{
 #'   \item{\code{lower}}{double lower age}
-#'   \item{\code{lower}}{double upper age}
+#'   \item{\code{upper}}{double upper age}
 #'   \item{\code{utility}}{double background utility value}
 #'}
 #' @details http://libris.kb.se/bib/10708053?vw=short
@@ -747,14 +746,14 @@ sthlm3_mri_arm <- data.frame(cohort = 2019 - 45:74,
 #'   \item{\code{sdlog}}{double describing the standard deviation of a
 #'   log-normal}
 #' }
-#' \strong{dre}
-#' @format A data frame with 4 rows and 4 variables:
-#' \describe{
-#'   \item{\code{psa.low}}{integer COLUMN_DESCRIPTION}
-#'   \item{\code{psa.high}}{double COLUMN_DESCRIPTION}
-#'   \item{\code{sensitivity}}{double COLUMN_DESCRIPTION}
-#'   \item{\code{specificity}}{double COLUMN_DESCRIPTION}
-#'}
+# #' \strong{dre}
+# #' @format A data frame with 4 rows and 4 variables:
+# #' \describe{
+# #'   \item{\code{psa.low}}{integer COLUMN_DESCRIPTION}
+# #'   \item{\code{psa.high}}{double COLUMN_DESCRIPTION}
+# #'   \item{\code{sensitivity}}{double COLUMN_DESCRIPTION}
+# #'   \item{\code{specificity}}{double COLUMN_DESCRIPTION}
+# #'}
 #' \strong{prob_grade7}
 #' @format A data frame with 51 rows and 2 variables:
 #' \describe{
@@ -924,8 +923,13 @@ ageStandards <- data.frame(Age = cut(seq(0, 85, 5),
 #' @format A data frame with 6 rows and 3 variables:
 #' \describe{
 #'   \item{\code{psa_low}}{double Left-hand interval for PSA}
-#'   \item{\code{se}}{double sensitivity}
-#'   \item{\code{sp}}{double specificity}
+#'   \item{\code{psa_high}}{double Left-hand interval for PSA}
+#'   \item{\code{dre}}{double total number}
+#'   \item{\code{appa}}{double predicted number with cancer}
+#'   \item{\code{bx}}{double count of the number of biopsies}
+#'   \item{\code{pc}}{double count of the number of cancers}
+#'   \item{\code{sensitivity}}{double sensitivity}
+#'   \item{\code{specificity}}{double specificity}
 #'}
 #' @details See https://doi.org/10.1093/jnci/90.23.1817, table 2.
 #' @rdname dre
@@ -953,7 +957,7 @@ fhcrcData$pradt <- unique(fhcrcData$pradt)
 #' @param n Integer number of men to simulate. Default: 10
 #' @param screen String with one of the following simulated screening scenarios:
 #'    \describe{
-#'      \item{\code{noScreening}}{no screening test, only diagnosis from symptoms}
+#'      \item{\code{noScreening}}{no screening test, only diagnosis from symptoms (default)}
 #'      \item{\code{randomScreen50to70}}{TBA}
 #'      \item{\code{twoYearlyScreen50to70}}{two-yearly screening from age 50 to 70}
 #'      \item{\code{fourYearlyScreen50to70}}{four-yearly screening from age 50 to 70}
@@ -972,7 +976,7 @@ fhcrcData$pradt <- unique(fhcrcData$pradt)
 #'      \item{\code{introduced_screening_preference}}{TBA}
 #'      \item{\code{introduced_screening}}{TBA}
 #'      \item{\code{stopped_screening}}{TBA}
-#'    } . Default: 'noScreening'
+#'    } 
 #'
 #' @param nLifeHistories Integer with number of men for all events should be
 #'     recorded, Default: 10
@@ -1008,7 +1012,7 @@ fhcrcData$pradt <- unique(fhcrcData$pradt)
 #'  \code{\link[parallel]{mclapply}}
 #' @rdname callFhcrc
 #' @export
-#' @importFrom parallel mclapply
+#' @importFrom parallel mclapply clusterEvalQ clusterExport
 callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                       seed=12345, panel=FALSE, flatPop = FALSE, pop = pop1,
                       tables = IHE, debug=FALSE, parms = NULL, mc.cores = 1,
@@ -1323,6 +1327,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
 #' @rdname summary.fhcrc
 #' @export
 summary.fhcrc <- function(object, from=0, ...) {
+    age <- NULL
     if (from<0) {
         warning("from argument should be non-negative - changed to 0")
         from <- 0
@@ -1545,13 +1550,14 @@ obj$discountRate.effectiveness,
 obj$discountRate.costs))
 }
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param object1 PARAM_DESCRIPTION
-#' @param object2 PARAM_DESCRIPTION
+#' @title Calculate an ICER from two fhcrc objects
+#' @description TBC
+#' @param object1 fhcrc object
+#' @param object2 fhcrc object (reference)
 #' @param perspective PARAM_DESCRIPTION, Default: c("societal.costs", "healthsector.costs")
+#' @param from double for the start age (assumes strategies are identical to that age)
 #' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
+#' @return list with perspective, from, ICER.QALE, delta.QALE, delta.costs, and possibly ICER.LE and delta.LE
 #' @details DETAILS
 #' @examples
 #' \dontrun{
@@ -1612,6 +1618,7 @@ print.fhcrc <- function(x, ...)
 #' @param scenarios PARAM_DESCRIPTION, Default: NULL
 #' @param type PARAM_DESCRIPTION, Default: 'incidence.rate'
 #' @param group PARAM_DESCRIPTION, Default: 'age'
+#' @param group.pt how to group the person-time, Default: group
 #' @param age.breaks PARAM_DESCRIPTION, Default: NULL
 #' @param year.breaks PARAM_DESCRIPTION, Default: NULL
 #' @param cohort.breaks PARAM_DESCRIPTION, Default: NULL

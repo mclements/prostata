@@ -6,6 +6,8 @@
 
 ## UPDATED: 2022-01-27
 
+#' @importFrom utils modifyList
+
 ShuangParameters <- function(year=2018) {
 
     stopifnot(year %in% 2018:2020)

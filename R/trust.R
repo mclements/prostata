@@ -1,5 +1,7 @@
 ## Parameters that are specific to Trust's analyses
 
+#' @importFrom utils modifyList
+
 ## Strategies
 
 TrustParameters <- function(year=2020, MRI_diagnostics=TRUE, DRE=FALSE, MRI_patient=TRUE) {

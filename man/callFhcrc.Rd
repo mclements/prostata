@@ -26,7 +26,7 @@ callFhcrc(
 
 \item{screen}{String with one of the following simulated screening scenarios:
 \describe{
-  \item{\code{noScreening}}{no screening test, only diagnosis from symptoms}
+  \item{\code{noScreening}}{no screening test, only diagnosis from symptoms (default)}
   \item{\code{randomScreen50to70}}{TBA}
   \item{\code{twoYearlyScreen50to70}}{two-yearly screening from age 50 to 70}
   \item{\code{fourYearlyScreen50to70}}{four-yearly screening from age 50 to 70}
@@ -45,7 +45,7 @@ callFhcrc(
   \item{\code{introduced_screening_preference}}{TBA}
   \item{\code{introduced_screening}}{TBA}
   \item{\code{stopped_screening}}{TBA}
-} . Default: 'noScreening'}
+}}
 
 \item{nLifeHistories}{Integer with number of men for all events should be
 recorded, Default: 10}

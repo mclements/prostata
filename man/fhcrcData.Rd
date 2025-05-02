@@ -103,15 +103,6 @@ A data frame with 4 rows and 3 variables. Describing the
   \item{\code{sdlog}}{double describing the standard deviation of a
   log-normal}
 }
-\strong{dre}
-
-A data frame with 4 rows and 4 variables:
-\describe{
-  \item{\code{psa.low}}{integer COLUMN_DESCRIPTION}
-  \item{\code{psa.high}}{double COLUMN_DESCRIPTION}
-  \item{\code{sensitivity}}{double COLUMN_DESCRIPTION}
-  \item{\code{specificity}}{double COLUMN_DESCRIPTION}
-}
 \strong{prob_grade7}
 
 A data frame with 51 rows and 2 variables:

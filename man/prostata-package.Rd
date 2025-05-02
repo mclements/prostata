@@ -5,6 +5,9 @@
 \alias{prostata-package}
 \alias{prostata}
 \title{prostata}
+\description{
+Microsimulation using discrete event simulation in R and C++. This includes a full prostate cancer model.
+}
 \section{Introduction}{
 
 

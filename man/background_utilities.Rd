@@ -8,7 +8,7 @@
 A data frame with 14 rows and 3 variables:
 \describe{
   \item{\code{lower}}{double lower age}
-  \item{\code{lower}}{double upper age}
+  \item{\code{upper}}{double upper age}
   \item{\code{utility}}{double background utility value}
 }
 }

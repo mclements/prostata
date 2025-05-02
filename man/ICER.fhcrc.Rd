@@ -2,7 +2,7 @@
 % Please edit documentation in R/prostata.R
 \name{ICER.fhcrc}
 \alias{ICER.fhcrc}
-\title{FUNCTION_TITLE}
+\title{Calculate an ICER from two fhcrc objects}
 \usage{
 \method{ICER}{fhcrc}(
   object1,
@@ -13,19 +13,21 @@
 )
 }
 \arguments{
-\item{object1}{PARAM_DESCRIPTION}
+\item{object1}{fhcrc object}
 
-\item{object2}{PARAM_DESCRIPTION}
+\item{object2}{fhcrc object (reference)}
 
 \item{perspective}{PARAM_DESCRIPTION, Default: c("societal.costs", "healthsector.costs")}
+
+\item{from}{double for the start age (assumes strategies are identical to that age)}
 
 \item{...}{PARAM_DESCRIPTION}
 }
 \value{
-OUTPUT_DESCRIPTION
+list with perspective, from, ICER.QALE, delta.QALE, delta.costs, and possibly ICER.LE and delta.LE
 }
 \description{
-FUNCTION_DESCRIPTION
+TBC
 }
 \details{
 DETAILS

@@ -387,8 +387,8 @@ FhcrcParameters <- list(
     human_as_AI = FALSE,          # Should the human pathologist have the same test characteristics as AI?
     full_biopsy_compliance = FALSE, # flag with whether to assume full biopsy compliance or not (default=not and use one of two lookup tables; see formal_compliance=1|0 and biopsyFormalComplianceTable and biopsyOpportunisticComplianceTable)
     dre_to_biopsy=FALSE,           # flag for whether a DRE proceeds to biopsy - otherwise do a PSA test
-    neg_mri_interval = 1, # rescreening interval for negative MRI (currently only for eau_guidelines)
-    neg_bx_interval = 1,  # rescreening interval for negative Bx (currently only for eau_guidelines)
+    neg_mri_interval = 2, # rescreening interval for negative MRI (currently only for eau_guidelines and risk_stratified_2_thresholds)
+    neg_bx_interval = 2,  # rescreening interval for negative Bx (currently only for eau_guidelines and risk_stratified_2_thresholds)
     risk_psa_threshold_lt_age_split=1, # PSA threshold for risk-stratified screening (uses screening_interval_split)
     risk_lower_interval_lt_age_split=8, # re-screening interval for lower risk for those in the younger age group
     risk_upper_interval_lt_age_split=2, # re-screening interval for higher risk for those in the younger age group
@@ -1044,7 +1044,8 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                  "introduced_screening", "stopped_screening",
                  "cap_control", "cap_study", "sthlm3_mri_arm", "grs_stratified", "grs_stratified_age",
                  "germany_2021", "germany_observed", "probase", "grs_stratified_ancestry",
-                 "grs_stratified_p", "grs_stratified_ancestry_p", "eau_guidelines")
+                 "grs_stratified_p", "grs_stratified_ancestry_p", "eau_guidelines",
+                 "risk_stratified_2_thresholds")
     screen <- match.arg(screen, screenT)
     stopifnot(is.na(n) || is.integer(as.integer(n)))
     stopifnot(is.integer(as.integer(nLifeHistories)))

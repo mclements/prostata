@@ -65,7 +65,8 @@ namespace fhcrc_example {
 		 stopped_screening, cap_control, cap_study, sthlm3_mri_arm,
 		 grs_stratified, grs_stratified_age, germany_2021, germany_observed,
 		 probase, grs_stratified_ancestry, grs_stratified_p,
-		 grs_stratified_ancestry_p, eau_guidelines};
+		 grs_stratified_ancestry_p, eau_guidelines,
+		 risk_stratified_2_thresholds};
 
   enum treatment_t {no_treatment, CM, RP, RT};
 
@@ -621,6 +622,24 @@ namespace fhcrc_example {
             scheduleAt(now() + in->parameter("risk_upper_interval_ge_age_split"), toScreen);
         }
         break;
+      case risk_stratified_2_thresholds:
+        if (now() >= in->parameter("start_screening")) {
+	  if (neg_mri && now()+in->parameter("neg_mri_interval") <= in->parameter("stop_screening"))
+	    scheduleAt(now() + in->parameter("neg_mri_interval"), toScreen);
+	  else if (neg_bx && now()+in->parameter("neg_bx_interval") <= in->parameter("stop_screening"))
+	    scheduleAt(now() + in->parameter("neg_bx_interval"), toScreen);
+          else if (psa < in->parameter("risk_psa_threshold_lower") &&
+	      now()+in->parameter("risk_lower_interval") <= in->parameter("stop_screening"))
+            scheduleAt(now() + in->parameter("risk_lower_interval"), toScreen);
+          else if (psa >= in->parameter("risk_psa_threshold_lower") &&
+	      psa < in->parameter("risk_psa_threshold_moderate") &&
+	      now()+in->parameter("risk_moderate_interval") <= in->parameter("stop_screening"))
+            scheduleAt(now() + in->parameter("risk_moderate_interval"), toScreen);
+          else if (psa >= in->parameter("risk_psa_threshold_moderate") &&
+	      now()+in->parameter("risk_upper_interval") <= in->parameter("stop_screening"))
+            scheduleAt(now() + in->parameter("risk_upper_interval"), toScreen);
+        }
+        break;
       case screenUptake:
       case randomScreen50to70:
       case single_screen:
@@ -876,6 +895,7 @@ void FhcrcPerson::init() {
     case risk_stratified:
     case probase:
     case eau_guidelines:
+    case risk_stratified_2_thresholds:
       scheduleAt(in->parameter("start_screening"),toScreen);
       break;
     case fourYearlyScreen50to70: // 50,54,58,62,66,70

@@ -497,7 +497,10 @@ namespace fhcrc_example {
   void FhcrcPerson::rescreening_schedules(double psa, bool organised, bool mixed_programs,
 					  bool neg_mri, bool neg_bx) {
     // Check for organised screens - opportunistic screens are described later
-    if (R::runif(0.0,1.0) < in->parameter("rescreeningParticipation")) {
+    if (R::runif(0.0,1.0) < in->parameter("rescreeningParticipation") &&
+	(!in->bparameter("use_min_life_expectancy") ||
+	 (in->bparameter("use_min_life_expectancy") &&
+	  in->rmu0.life_expectancy(now()) > in->parameter("min_life_expectancy")))) {
       switch (in->screen) {
       case mixed_screening:
       case stockholm3_goteborg:
@@ -859,6 +862,11 @@ void FhcrcPerson::init() {
     tmc = calculate_transition_time(R::runif(0.0,1.0), tm, in->parameter("gc")*in->parameter("thetac")*in->parameter("grade.clinical.rate.high"));
   }
   out->tmc_minus_t0 += (tmc - t0);
+  if (in->parameter("mu_variance") > 0.0) {
+    double Z = R::rgamma(1.0/in->parameter("mu_variance"),
+			 in->parameter("mu_variance"));
+    in->rmu0.set_Z(Z); // can be retrieved using in->rmu0.Z
+  }
   aoc = in->rmu0.rand(R::runif(0.0,1.0));
   if (!in->bparameter("revised_natural_history")){
     future_ext_grade= (future_grade==base::Gleason_le_7) ?
@@ -882,7 +890,10 @@ void FhcrcPerson::init() {
   rescreening_frailty = R::rgamma(1.25, 1.25);
   double u1 = R::runif(0.0,1.0);
   double u2 = R::runif(0.0,1.0);
-  if (R::runif(0.0,1.0)<in->parameter("screeningParticipation")) {
+  if (R::runif(0.0,1.0)<in->parameter("screeningParticipation") &&
+      (!in->bparameter("use_min_life_expectancy") ||
+       (in->bparameter("use_min_life_expectancy") &&
+	in->rmu0.life_expectancy(now()) > in->parameter("min_life_expectancy")))) {
     switch(in->screen) {
     case noScreening:
       break; // no screening
@@ -1147,8 +1158,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     out->lifeHistories.push_back(LifeHistory::Type(id, ext_state, ext_grade, dx, msg->kind, previousEventTime, age, year, psa, utility, detectable));
   }
 
-  if (in->debug)
+  if (in->debug) {
     Rprint(*utilities);
+    Rprintf("kind=%i, previousEventtime=%f, age=%f\n", msg->kind, previousEventTime, age, utility);
+  }
 
   // handle messages by kind
 
@@ -1238,6 +1251,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     
   case toScreen:
   case toBiopsyFollowUpScreen: {
+    if (in->bparameter("cancel_screens"))
+      RemoveKind(toScreen);
     if (ageFirstScreen < 0.0) ageFirstScreen = now();
     in->rngBx->set();
     this->psa_last_screen = psa;
@@ -1994,6 +2009,7 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   std::vector<double> ages0(mu0.size());
   std::iota(ages0.begin(), ages0.end(), 0.0);
   in.rmu0 = Rpexp(&mu0[0], &ages0[0], mu0.size());
+  
   vector<double> ages(101);
   std::iota(ages.begin(), ages.end(), 0.0);
   ages.push_back(1.0e+6);

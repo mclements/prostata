@@ -389,12 +389,16 @@ FhcrcParameters <- list(
     dre_to_biopsy=FALSE,           # flag for whether a DRE proceeds to biopsy - otherwise do a PSA test
     neg_mri_interval = 2, # rescreening interval for negative MRI (currently only for eau_guidelines and risk_stratified_2_thresholds)
     neg_bx_interval = 2,  # rescreening interval for negative Bx (currently only for eau_guidelines and risk_stratified_2_thresholds)
-    risk_psa_threshold_lt_age_split=1, # PSA threshold for risk-stratified screening (uses screening_interval_split)
+    risk_psa_threshold_lt_age_split=1,  # PSA threshold for risk-stratified screening (uses screening_interval_split)
     risk_lower_interval_lt_age_split=8, # re-screening interval for lower risk for those in the younger age group
     risk_upper_interval_lt_age_split=2, # re-screening interval for higher risk for those in the younger age group
-    risk_psa_threshold_ge_age_split=2, # PSA threshold for risk-stratified screening (uses screening_interval_split)
+    risk_psa_threshold_ge_age_split=2,  # PSA threshold for risk-stratified screening (uses screening_interval_split)
     risk_lower_interval_ge_age_split=8, # re-screening interval for lower risk for those in the younger age group
-    risk_upper_interval_ge_age_split=2 # re-screening interval for higher risk for those in the younger age group
+    risk_upper_interval_ge_age_split=2, # re-screening interval for higher risk for those in the younger age group
+    cancel_screens = FALSE, # for handling toScreen, first cancel existing toScreen events
+    mu_variance = 0.0,                  # variance for all cause mortality
+    min_life_expectancy = 15,           # minimum life expectancy to continue screening
+    use_min_life_expectancy = FALSE     # whether to use life expectancy in whether to screen
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]

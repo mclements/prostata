@@ -56,7 +56,7 @@ namespace fhcrc_example {
                 toCM, toRP, toRT, toADT, toUtilityChange, toUtilityRemove,
                 toSTHLM3, toOpportunistic, toT3plus, toCancelScreens,
                 toYearlyActiveSurveillance, toYearlyPostTxFollowUp, toMRI, toPalliative, toTerminal, toDRE,
-                toGRS};
+                toGRS,toPosMRI};
 
   enum screen_t {noScreening, randomScreen50to70, twoYearlyScreen50to70, fourYearlyScreen50to70,
 		 screen50, screen60, screen70, screenUptake, stockholm3_goteborg, stockholm3_risk_stratified,
@@ -65,7 +65,7 @@ namespace fhcrc_example {
 		 stopped_screening, cap_control, cap_study, sthlm3_mri_arm,
 		 grs_stratified, grs_stratified_age, germany_2021, germany_observed,
 		 probase, grs_stratified_ancestry, grs_stratified_p,
-		 grs_stratified_ancestry_p};
+		 grs_stratified_ancestry_p, eau_guidelines};
 
   enum treatment_t {no_treatment, CM, RP, RT};
 
@@ -83,8 +83,8 @@ namespace fhcrc_example {
     // string names[5] = {"ext_state","ext_grade","dx","psa_ge_3","cohort"};
   }
   namespace LifeHistory {
-    typedef std::tuple<int, short, short, int, short, double, double, double, double, double> Type;
-    enum Fields {id, ext_state, ext_grade, dx, event, begin, end, year, psa, utility};
+    typedef std::tuple<int, short, short, int, short, double, double, double, double, double, short> Type;
+    enum Fields {id, ext_state, ext_grade, dx, event, begin, end, year, psa, utility, detectable};
   }
 
   RcppExport SEXP rllogis_(SEXP shape, SEXP scale) {
@@ -597,6 +597,30 @@ namespace fhcrc_example {
         if (50.0 <= now() && now() < 70.0)
           scheduleAt(now() + 4.0, toScreen);
         break;
+      case eau_guidelines:
+        if (now() >= in->parameter("start_screening")) {
+	  if (neg_mri && now()+in->parameter("neg_mri_interval") <= in->parameter("stop_screening"))
+	    scheduleAt(now() + in->parameter("neg_mri_interval"), toScreen);
+	  else if (neg_bx && now()+in->parameter("neg_bx_interval") <= in->parameter("stop_screening"))
+	    scheduleAt(now() + in->parameter("neg_bx_interval"), toScreen);
+          else if (now() < in->parameter("screening_interval_split") &&
+		   psa < in->parameter("risk_psa_threshold_lt_age_split") &&
+		   now()+in->parameter("risk_lower_interval_lt_age_split") <= in->parameter("stop_screening"))
+            scheduleAt(now() + in->parameter("risk_lower_interval_lt_age_split"), toScreen);
+          else if (now() < in->parameter("screening_interval_split") &&
+		   psa >= in->parameter("risk_psa_threshold_lt_age_split") &&
+		   now()+in->parameter("risk_upper_interval_lt_age_split") <= in->parameter("stop_screening"))
+            scheduleAt(now() + in->parameter("risk_upper_interval_lt_age_split"), toScreen);
+          else if (now() >= in->parameter("screening_interval_split") &&
+		   psa < in->parameter("risk_psa_threshold_ge_age_split") &&
+		   now()+in->parameter("risk_lower_interval_ge_age_split") <= in->parameter("stop_screening"))
+            scheduleAt(now() + in->parameter("risk_lower_interval_ge_age_split"), toScreen);
+          else if (now() >= in->parameter("screening_interval_split") &&
+		   psa >= in->parameter("risk_psa_threshold_ge_age_split") &&
+		   now()+in->parameter("risk_upper_interval_ge_age_split") <= in->parameter("stop_screening"))
+            scheduleAt(now() + in->parameter("risk_upper_interval_ge_age_split"), toScreen);
+        }
+        break;
       case screenUptake:
       case randomScreen50to70:
       case single_screen:
@@ -851,6 +875,7 @@ void FhcrcPerson::init() {
     case goteborg:
     case risk_stratified:
     case probase:
+    case eau_guidelines:
       scheduleAt(in->parameter("start_screening"),toScreen);
       break;
     case fourYearlyScreen50to70: // 50,54,58,62,66,70
@@ -1099,7 +1124,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   }
 
   if (in->bparameter("includeEventHistories") && id < in->nLifeHistories) { // only record up to the first n individuals
-    out->lifeHistories.push_back(LifeHistory::Type(id, ext_state, ext_grade, dx, msg->kind, previousEventTime, age, year, psa, utility));
+    out->lifeHistories.push_back(LifeHistory::Type(id, ext_state, ext_grade, dx, msg->kind, previousEventTime, age, year, psa, utility, detectable));
   }
 
   if (in->debug)
@@ -1281,9 +1306,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     in->rngBx->set();
     if (positive_test && R::runif(0.0,1.0) < compliance) {
       if (in->bparameter("MRI_screen")) {
-	scheduleAt(now()+1.0/52.0, toMRI); // MRI in one month
+	scheduleAt(now()+1.0/52.0, toMRI); // MRI in one week (not realistic:()
       } else {
-	scheduleAt(now()+1.0/52.0, toScreenInitiatedBiopsy); // biopsy in one month
+	scheduleAt(now()+1.0/52.0, toScreenInitiatedBiopsy); // biopsy in one week
       }
     } // assumes similar biopsy compliance, reasonable? An option to different psa-thresholds would be to use different biopsyCompliance. /AK
     else {
@@ -1357,6 +1382,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       (this->ext_grade == ext::Gleason_le_6) ? in->parameter("pMRIposG1") :
       in->parameter("pMRIposG2");
     this->MRIpos = (R::runif(0.0,1.0) < pMRIpos); // we need to know if they are MRI+ at toScreenInitiatedBiopsy
+    if (this->MRIpos)
+      scheduleAt(now(), toPosMRI);
     if (this->MRIpos || in->bparameter("MRInegSBx")) {
       scheduleAt(now(), toScreenInitiatedBiopsy);
     } else {
@@ -1367,6 +1394,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     in->rngNh->set();
   } break;
     
+  case toPosMRI:
+    // only for recording
+    break;
+
   // record additional biopsies for clinical diagnoses
   case toClinicalDiagnosticBiopsy:
     if (in->bparameter("MRI_clinical") ||

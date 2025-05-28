@@ -386,7 +386,15 @@ FhcrcParameters <- list(
     pAIposG4plus=1,               # Pr(AI+ | ISUP 4+, sensitivity = 0.99) Henrik's data output
     human_as_AI = FALSE,          # Should the human pathologist have the same test characteristics as AI?
     full_biopsy_compliance = FALSE, # flag with whether to assume full biopsy compliance or not (default=not and use one of two lookup tables; see formal_compliance=1|0 and biopsyFormalComplianceTable and biopsyOpportunisticComplianceTable)
-    dre_to_biopsy=FALSE           # flag for whether a DRE proceeds to biopsy - otherwise do a PSA test
+    dre_to_biopsy=FALSE,           # flag for whether a DRE proceeds to biopsy - otherwise do a PSA test
+    neg_mri_interval = 1, # rescreening interval for negative MRI (currently only for eau_guidelines)
+    neg_bx_interval = 1,  # rescreening interval for negative Bx (currently only for eau_guidelines)
+    risk_psa_threshold_lt_age_split=1, # PSA threshold for risk-stratified screening (uses screening_interval_split)
+    risk_lower_interval_lt_age_split=8, # re-screening interval for lower risk for those in the younger age group
+    risk_upper_interval_lt_age_split=2, # re-screening interval for higher risk for those in the younger age group
+    risk_psa_threshold_ge_age_split=2, # PSA threshold for risk-stratified screening (uses screening_interval_split)
+    risk_lower_interval_ge_age_split=8, # re-screening interval for lower risk for those in the younger age group
+    risk_upper_interval_ge_age_split=2 # re-screening interval for higher risk for those in the younger age group
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]
@@ -1036,7 +1044,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                  "introduced_screening", "stopped_screening",
                  "cap_control", "cap_study", "sthlm3_mri_arm", "grs_stratified", "grs_stratified_age",
                  "germany_2021", "germany_observed", "probase", "grs_stratified_ancestry",
-                 "grs_stratified_p", "grs_stratified_ancestry_p")
+                 "grs_stratified_p", "grs_stratified_ancestry_p", "eau_guidelines")
     screen <- match.arg(screen, screenT)
     stopifnot(is.na(n) || is.integer(as.integer(n)))
     stopifnot(is.integer(as.integer(nLifeHistories)))
@@ -1051,7 +1059,7 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                 "toCM","toRP", "toRT","toADT","toUtilityChange","toUtilityRemove",
                 "toSTHLM3", "toOpportunistic","toT3plus", "toCancelScreens",
                 "toYearlyActiveSurveillance", "toYearlyPostTxFollowUp", "toMRI",
-                "toPalliative", "toTerminal", "toDRE", "toGRS")
+                "toPalliative", "toTerminal", "toDRE", "toGRS", "toPosMRI")
     diagnosisT <- c("NotDiagnosed","ClinicalDiagnosis","ScreenDiagnosis")
     treatmentT <- c("no_treatment","CM","RP","RT")
     psaT <- c("PSA<3","PSA>=3") # not sure where to put this...
@@ -1281,10 +1289,10 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                                          "Productivity loss",
                                          "Health sector cost")) # societal perspective
     healthsector.costs <- societal.costs[societal.costs["type"] == "Health sector cost", c("item", "age", "costs")] # healthcare perspective
-    names(lifeHistories) <- c("id", "ext_state", "ext_grade", "dx", "event", "begin", "end", "year", "psa", "utility")
+    names(lifeHistories) <- c("id", "ext_state", "ext_grade", "dx", "event", "begin", "end", "year", "psa", "utility", "detectable")
     enum(lifeHistories$ext_state) <- ext_stateT
     lifeHistories$state <- ext_state2state(lifeHistories$ext_state)
-    lifeHistories <- lifeHistories[c(names(lifeHistories)[1], "state", names(lifeHistories)[-1])] # shift col order
+    lifeHistories <- lifeHistories[c(names(lifeHistories)[1], "state", names(lifeHistories)[-1])] # shift col order????
     enum(lifeHistories$dx) <- diagnosisT
     enum(lifeHistories$event) <- eventT
     enum(diagnoses$ext_state) <- ext_stateT
@@ -1608,8 +1616,8 @@ ICER.fhcrc <- function(object1, object2,
 #' @export
 print.fhcrc <- function(x, ...)
     cat(sprintf("FHCRC prostate cancer model with %i individual(s) under scenario '%s'.\n",
-                x$n, x$screen),
-        ...)
+                    x$n, x$screen),
+            ...)
 
 ## TODO: better solve issue below with testing.rate for noScreening scenario
 #' @title FUNCTION_TITLE

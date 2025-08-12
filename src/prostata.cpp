@@ -252,7 +252,7 @@ namespace fhcrc_example {
     treatment_t tx;
     bool adt;
     double txhaz, psa_last_screen;
-    int id, index;
+    int id, index, screening_round;
     double cohort, rescreening_frailty, ageEntry, grs_frailty, other_frailty, ageFirstScreen,
       age_dx, rr_ancestry, grs_p, grs_ancestry_p;
     bool everPSA, previousNegativeBiopsy, organised, previousFollowup, MRIpos, everGRS,
@@ -763,6 +763,7 @@ void FhcrcPerson::init() {
   everPSA = previousNegativeBiopsy = organised = adt = previousFollowup = MRIpos = everGRS =
     dre_annual = dre_2_3 = false;
   age_dx = -1.0;
+  screening_round=0;
   in->rngNh->set();
   // https://journals.plos.org/plosmedicine/article/file?id=10.1371/journal.pmed.1002998&type=printable
   // genetic risk score with T ~ LogNormal(mu,sigma^2) with mean(T) =1 and sigma^2=0.68
@@ -1253,6 +1254,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   case toBiopsyFollowUpScreen: {
     if (in->bparameter("cancel_screens"))
       RemoveKind(toScreen);
+    screening_round += 1;
     if (ageFirstScreen < 0.0) ageFirstScreen = now();
     in->rngBx->set();
     this->psa_last_screen = psa;
@@ -1416,6 +1418,13 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     double pMRIpos = (this->ext_grade == ext::Healthy || !detectable) ? in->parameter("pMRIposG0") :
       (this->ext_grade == ext::Gleason_le_6) ? in->parameter("pMRIposG1") :
       in->parameter("pMRIposG2");
+    if (in->bparameter("round_specific_p_mri") && screening_round>1) {
+      // WARNING! Round-specific pMRIpos assumes that the original estimates hold for the first round
+      // Reminder: the default is to use the above test characteristics for all screening rounds
+      pMRIpos = (this->ext_grade == ext::Healthy || !detectable) ? in->parameter("pMRIposG0_r2") :
+	(this->ext_grade == ext::Gleason_le_6) ? in->parameter("pMRIposG1_r2") :
+	in->parameter("pMRIposG2_r2");
+    }
     this->MRIpos = (R::runif(0.0,1.0) < pMRIpos); // we need to know if they are MRI+ at toScreenInitiatedBiopsy
     if (this->MRIpos)
       scheduleAt(now(), toPosMRI);
@@ -1526,6 +1535,17 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	}
 	else if (this->ext_grade == ext::Gleason_ge_8) {
 	  Bx_missed = (u2 < in->parameter("pTBxG0ifG4plus_MRIpos"));
+	}
+	if (in->bparameter("round_specific_p_mri") && screening_round>1) {
+	  if (this->ext_grade == ext::Gleason_le_6) {
+	    Bx_missed = (u2 < in->parameter("pTBxG0ifG1_MRIpos_r2"));
+	  }
+	  else if (this->ext_grade == ext::Gleason_7) {
+	    Bx_missed = (u2 < in->parameter("pTBxG0ifG2_MRIpos_r2"));
+	  }
+	  else if (this->ext_grade == ext::Gleason_ge_8) {
+	    Bx_missed = (u2 < in->parameter("pTBxG0ifG4plus_MRIpos_r2"));
+	  }
 	}
       } else { // SBx compared with MRI
 	if (this->ext_grade == ext::Gleason_le_6) {

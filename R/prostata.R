@@ -394,6 +394,7 @@ FhcrcParameters <- list(
     rr_black = 2.62,              # proportion Black by ancestry (95% CI: 2.51, 2.73)
     rr_asian = 0.497,             # proportion Asian by ancestry (95% CI: 0.470, 0.524)
     negbx_to_regular = FALSE,     # flag for whether to return to regular screening after a negative biopsy
+    negbx_to_repeat_sbx = TRUE,   # flag for whether a negative biopsy could possibly go to standard biopsy cf MRI
     pAIposG1=0.992,               # Pr(AI+ | ISUP 1, sensitivity = 0.99) Henrik's data output
     pAIposG2=1,                   # Pr(AI+ | ISUP 2-3, sensitivity = 0.99) Henrik's data output
     pAIposG4plus=1,               # Pr(AI+ | ISUP 4+, sensitivity = 0.99) Henrik's data output

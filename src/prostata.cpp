@@ -1161,7 +1161,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   if (in->debug) {
     Rprint(*utilities);
-    Rprintf("kind=%i, previousEventtime=%f, age=%f\n", msg->kind, previousEventTime, age, utility);
+    Rprintf("kind=%i, previousEventtime=%f, age=%f, utility=%f\n", msg->kind, previousEventTime, age, utility);
   }
 
   // handle messages by kind
@@ -1539,7 +1539,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	else if (this->ext_grade == ext::Gleason_ge_8) {
 	  Bx_missed = (u2 < in->parameter("pTBxG0ifG4plus_MRIpos"));
 	}
-	if (in->bparameter("round_specific_p_mri") && screening_round>1) {
+	if (in->bparameter("round_specific_p_mri") && screening_round>1) { // overwrites the values!
 	  if (this->ext_grade == ext::Gleason_le_6) {
 	    Bx_missed = (u2 < in->parameter("pTBxG0ifG1_MRIpos_r2"));
 	  }
@@ -1595,13 +1595,18 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
         // Competing risk for event following a negative biopsy
         double timeToPSA = R::rlnorm(in->tableNegBiopsyToPSAmeanlog(age),
                                      in->tableNegBiopsyToPSAsdlog(age));
+	// time to next biopsy *or* MRI
         double timeToBiopsy = R::rlnorm(in->tableNegBiopsyToBiopsymeanlog(age),
                                         in->tableNegBiopsyToBiopsysdlog(age));
         if (timeToPSA <= timeToBiopsy) { // PSA was the first event
           scheduleAt(now() + timeToPSA, toScreen);
-        } else { // Biopsy was the first event
-	  this->MRIpos = false; // HACK!!! This ensures that they do SBx only.
-          scheduleAt(now() + timeToBiopsy, toScreenInitiatedBiopsy);
+        } else { // Biopsy or MRI was the first event
+	  if (in->bparameter("negbx_to_repeat_sbx")) { // if they do not have a PSA first, then do SBx
+	    this->MRIpos = false; // HACK!!! This ensures that they do SBx only.
+	    scheduleAt(now() + timeToBiopsy, toScreenInitiatedBiopsy);
+	  } else { // otherwise have an MRI
+	    scheduleAt(now() + timeToBiopsy, toMRI);
+	  }
         }
       }
     }

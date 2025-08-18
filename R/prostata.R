@@ -276,7 +276,9 @@ FhcrcParameters <- list(
                         "Polygenic risk stratification" = 250*12, # Callender et al (2021) with exchange rate of approximately 12
                         "Opportunistic DRE" = 349                 # DRE procedure in primary care
                         + 0.2 * 1539,                             # part of primary care visit
-                        "AI pathology" = 1000),                   # AI pathology costs
+                        "AI pathology" = 1000,                    # AI pathology costs
+                        "MRI" = 3548.67,                          # MRI costs (excludes radiology costs if cost_MRIpos=TRUE)
+                        "MRIpos" = 2711),                         # Additional radiology costs following a positive MRI (requires cost_MRIpos=TRUE)
     active_surveillance_cost_scale_first_two_years = 1.0,         # cost scale for AS first two years (Trust: you owe me:)
     ## Swedish governmental report on organised PSA testing (p.23):
     ## https://www.socialstyrelsen.se/globalassets/sharepoint-dokument/artikelkatalog/nationella-screeningprogram/2018-10-15-halsoekonomisk-analys.pdf
@@ -350,6 +352,7 @@ FhcrcParameters <- list(
     MRI_active_surveillance = FALSE, # defines whether MRI pathway is used for active surveillance
     MRI_override_no_active_surveillance=FALSE, # turn *off* MRI for active surveillance if MRI_screen or MRI_clinical (otherwise MRI_screen or MRI_clinical turn *on* MRI for active surveillance - old behaviour:()
     MRInegSBx=FALSE,              # No SBx for MRI- (by default)
+    cost_MRIpos=FALSE,            # Is there an extra cost for a positive MRI (for the radiologist to target the lesion)
     rescreenDoubleNeg = FALSE,    # defines whether MRI-/Bx- men should move to rescreening (cf. repeat PSA and Bx within ~12 months)
     indiv_reports = FALSE,        # should the cost and standard reports include individual values?
     startReportAge = 0.0,         # Age to start reporting (currently only means_utilities and means_costs)

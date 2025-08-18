@@ -1439,7 +1439,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   } break;
     
   case toPosMRI:
-    // only for recording
+    if (in->bparameter("cost_MRIpos"))
+      add_costs("MRIpos");
     break;
 
   // record additional biopsies for clinical diagnoses
@@ -1449,6 +1450,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	 now()>=in->parameter("start_screening") && now()<in->parameter("stop_screening"))) {
       add_costs("MRI");
       lost_productivity("MRI");
+      if (in->bparameter("cost_MRIpos"))
+	add_costs("MRIpos"); // assumes that both clinical diagnostic biopsies with MRI will be MRI-positive
       add_costs("Combined biopsy");
       lost_productivity("Combined biopsy");
     } else {

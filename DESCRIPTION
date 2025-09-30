@@ -14,7 +14,7 @@ Authors@R: c(person("Mark", "Clements", role = c("aut", "cre"),
                      email = "edna.keeney@bristol.ac.uk"))
 Description: Microsimulation using discrete event simulation in R and C++. This includes a full prostate cancer model.
 License: GPL (>= 3)
-Depends: microsimulation (>= 1.4.0)
+Depends: microsimulation (>= 1.4.6)
 Imports: Rcpp, graphics, utils, parallel, stats
 LinkingTo: microsimulation, Rcpp, RcppArmadillo
 Suggests: testthat

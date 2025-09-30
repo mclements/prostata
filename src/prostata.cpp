@@ -497,10 +497,7 @@ namespace fhcrc_example {
   void FhcrcPerson::rescreening_schedules(double psa, bool organised, bool mixed_programs,
 					  bool neg_mri, bool neg_bx) {
     // Check for organised screens - opportunistic screens are described later
-    if (R::runif(0.0,1.0) < in->parameter("rescreeningParticipation") &&
-	(!in->bparameter("use_min_life_expectancy") ||
-	 (in->bparameter("use_min_life_expectancy") &&
-	  in->rmu0.life_expectancy(now()) > in->parameter("min_life_expectancy")))) {
+    if (R::runif(0.0,1.0) < in->parameter("rescreeningParticipation")) {
       switch (in->screen) {
       case mixed_screening:
       case stockholm3_goteborg:
@@ -601,7 +598,7 @@ namespace fhcrc_example {
         if (50.0 <= now() && now() < 70.0)
           scheduleAt(now() + 4.0, toScreen);
         break;
-      case eau_guidelines:
+      case eau_guidelines: // reminder: split by age and then have age-specific psa splits
         if (now() >= in->parameter("start_screening")) {
 	  if (neg_mri && now()+in->parameter("neg_mri_interval") <= in->parameter("stop_screening"))
 	    scheduleAt(now() + in->parameter("neg_mri_interval"), toScreen);
@@ -891,10 +888,7 @@ void FhcrcPerson::init() {
   rescreening_frailty = R::rgamma(1.25, 1.25);
   double u1 = R::runif(0.0,1.0);
   double u2 = R::runif(0.0,1.0);
-  if (R::runif(0.0,1.0)<in->parameter("screeningParticipation") &&
-      (!in->bparameter("use_min_life_expectancy") ||
-       (in->bparameter("use_min_life_expectancy") &&
-	in->rmu0.life_expectancy(now()) > in->parameter("min_life_expectancy")))) {
+  if (R::runif(0.0,1.0)<in->parameter("screeningParticipation")) {
     switch(in->screen) {
     case noScreening:
       break; // no screening
@@ -1251,11 +1245,32 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     break;
     
   case toScreen:
-  case toBiopsyFollowUpScreen: {
+  case toBiopsyFollowUpScreen: { // Issue: this specific event is never scheduled
     if (in->bparameter("cancel_screens"))
       RemoveKind(toScreen);
     screening_round += 1;
     if (ageFirstScreen < 0.0) ageFirstScreen = now();
+    if (in->bparameter("use_min_life_expectancy")) {
+      double Z_error_variance = in->parameter("Z_error_variance");
+      double Z_error = (Z_error_variance > 0.0) ?
+	R::rgamma(1.0/Z_error_variance, Z_error_variance) : 1.0;
+      if (in->rmu0.life_expectancy(now(), Z_error) < in->parameter("min_life_expectancy")) {
+	add_costs("GP visit - no screen");
+	RemoveKind(toScreen);
+	return;
+      }
+    }
+    if (in->bparameter("use_max_n_year_risk")) {
+      double Z_error_variance = in->parameter("Z_error_variance");
+      double Z_error = (Z_error_variance > 0.0) ?
+	R::rgamma(1.0/Z_error_variance, Z_error_variance) : 1.0;
+      if (in->rmu0.n_year_risk(now(),in->parameter("n_year"),Z_error) >
+	  in->parameter("max_n_year_risk")) {
+	add_costs("GP visit - no screen");
+	RemoveKind(toScreen);
+	return;
+      }
+    }
     in->rngBx->set();
     this->psa_last_screen = psa;
     if (in->bparameter("includePSArecords")) {
@@ -1531,7 +1546,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	// pass
       } else if (in->bparameter("MRI_screen") && this->MRIpos) {
 	if (this->ext_grade == ext::Gleason_le_6) {
-	  Bx_missed = (u2 < in->parameter("pTBxG0ifG1_MRIpos"));
+	  Bx_missed = (u2 < in->parameter("pTBxG0ifG1_MRIpos")); // should this be pBxG0ifG1_MRIpos?
 	}
 	else if (this->ext_grade == ext::Gleason_7) {
 	  Bx_missed = (u2 < in->parameter("pTBxG0ifG2_MRIpos"));

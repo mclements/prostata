@@ -278,7 +278,8 @@ FhcrcParameters <- list(
                         + 0.2 * 1539,                             # part of primary care visit
                         "AI pathology" = 1000,                    # AI pathology costs
                         "MRI" = 3548.67,                          # MRI costs (excludes radiology costs if cost_MRIpos=TRUE)
-                        "MRIpos" = 2711),                         # Additional radiology costs following a positive MRI (requires cost_MRIpos=TRUE)
+                        "MRIpos" = 2711,                          # Additional radiology costs following a positive MRI (requires cost_MRIpos=TRUE)
+                        "GP visit - no screen" = 0.2*1539),                    # Cost for a GP visit without any test (currently only used for use_min_life_expectancy and use_max_life_risk)
     active_surveillance_cost_scale_first_two_years = 1.0,         # cost scale for AS first two years (Trust: you owe me:)
     ## Swedish governmental report on organised PSA testing (p.23):
     ## https://www.socialstyrelsen.se/globalassets/sharepoint-dokument/artikelkatalog/nationella-screeningprogram/2018-10-15-halsoekonomisk-analys.pdf
@@ -381,6 +382,7 @@ FhcrcParameters <- list(
     pTBxG0ifG1_MRIpos=0,          # Pr(TBx gives ISUP 0 | ISUP 1, MRI+)
     pTBxG0ifG2_MRIpos=0,          # Pr(TBx gives ISUP 0 | ISUP 2-3, MRI+) -- NB: actually G2 and G3
     pTBxG0ifG4plus_MRIpos=0,      # Pr(TBx gives ISUP 0 | ISUP 4+, MRI+)
+    ## second+ screening round(s) -- uses the round_specific_p_mri flag
     pTBxG0ifG1_MRIpos_r2=0,          # Pr(TBx gives ISUP 0 | ISUP 1, MRI+)
     pTBxG0ifG2_MRIpos_r2=0,          # Pr(TBx gives ISUP 0 | ISUP 2-3, MRI+) -- NB: actually G2 and G3
     pTBxG0ifG4plus_MRIpos_r2=0,      # Pr(TBx gives ISUP 0 | ISUP 4+, MRI+)
@@ -410,9 +412,13 @@ FhcrcParameters <- list(
     risk_lower_interval_ge_age_split=8, # re-screening interval for lower risk for those in the younger age group
     risk_upper_interval_ge_age_split=2, # re-screening interval for higher risk for those in the younger age group
     cancel_screens = FALSE, # for handling toScreen, first cancel existing toScreen events
+    Z_error_variance = 0.0,             # variance for measuring the frailty for all cause mortality
     mu_variance = 0.0,                  # variance for all cause mortality
     min_life_expectancy = 15,           # minimum life expectancy to continue screening
-    use_min_life_expectancy = FALSE     # whether to use life expectancy in whether to screen
+    use_min_life_expectancy = FALSE,    # whether to use life expectancy in whether to screen
+    max_n_year_risk = 0.07,             # minimum life expectancy to continue screening
+    n_year = 10,                        # number of years for the risk calculations
+    use_max_n_year_risk = FALSE         # whether to use life expectancy in whether to screen
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]

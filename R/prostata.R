@@ -1317,7 +1317,9 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
     names(lifeHistories) <- c("id", "ext_state", "ext_grade", "dx", "event", "begin", "end", "year", "psa", "utility", "detectable")
     enum(lifeHistories$ext_state) <- ext_stateT
     lifeHistories$state <- ext_state2state(lifeHistories$ext_state)
-    lifeHistories <- lifeHistories[c(names(lifeHistories)[1], "state", names(lifeHistories)[-1])] # shift col order????
+    first.states = c(1,2,which(names(lifeHistories) == "state"))
+    lifeHistories <- lifeHistories[c(first.states,
+                                     setdiff(1:length(lifeHistories), first.states))]
     enum(lifeHistories$dx) <- diagnosisT
     enum(lifeHistories$event) <- eventT
     enum(diagnoses$ext_state) <- ext_stateT

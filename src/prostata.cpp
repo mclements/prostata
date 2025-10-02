@@ -885,7 +885,7 @@ void FhcrcPerson::init() {
 
   // schedule screening events that depend on screeningParticipation
   in->rngScreen->set();
-  rescreening_frailty = R::rgamma(1.25, 1.25);
+  rescreening_frailty = R::rgamma(1/1.25, 1.25); // not used:|
   double u1 = R::runif(0.0,1.0);
   double u2 = R::runif(0.0,1.0);
   if (R::runif(0.0,1.0)<in->parameter("screeningParticipation")) {

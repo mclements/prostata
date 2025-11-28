@@ -816,7 +816,12 @@ void FhcrcPerson::init() {
     grs_ancestry_p = grs_p = 0.5;
   }
   if (R::runif(0.0, 1.0) <= in->parameter("susceptible")) { // portion susceptible
-    if (in->bparameter("weibull_onset")) {
+    if (in->bparameter("mvk_onset")) {
+      t0 = rMVK(1.0-pow(R::runif(0.0,1.0),1/(grs_frailty*other_frailty)),
+		in->parameter("mvk_onset_A"),
+		in->parameter("mvk_onset_B"),
+		in->parameter("mvk_onset_delta"));
+    } else if (in->bparameter("weibull_onset")) {
       t0 = rweibull_frailty(in->parameter("weibull_onset_shape"),
 			    in->parameter("weibull_onset_scale"),
 			    grs_frailty*other_frailty);

@@ -360,6 +360,10 @@ FhcrcParameters <- list(
     weibull_onset = FALSE,        # flag to use Weibull-distributed onset
     weibull_onset_shape = 2,      # shape; values (0,Inf)
     weibull_onset_scale= 40,      # scale; values (0,Inf)
+    mvk_onset = FALSE,            # flag to use MVK-distributed onset
+    mvk_onset_A = -0.001940466,   # A; values (-Inf,0)
+    mvk_onset_B =  0.079539535,   # B; values (0,Inf)
+    mvk_onset_delta = 5.591766337,# delta; values (0,Inf)
     frailty = FALSE,              # assume a frailty distribution on the onset distribution?
     grs_variance = 0.68,          # Callender et al (2019) -- variance on the log-frailty scale
     other_variance = 1.14,        # total variance = 1.82 from Kicinski et al (2011; https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0027130) -- variance on the log-frailty scale

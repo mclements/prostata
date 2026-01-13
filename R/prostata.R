@@ -61,6 +61,21 @@ if(.Platform$OS.type == "unix") {
         microsimulation::user.Random.seed(pkg)
 }
 
+## Utilities
+## Take an MVN distribution and convert so that the columns after the
+## first are *log-normal* with the same means and covariances
+logMVN_approx <- function(mu, Sigma){
+    K <- length(mu)
+    for(i in 2:K){
+        Sigma[1,i] = Sigma[i,1] = Sigma[1,i]/mu[i]
+        for(j in 2:K){
+            Sigma[i,j] <- log(1 + Sigma[i,j]/(mu[i]*mu[j]))
+        }
+    }
+    mu[2:K] = log(mu[2:K]) - 0.5*diag(Sigma[2:K,2:K])
+    list(mu = mu, Sigma = Sigma)
+}
+
 ##
 #' @title Initial values for the FHCRC model
 #' @description Initial values for the FHCRC model
@@ -422,7 +437,20 @@ FhcrcParameters <- list(
     use_min_life_expectancy = FALSE,    # whether to use life expectancy in whether to screen
     max_n_year_risk = 0.07,             # minimum life expectancy to continue screening
     n_year = 10,                        # number of years for the risk calculations
-    use_max_n_year_risk = FALSE         # whether to use life expectancy in whether to screen
+    use_max_n_year_risk = FALSE,        # whether to use life expectancy in whether to screen
+    only_symptomatic_if_detectable = FALSE, # flag for whether symptomatics must be from when detectable
+    daniela_psa_param_distribution = FALSE, # should we use the "new" PSA parameter distribution?
+    psa_param_distribution = local({
+        ## centred age at 65
+        ## assumed onset 10 years in the past:)
+        var.epsilon = 0.170362
+        mu=c(intercept=0.24342, age_centred=0.02689, time_since_onset=0.19671)
+        vars = c(intercept=0.563331, age_centred=0.001096, time_since_onset=0.021323)
+        cors = matrix(c(1,0.595,-0.231, 0.595,1,-0.141, -0.231,-0.141,1),3)
+        Sigma = cors * outer(sqrt(vars), sqrt(vars))
+        ## this is a weird distribution which is normal for the first column and log-normal for the second and third
+        logMVN_approx(mu,Sigma)
+        })
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]

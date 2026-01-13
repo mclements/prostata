@@ -163,6 +163,7 @@ namespace fhcrc_example {
     // cumulative hazard for screening uptake (currently only cap_control and cap_study)
     NumericInterpolate H_screen_uptake;
     NumericVector cap_pScreened;
+    ssim::MVN psa_parameter_mvn;
 
     ~SimInput() {
       if (rngNh != NULL) delete rngNh;
@@ -852,16 +853,28 @@ void FhcrcPerson::init() {
   }
   beta0 = R::rnorm(in->parameter("mubeta0"),in->parameter("sebeta0"));
   beta1 = R::rnormPos(in->parameter("mubeta1"),in->parameter("sebeta1"));
-
+  if (in->bparameter("daniela_psa_param_distribution")) {
+    arma::vec betas = in->psa_parameter_mvn.rand();
+    beta0 = betas[0];
+    beta1 = exp(betas[1]);
+    beta2 = exp(betas[2]);
+    if (future_ext_grade == ext::Gleason_ge_8)
+      beta2 *= in->mubeta2[2]/in->mubeta2[1];
+  }
   y0 = psamean(t0+35); // depends on: t0, beta0, beta1, beta2
   t3p = calculate_transition_time(R::runif(0.0,1.0), t0, in->parameter("g3p"));
   tm = calculate_transition_time(R::runif(0.0,1.0), t3p, in->parameter("gm"));
   ym = psamean(tm+35);
+  double td = t3p - (t3p-t0)*in->parameter("biopsySensitivityTimeProportionT1T2");
   if (future_grade==base::Gleason_le_7) { // Annals
-    tc = calculate_transition_time(R::runif(0.0,1.0), t0, in->parameter("gc"));
+    tc = calculate_transition_time(R::runif(0.0,1.0),
+				   in->bparameter("only_symptomatic_if_detectable") ? td : t0,
+				   in->parameter("gc"));
     tmc = calculate_transition_time(R::runif(0.0,1.0), tm, in->parameter("gc")*in->parameter("thetac"));
   } else {
-    tc = calculate_transition_time(R::runif(0.0,1.0), t0, in->parameter("gc")*in->parameter("grade.clinical.rate.high"));
+    tc = calculate_transition_time(R::runif(0.0,1.0),
+				   in->bparameter("only_symptomatic_if_detectable") ? td : t0,
+				   in->parameter("gc")*in->parameter("grade.clinical.rate.high"));
     tmc = calculate_transition_time(R::runif(0.0,1.0), tm, in->parameter("gc")*in->parameter("thetac")*in->parameter("grade.clinical.rate.high"));
   }
   out->tmc_minus_t0 += (tmc - t0);
@@ -2062,6 +2075,9 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   std::iota(ages.begin(), ages.end(), 0.0);
   ages.push_back(1.0e+6);
 
+  Rcpp::List psa_parameter_list = as<Rcpp::List>(otherParameters("psa_param_distribution"));
+  in.psa_parameter_mvn = ssim::MVN(as<arma::vec>(psa_parameter_list("mu")),
+				   as<arma::mat>(psa_parameter_list("Sigma")));
   // setup for cap_control and cap_study
   // if (in.screen == cap_control || in.screen == cap_study) {
   //   DataFrame uk_screen_uptake = as<DataFrame>(otherParameters("uk_screen_uptake")); // age,H

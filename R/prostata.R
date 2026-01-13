@@ -449,7 +449,9 @@ FhcrcParameters <- list(
         cors = matrix(c(1,0.595,-0.231, 0.595,1,-0.141, -0.231,-0.141,1),3)
         Sigma = cors * outer(sqrt(vars), sqrt(vars))
         ## this is a weird distribution which is normal for the first column and log-normal for the second and third
-        logMVN_approx(mu,Sigma)
+        vals = logMVN_approx(mu,Sigma)
+        vals$tau2 = var.epsilon
+        vals
         })
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods

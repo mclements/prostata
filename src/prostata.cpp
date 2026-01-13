@@ -2075,9 +2075,13 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   std::iota(ages.begin(), ages.end(), 0.0);
   ages.push_back(1.0e+6);
 
-  Rcpp::List psa_parameter_list = as<Rcpp::List>(otherParameters("psa_param_distribution"));
-  in.psa_parameter_mvn = ssim::MVN(as<arma::vec>(psa_parameter_list("mu")),
-				   as<arma::mat>(psa_parameter_list("Sigma")));
+  if (in.bparameter("daniela_psa_param_distribution")) {
+    Rcpp::List psa_parameter_list = as<Rcpp::List>(otherParameters("psa_param_distribution"));
+    in.psa_parameter_mvn = ssim::MVN(as<arma::vec>(psa_parameter_list("mu")),
+				     as<arma::mat>(psa_parameter_list("Sigma")));
+    in.parameter("tau2") = as<double>(psa_parameter_list("tau2"));
+  }
+  
   // setup for cap_control and cap_study
   // if (in.screen == cap_control || in.screen == cap_study) {
   //   DataFrame uk_screen_uptake = as<DataFrame>(otherParameters("uk_screen_uptake")); // age,H

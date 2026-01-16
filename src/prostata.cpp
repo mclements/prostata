@@ -1374,14 +1374,24 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     //   if (R::runif(0.0,1.0) < 1.0-parameter("rTPF")) positive_test = true;
     // }
     in->rngBx->set();
-    if (positive_test && R::runif(0.0,1.0) < compliance) {
+    double u_compliance = R::runif(0.0,1.0);
+    if (positive_test && u_compliance < compliance) {
       if (in->bparameter("MRI_screen")) {
 	scheduleAt(now()+1.0/52.0, toMRI); // MRI in one week (not realistic:()
       } else {
 	scheduleAt(now()+1.0/52.0, toScreenInitiatedBiopsy); // biopsy in one week
       }
     } // assumes similar biopsy compliance, reasonable? An option to different psa-thresholds would be to use different biopsyCompliance. /AK
-    else {
+    else if (!positive_test && in->bparameter("psa_grs_flag")  && u_compliance < compliance && psa >= in->parameter("psa_grs_psa_threshold")) {
+      if (!everGRS) scheduleAt(now(), toGRS);
+      if (grs_p >= in->parameter("psa_grs_p_threshold")) {
+	if (in->bparameter("MRI_screen")) {
+	  scheduleAt(now()+1.0/52.0, toMRI); // MRI in one week (not realistic:()
+	} else {
+	  scheduleAt(now()+1.0/52.0, toScreenInitiatedBiopsy); // biopsy in one week
+	}
+      }
+    } else {
           in->rngScreen->set();
 	  if ((in->screen == cap_study || in->screen == sthlm3_mri_arm) && organised)
 	    organised = false;

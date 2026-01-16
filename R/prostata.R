@@ -452,7 +452,10 @@ FhcrcParameters <- list(
         vals = logMVN_approx(mu,Sigma)
         vals$tau2 = var.epsilon
         vals
-        })
+    }),
+    psa_grs_flag = FALSE,              # should we possibly use GRS after PSA?
+    psa_grs_psa_threshold=1,               # what is the PSA reflex value for using a GRS for *negative tests*?
+    psa_grs_p_threshold=0.8        # what is the lower bound of grs_p for referral?
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]

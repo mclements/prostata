@@ -431,8 +431,8 @@ namespace fhcrc_example {
   double FhcrcPerson::calculate_transition_time(double u, double t_enter, double gamma) {
     double y_enter = psamean(35.0 + t_enter);
     double offset = 0.0;
-    if (in->bparameter("daniela_psa_param_distribution"))
-      offset = 30.0*beta1;
+    if (in->bparameter("daniela_psa_param_distribution")) // centred at age 65 (!)
+      offset = -30.0*beta1;
     return (log(-log(u)*(beta1+beta2)/gamma + y_enter) - beta0 - offset + beta2*t0) / (beta1+beta2);
   }
 

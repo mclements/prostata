@@ -292,7 +292,11 @@ namespace fhcrc_example {
   */
   double FhcrcPerson::psamean(double age) {
     double t = age<35.0 ? 0.0 : age - 35.0;
-    double yt = t<t0 ? exp(beta0+beta1*t) : exp(beta0+beta1*t+beta2*(t-t0));
+    double tnew = t;
+    if (in->bparameter("daniela_psa_param_distribution")) {
+      tnew = t-30.0;
+    }
+    double yt = t<t0 ? exp(beta0+beta1*tnew) : exp(beta0+beta1*tnew+beta2*(t-t0));
     return yt;
   }
  
@@ -426,7 +430,10 @@ namespace fhcrc_example {
   **/
   double FhcrcPerson::calculate_transition_time(double u, double t_enter, double gamma) {
     double y_enter = psamean(35.0 + t_enter);
-    return (log(-log(u)*(beta1+beta2)/gamma + y_enter) - beta0 + beta2*t0) / (beta1+beta2);
+    double offset = 0.0;
+    if (in->bparameter("daniela_psa_param_distribution"))
+      offset = 30.0*beta1;
+    return (log(-log(u)*(beta1+beta2)/gamma + y_enter) - beta0 - offset + beta2*t0) / (beta1+beta2);
   }
 
   void FhcrcPerson::opportunistic_rescreening(double psa) {

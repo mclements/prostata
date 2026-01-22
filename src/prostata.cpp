@@ -864,9 +864,9 @@ void FhcrcPerson::init() {
     arma::vec betas = in->psa_parameter_mvn.rand();
     beta0 = betas[0];
     beta1 = exp(betas[1]);
-    beta2 = exp(betas[2]);
-    if (future_ext_grade == ext::Gleason_ge_8)
-      beta2 *= in->mubeta2[2]/in->mubeta2[1];
+    // beta2 = exp(betas[2]);
+    // if (future_ext_grade == ext::Gleason_ge_8)
+    //   beta2 *= in->mubeta2[2]/in->mubeta2[1];
   }
   y0 = psamean(t0+35); // depends on: t0, beta0, beta1, beta2
   t3p = calculate_transition_time(R::runif(0.0,1.0), t0, in->parameter("g3p"));

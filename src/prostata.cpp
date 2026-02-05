@@ -410,6 +410,7 @@ namespace fhcrc_example {
     double txhaz = (localised && (tx == RP || tx == RT)) ? in->parameter("RP_mortHR") : 1.0; // assume same HR for RP & RT
     // calibration HR(age_diag,PSA,ext_grade) for loco-regional or HR(age_diag) for metastatic cancer
     double lead_time = age_c - age_diag;
+    if (in->bparameter("fix_lead_time")) lead_time=std::max(0.0, lead_time);
     double txbenefit = exp(log(txhaz)+log(double(in->parameter("c_txlt_interaction")))*lead_time); // treatment lead-time interaction
     double mort_hr = calculate_mortality_hr(age_diag);
     double ustar = pow(u,1/(in->parameter("c_baseline_specific")*mort_hr*txbenefit*in->parameter("sxbenefit")));
@@ -1698,6 +1699,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     bool cured = false;
     double age_c = (state == Localised) ? tc + 35.0 : tmc + 35.0;
     double lead_time = age_c - now();
+    if (in->bparameter("fix_lead_time")) lead_time=std::max(0.0, lead_time);
     // calculate the age at cancer death by c_benefit_type
     double age_cancer_death=R_PosInf;
     double age_cd = R_PosInf, age_sd = R_PosInf, weight = R_PosInf;

@@ -28,6 +28,7 @@
 #include <microsimulation.h>
 
 #include <numeric>
+#include <csignal>
 
 namespace fhcrc_example {
 
@@ -56,7 +57,7 @@ namespace fhcrc_example {
                 toCM, toRP, toRT, toADT, toUtilityChange, toUtilityRemove,
                 toSTHLM3, toOpportunistic, toT3plus, toCancelScreens,
                 toYearlyActiveSurveillance, toYearlyPostTxFollowUp, toMRI, toPalliative, toTerminal, toDRE,
-                toGRS,toPosMRI};
+                toGRS,toPosMRI,toGRSInitiatedFollowUp};
 
   enum screen_t {noScreening, randomScreen50to70, twoYearlyScreen50to70, fourYearlyScreen50to70,
 		 screen50, screen60, screen70, screenUptake, stockholm3_goteborg, stockholm3_risk_stratified,
@@ -466,6 +467,7 @@ namespace fhcrc_example {
     RemoveKind(toMRI);
     RemoveKind(toDRE);
     RemoveKind(toGRS);
+    RemoveKind(toGRSInitiatedFollowUp);
   }
 
   void FhcrcPerson::opportunistic_uptake_if_ever() {
@@ -1269,6 +1271,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     add_costs("Polygenic risk stratification");
     everGRS = true;
     break;
+
+  case toGRSInitiatedFollowUp:
+    break;
     
   case toScreen:
   case toBiopsyFollowUpScreen: { // Issue: this specific event is never scheduled
@@ -1390,20 +1395,27 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	scheduleAt(now()+1.0/52.0, toScreenInitiatedBiopsy); // biopsy in one week
       }
     } // assumes similar biopsy compliance, reasonable? An option to different psa-thresholds would be to use different biopsyCompliance. /AK
-    else if (!positive_test && in->bparameter("psa_grs_flag")  && u_compliance < compliance && psa >= in->parameter("psa_grs_psa_threshold")) {
-      if (!everGRS) scheduleAt(now(), toGRS);
-      if (grs_p >= in->parameter("psa_grs_p_threshold")) {
-	if (in->bparameter("MRI_screen")) {
-	  scheduleAt(now()+1.0/52.0, toMRI); // MRI in one week (not realistic:()
-	} else {
-	  scheduleAt(now()+1.0/52.0, toScreenInitiatedBiopsy); // biopsy in one week
+    else { // negative test
+      if (in->debug)
+	Rprintf("psa: %f, positive_test: %i, psa_grs_flag: %d, u_compliance: %f, psa_grs_psa_threshold: %f, psa_grs_p_threshold: %f, grs_p: %f, psa_grs_p_threshold: %f\n",
+		psa, positive_test, int(in->bparameter("psa_grs_flag")), u_compliance, double(in->parameter("psa_grs_psa_threshold")),
+		double(in->parameter("psa_grs_p_threshold")), grs_p, double(in->parameter("psa_grs_p_threshold")));
+      if (!positive_test && in->bparameter("psa_grs_flag")  && u_compliance < compliance && psa >= in->parameter("psa_grs_psa_threshold")) {
+	if (!everGRS) scheduleAt(now(), toGRS);
+	if (grs_p >= in->parameter("psa_grs_p_threshold")) {
+	  scheduleAt(now(), toGRSInitiatedFollowUp);
+	  if (in->bparameter("MRI_screen")) {
+	    scheduleAt(now()+1.0/52.0, toMRI); // MRI in one week (not realistic:()
+	  } else {
+	    scheduleAt(now()+1.0/52.0, toScreenInitiatedBiopsy); // biopsy in one week
+	  }
 	}
+      } else {
+	in->rngScreen->set();
+	if ((in->screen == cap_study || in->screen == sthlm3_mri_arm) && organised)
+	  organised = false;
+	rescreening_schedules(psa, organised, mixed_programs, false, false);
       }
-    } else {
-          in->rngScreen->set();
-	  if ((in->screen == cap_study || in->screen == sthlm3_mri_arm) && organised)
-	    organised = false;
-	  rescreening_schedules(psa, organised, mixed_programs, false, false);
     }
     in->rngNh->set();
   } break;

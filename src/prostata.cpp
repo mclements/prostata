@@ -149,6 +149,7 @@ namespace fhcrc_example {
 
     Rng * rngNh, * rngOther, * rngScreen, * rngTreatment, * rngSurv, * rngBx, * rngPrelude;
     Rpexp rmu0;
+    Rpexp_gamma rmu0_gamma;
 
     NumericVector parameter;
     LogicalVector bparameter;
@@ -256,7 +257,7 @@ namespace fhcrc_example {
     double txhaz, psa_last_screen;
     int id, index, screening_round;
     double cohort, rescreening_frailty, ageEntry, grs_frailty, other_frailty, ageFirstScreen,
-      age_dx, rr_ancestry, grs_p, grs_ancestry_p;
+      age_dx, rr_ancestry, grs_p, grs_ancestry_p, Z_mu0;
     bool everPSA, previousNegativeBiopsy, organised, previousFollowup, MRIpos, everGRS,
       dre_annual, dre_2_3;
     FhcrcPerson(SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950, const int index = 0) :
@@ -889,11 +890,10 @@ void FhcrcPerson::init() {
   }
   out->tmc_minus_t0 += (tmc - t0);
   if (in->parameter("mu_variance") > 0.0) {
-    double Z = R::rgamma(1.0/in->parameter("mu_variance"),
+    Z_mu0 = R::rgamma(1.0/in->parameter("mu_variance"),
 			 in->parameter("mu_variance"));
-    in->rmu0.set_Z(Z); // can be retrieved using in->rmu0.Z
-  }
-  aoc = in->rmu0.rand(R::runif(0.0,1.0));
+    aoc = in->rmu0_gamma.rand(R::runif(0.0,1.0), Z_mu0);
+  } else aoc = in->rmu0.rand(R::runif(0.0,1.0));
   if (!in->bparameter("revised_natural_history")){
     future_ext_grade= (future_grade==base::Gleason_le_7) ?
       (R::runif(0.0,1.0) <= in->interp_prob_grade7.approx(beta2) ? ext::Gleason_7 : ext::Gleason_le_6) :
@@ -1280,26 +1280,30 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (in->bparameter("cancel_screens"))
       RemoveKind(toScreen);
     screening_round += 1;
+    double Z_error_variance = in->parameter("Z_error_variance");
+    double Z_error = (Z_error_variance > 0.0) ?
+      R::rgamma(1.0/Z_error_variance, Z_error_variance) : 1.0;
     if (ageFirstScreen < 0.0) ageFirstScreen = now();
     if (in->bparameter("use_min_life_expectancy")) {
-      double Z_error_variance = in->parameter("Z_error_variance");
-      double Z_error = (Z_error_variance > 0.0) ?
-	R::rgamma(1.0/Z_error_variance, Z_error_variance) : 1.0;
-      if (in->rmu0.life_expectancy(now(), Z_error) < in->parameter("min_life_expectancy")) {
+      double le = (in->parameter("mu_variance") > 0.0) ?
+	in->rmu0_gamma.life_expectancy(now(), Z_mu0*Z_error) :
+	in->rmu0.life_expectancy(now(), Z_error);
+      if (le < in->parameter("min_life_expectancy")) {
 	add_costs("GP visit - no screen");
 	RemoveKind(toScreen);
-	return;
+	in->rngNh->set();
+	break;
       }
     }
     if (in->bparameter("use_max_n_year_risk")) {
-      double Z_error_variance = in->parameter("Z_error_variance");
-      double Z_error = (Z_error_variance > 0.0) ?
-	R::rgamma(1.0/Z_error_variance, Z_error_variance) : 1.0;
-      if (in->rmu0.n_year_risk(now(),in->parameter("n_year"),Z_error) >
-	  in->parameter("max_n_year_risk")) {
+      double risk = (in->parameter("mu_variance") > 0.0) ?
+	in->rmu0_gamma.n_year_risk(now(), in->parameter("n_year"), Z_mu0*Z_error) :
+	in->rmu0.n_year_risk(now(), in->parameter("n_year"), Z_error);
+      if (risk > in->parameter("max_n_year_risk")) {
 	add_costs("GP visit - no screen");
 	RemoveKind(toScreen);
-	return;
+	in->rngNh->set();
+	break;
       }
     }
     in->rngBx->set();
@@ -2101,6 +2105,9 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   std::vector<double> ages0(mu0.size());
   std::iota(ages0.begin(), ages0.end(), 0.0);
   in.rmu0 = Rpexp(&mu0[0], &ages0[0], mu0.size());
+  if (in.parameter("mu_variance") > 0.0)
+    in.rmu0_gamma = Rpexp_gamma(in.parameter("mu_variance"),
+				&mu0[0], &ages0[0], mu0.size());
   
   vector<double> ages(101);
   std::iota(ages.begin(), ages.end(), 0.0);

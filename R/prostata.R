@@ -262,6 +262,7 @@ FhcrcParameters <- list(
                         + 45                                      # PSA analysis not included in panel price
                         + 2300                                    # From KUL price list
                         + 0 * 1539,                               # No GP for formal
+                        "GP visit - no screen" = 0.2 * 1539,      # should this be only part of the total cost for a visit?
                         "Opportunistic PSA" = 349                 # test sampling, primary care
                         + 45                                      # PSA analysis
                         + 0.2 * 1539,                             # GP primary care

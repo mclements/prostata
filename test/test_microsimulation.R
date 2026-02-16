@@ -2,6 +2,34 @@
 ## require(microsimulation)
 ## microsimulation:::.testPackage()
 
+library(prostata)
+parms = prostata:::ShuangParameters() |>
+    modifyList(list(start_screening=55, stop_screening=70, screening_interval=4,
+                    mu_variance=2))
+parms$cost_parameters["GP visit - no screen"] = 0.2 * 1539
+
+model1 = callFhcrc(1e4, "regular_screen", parms=parms, mc.cores=5)
+model2 = callFhcrc(1e4, "regular_screen",
+                   parms=modifyList(parms,
+                                    list(use_min_life_expectancy=TRUE,
+                                         min_life_expectancy=15,
+                                         stop_screening=200)),
+                   mc.cores=5)
+
+merge.summary.fhcrc = function(x,y,...) {
+    merged = lapply(1:length(x), function(i) c(x[[i]], y[[i]]))
+    names(merged) = names(x)
+    merged
+}
+merge(summary(model1), summary(model2))
+
+sum1 = summary(model1) |> unclass()
+sum2 = summary(model2) |> unclass()
+sum12 = lapply(1:length(sum1), function(i) c(sum1[[i]], sum2[[i]]))
+names(sum12) = names(sum1)
+sum12
+
+
 library(microsimulation)
 library(parallel)
 compare_test_rstream3 = function() {

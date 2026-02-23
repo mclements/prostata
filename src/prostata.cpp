@@ -71,7 +71,7 @@ namespace fhcrc_example {
 
   enum treatment_t {no_treatment, CM, RP, RT};
 
-  enum survival_t {StageShiftBased, LeadTimeBased};
+  enum survival_t {StageShiftBased, LeadTimeBased, HybridBased};
 
   enum biomarker_model_t {random_correction, psa_informed_correction};
 
@@ -1736,6 +1736,22 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       age_sd = calculate_survival(u_surv,now(),age_c,tx);
       weight = exp(- in->parameter("c_benefit_value0")*lead_time);
       age_cancer_death = weight*age_cd + (1.0-weight)*age_sd;
+    }
+    else if (in->parameter("c_benefit_type")==HybridBased) { // Combines generalised stage-shift and cure
+      // calculate survival as per StageShiftBased
+      double u_surv = R::runif(0.0,1.0);
+      age_cd = calculate_survival(u_surv,age_c,age_c,calculate_treatment(u_tx,age_c,year+lead_time));
+      age_sd = calculate_survival(u_surv,now(),age_c,tx);
+      weight = exp(- in->parameter("c_benefit_value0")*lead_time);
+      age_cancer_death = weight*age_cd + (1.0-weight)*age_sd;
+      // now check for cure as per LeadTimeBased
+      double pcure = pow(1 - exp(-lead_time * in->parameter("c_benefit_value1")),
+      			 calculate_mortality_hr(age_c));
+      if (in->debug) Rprintf("hr for lead time=%f\n", calculate_mortality_hr(age_c));
+      cured = (R::runif(0.0,1.0) < pcure);
+      if (cured) { // if cured then set age_cancer_death to something large:)
+	age_cancer_death=R_PosInf;
+      }
     }
     else REprintf("c_benefit_type not matched.");
     if (!cured) {

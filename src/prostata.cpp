@@ -1719,7 +1719,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     // calculate the age at cancer death by c_benefit_type
     double age_cancer_death=R_PosInf;
     double age_cd = R_PosInf, age_sd = R_PosInf, weight = R_PosInf;
-    if (in->parameter("c_benefit_type")==LeadTimeBased) { // [new paper ref]
+    if (in->parameter("c_benefit_type")==LeadTimeBased) { // de Koning et al (2018; https://doi.org/10.1002/cncr.31178)
       double pcure = pow(1 - exp(-lead_time * in->parameter("c_benefit_value1")),
       			 calculate_mortality_hr(age_c));
       if (in->debug) Rprintf("hr for lead time=%f\n", calculate_mortality_hr(age_c));
@@ -1729,7 +1729,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
         age_cancer_death = calculate_survival(u_surv,age_c,age_c,calculate_treatment(u_tx,age_c,year+lead_time));
       }
     }
-    else if (in->parameter("c_benefit_type")==StageShiftBased) { // [annals paper ref]
+    else if (in->parameter("c_benefit_type")==StageShiftBased) { // Gulati et al (2013; https://doi.org/10.7326/0003-4819-158-3-201302050-00003)
       // calculate survival
       double u_surv = R::runif(0.0,1.0);
       age_cd = calculate_survival(u_surv,age_c,age_c,calculate_treatment(u_tx,age_c,year+lead_time));
@@ -1737,7 +1737,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       weight = exp(- in->parameter("c_benefit_value0")*lead_time);
       age_cancer_death = weight*age_cd + (1.0-weight)*age_sd;
     }
-    else if (in->parameter("c_benefit_type")==HybridBased) { // Combines generalised stage-shift and cure
+    else if (in->parameter("c_benefit_type")==HybridBased) { // Xia and Chen (2022; https://doi.org/10.1016/j.jncc.2022.11.002)
+      // Combines generalised stage-shift and cure
       // calculate survival as per StageShiftBased
       double u_surv = R::runif(0.0,1.0);
       age_cd = calculate_survival(u_surv,age_c,age_c,calculate_treatment(u_tx,age_c,year+lead_time));

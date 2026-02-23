@@ -238,7 +238,12 @@ DanielaParameters <- function(year=2024,...) {
                 # Probability of re-screening was 84% in Finnish trial, so we decide to take the same value as for the first round (85%),
                 # Finnish trial first screening round was 69%
                 biopsyCompliance = 0.95,
-                    
+                negbx_to_repeat_sbx=FALSE,
+        round_specific_p_mri=TRUE,
+        MRI_screen=TRUE,
+        MRI_clinical=TRUE,
+        cost_MRIpos=TRUE,
+        mvk_onset=TRUE,
         
             ## https://www.mortality.org/ 2020-2024, 1*5 Death rates for Swedish male, #accessed on July 30th, 2025
             mu0=c(0.002263, 0.000183, 0.000107, 0.000101, 0.000112, 0.000057, 0.000076, 0.000069, 0.000072, 

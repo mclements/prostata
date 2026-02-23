@@ -3,6 +3,23 @@
 ## microsimulation:::.testPackage()
 
 library(prostata)
+parms1 = prostata:::DanielaParameters() |>
+    modifyList(list(c_benefit_type=2, c_benefit_value1=0.05))
+model1 = callFhcrc(1e4, "regular_screen", parms=parms1, mc.cores=5)
+parms2 = prostata:::DanielaParameters()
+model2 = callFhcrc(1e4, "regular_screen", parms=parms2, mc.cores=5)
+merge.summary.fhcrc = function(x,y,...) {
+    merged = lapply(1:length(x), function(i) c(x[[i]], y[[i]]))
+    names(merged) = names(x)
+    merged
+}
+merge(summary(model1), summary(model2))
+
+
+
+
+
+library(prostata)
 parms = prostata:::ShuangParameters() |>
     modifyList(list(start_screening=55, stop_screening=70, screening_interval=4,
                     mu_variance=2))

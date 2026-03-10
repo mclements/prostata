@@ -1158,6 +1158,13 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
         initialSeeds <- c(list(currentSeed), lapply(ns[-c(1,mc.cores+1)], function(i) advance.substream(currentSeed, i)))
         ns <- ns[-length(ns)]
     }
+    ## check names in tables and parms arguments -- they should all be in either fhcrcData or FhcrcParameters
+    for (nm in names(tables))
+        if (!(nm %in% c(names(fhcrcData), names(FhcrcParameters))))
+            warning("Unknown parms parameter: ", nm)
+    for (nm in names(parms))
+        if (!(nm %in% c(names(fhcrcData), names(FhcrcParameters))))
+            warning("Unknown tables parameter: ", nm)
     ## Minor changes to fhcrcData
     fhcrcData$biopsyOpportunisticComplianceTable <- swedenOpportunisticBiopsyCompliance
     fhcrcData$biopsyFormalComplianceTable <- swedenFormalBiopsyCompliance

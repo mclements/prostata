@@ -1,6 +1,6 @@
 PKGB_PATH=`echo 'library(microsimulation); cat(system.file("libs", package="microsimulation", mustWork=TRUE))' \
  | rterm --vanilla --slave`
-PKG_LIBS= -L"$(PKGB_PATH)$(R_ARCH)" -lmicrosimulation
+PKG_LIBS= -L"$(PKGB_PATH)$(R_ARCH)" -lmicrosimulation $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
 
 PKG_CXXFLAGS = -I. -DBOOST_NO_AUTO_PTR
 PKG_CFLAGS = -I.

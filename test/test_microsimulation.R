@@ -3,10 +3,69 @@
 ## microsimulation:::.testPackage()
 
 library(prostata)
+library(dplyr)
+
+trial_start <- 1993
+age_start <- 55
+age_end   <- 69
+screening_interval <- 4 # 4-yearly screening interval; also as mentioned in Karlsson et al. PlosOne
+fu <- 16 # 16-year follow-up
+pop_cohort <- (trial_start - age_end):(trial_start - age_start) # birth cohorts of interest
+year_min <- trial_start
+year_max <- trial_start + fu - 1
+
+set.seed(123)
+
+check_MRR = function(parms, nPop=1e6) {
+    ## Control arm - no screening
+    CtrlGrp <- callFhcrc(
+        n = nPop,
+        screen = "noScreening",
+        mc.cores = 5,
+        flatPop = TRUE, 
+        pop = pop_cohort,
+        parms = parms
+    )
+    ## Screening arm - 4-yearly screening
+    TxGrp <- callFhcrc(
+        n = nPop,
+        screen = "introduced_screening", # Should I use regular_screen here?
+        mc.cores = 5,
+        flatPop = TRUE, 
+        pop = pop_cohort,
+        parms = modifyList(parms, list(
+                                      start_screening = age_start,
+                                      stop_screening  = age_end,
+                                      screening_interval = screening_interval,
+                                      introduction_year  = trial_start,
+                                      psaThreshold = 3.0,
+                                      biopsyCompliance = 0.856
+                                  ))
+    )
+    mort_ctrl <- predict(CtrlGrp, type="pc.mortality.rate", group="year") %>%
+        filter(year >= year_min, year <= year_max) %>%
+        summarize(rate = sum(n)/sum(pt))
+    mort_tx <- predict(TxGrp, type="pc.mortality.rate", group="year") %>%
+        filter(year >= year_min, year <= year_max) %>%
+        summarize(rate = sum(n)/sum(pt))
+    mort_tx$rate / mort_ctrl$rate
+}
+
+parms1 = prostata:::DanielaParameters() |>
+    modifyList(list(c_benefit_type=2, c_benefit_value1=0.1))
+check_MRR(parms1,1e6)
+parms2 = prostata:::DanielaParameters() |>
+    modifyList(list(c_benefit_type=1, c_benefit_value1=0.1))
+check_MRR(parms2,1e6)
+
+
 parms1 = prostata:::DanielaParameters() |>
     modifyList(list(c_benefit_type=2, c_benefit_value1=0.05))
+model0 = callFhcrc(1e4, "noScreen", parms=parms1, mc.cores=5)
 model1 = callFhcrc(1e4, "regular_screen", parms=parms1, mc.cores=5)
+
 parms2 = prostata:::DanielaParameters()
+    modifyList(list(c_benefit_type=1, c_benefit_value0=10))
 model2 = callFhcrc(1e4, "regular_screen", parms=parms2, mc.cores=5)
 merge.summary.fhcrc = function(x,y,...) {
     merged = lapply(1:length(x), function(i) c(x[[i]], y[[i]]))

@@ -1479,7 +1479,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toMRI: {
     in->rngBx->set();
-    add_costs("MRI"); // does this include costs for the consultation?
+    if (in->bparameter("different_MRI_costs")) {
+      add_costs("bpMRI"); // does this include costs for the consultation?
+    } else add_costs("MRI"); // does this include costs for the consultation?
     lost_productivity("MRI");
     // scheduleUtilityChange(now(), "MRI");
     double pMRIpos = (this->ext_grade == ext::Healthy || !detectable) ? in->parameter("pMRIposG0") :
@@ -1515,7 +1517,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (in->bparameter("MRI_clinical") ||
 	(in->bparameter("MRI_interval") &&
 	 now()>=in->parameter("start_screening") && now()<in->parameter("stop_screening"))) {
-      add_costs("MRI");
+      if (in->bparameter("different_MRI_costs")) {
+	add_costs("mpMRI"); // does this include costs for the consultation?
+      } else add_costs("MRI"); // does this include costs for the consultation?
       lost_productivity("MRI");
       if (in->bparameter("cost_MRIpos"))
 	add_costs("MRIpos"); // assumes that both clinical diagnostic biopsies with MRI will be MRI-positive

@@ -295,7 +295,9 @@ FhcrcParameters <- list(
                         "AI pathology" = 1000,                    # AI pathology costs
                         "MRI" = 3548.67,                          # MRI costs (excludes radiology costs if cost_MRIpos=TRUE)
                         "MRIpos" = 2711,                          # Additional radiology costs following a positive MRI (requires cost_MRIpos=TRUE)
-                        "GP visit - no screen" = 0.2*1539),                    # Cost for a GP visit without any test (currently only used for use_min_life_expectancy and use_max_life_risk)
+                        "GP visit - no screen" = 0.2*1539,        # Cost for a GP visit without any test (currently only used for use_min_life_expectancy and use_max_life_risk)
+                        "mpMRI" = 3548.67,                        # New! Cost for mpMRI. Currently as per "MRI"
+                        "bpMRI" = 3548.67),                       # New! Cost for bpMRI. Currently as per "MRI"
     active_surveillance_cost_scale_first_two_years = 1.0,         # cost scale for AS first two years (Trust: you owe me:)
     ## Swedish governmental report on organised PSA testing (p.23):
     ## https://www.socialstyrelsen.se/globalassets/sharepoint-dokument/artikelkatalog/nationella-screeningprogram/2018-10-15-halsoekonomisk-analys.pdf
@@ -455,10 +457,11 @@ FhcrcParameters <- list(
         vals
     }),
     psa_grs_flag = FALSE,              # should we possibly use GRS after PSA?
-    psa_grs_psa_threshold=1,               # what is the PSA reflex value for using a GRS for *negative tests*?
-    psa_grs_p_threshold=0.8,        # what is the lower bound of grs_p for referral?
-    fix_lead_time=FALSE,             # sometimes the lead_time can be negative (e.g. -1 month) - make those lead-time zero
-    SplitS3M25plus=FALSE             # see prostata.cpp (that is, I am not certain how this is being used)
+    psa_grs_psa_threshold=1,           # what is the PSA reflex value for using a GRS for *negative tests*?
+    psa_grs_p_threshold=0.8,           # what is the lower bound of grs_p for referral?
+    fix_lead_time=FALSE,               # sometimes the lead_time can be negative (e.g. -1 month) - make those lead-time zero
+    SplitS3M25plus=FALSE,              # see prostata.cpp (that is, I am not certain how this is being used)
+    different_MRI_costs = FALSE        # if true, assume "bpMRI" costs for screening and "mpMRI" costs for clinical detection
 )
 IHE <- list(prtx=data.frame(Age=50.0,DxY=1973.0,G=1:2,CM=0.6,RP=0.26,RT=0.14)) ## assumed constant across ages and periods
 ParameterNV <- FhcrcParameters[sapply(FhcrcParameters,class)=="numeric" & sapply(FhcrcParameters,length)==1]
@@ -1191,6 +1194,10 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
     if (any(.intersection <- (names(parameter) %in% names(fhcrcData))))
         warning("The following tables are being over-written by values from parms: ",
                 paste0(names(parameter)[.intersection], collapse=", "))
+    if (any(.odd_cost_names_index <- !(names(parms$cost_parameters) %in% names(FhcrcParameters$cost_parameters)))) {
+        warning("The following cost names are unexpected (spelling incorrect?): ",
+                names(parms$cost_parameters)[.odd_cost_names_index])
+    }
     temp <- parameter
     parameter <- fhcrcData
     for (name in names(temp))

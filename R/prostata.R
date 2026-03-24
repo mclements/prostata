@@ -284,6 +284,27 @@ FhcrcParameters <- list(
                         + 45 * 2                                  # PSA analysis
                         + 4733 * 0.5,                             # Biopsy
                         "Active surveillance - single MR" = 3090, # Used once for active surveillance
+                        ## the following block is from shuang.R
+                             "Active surveillance - yearly - w/o MRI" = 1460    # Urology visit and nurse visit 
+                             + 355.82*3                                # PSA sampling
+                             + 57.4*3                                  # PSA analysis
+                             + 3010*0.33                               # Systematic biopsy
+                             + 4238.25*0.33,                           # Pathology of biopsy
+                             "Active surveillance - yearly - with MRI" = 1460   # Urology visit and nurse visit
+                             + 355.82*3                                # PSA sampling
+                             + 57.4*3                                  # PSA analysis
+                             + 3500*0.33                               # MRI cost
+                             + 3010*1.5*0.33                           # Biopsy cost (SBx|TBx)
+                             + 4238.25*0.33,                           # Pathology of biopsy
+                             "ADT+chemo" = 71579.64*1.5,               # NEW: Chemo and hormone therapy
+                             "Post-Tx follow-up - yearly first" = 1460 # Urologist and nurse consultation
+                             + 355.82                                  # PSA test sampling
+                             + 57.4,                                   # PSA analysis
+                             "Post-Tx follow-up - yearly after" = 355.82  # PSA test sampling
+                             + 57.4                                    # PSA analysis,
+                             + 146,                                    # Telefollow-up by urologist
+                             "Palliative therapy - yearly" = 161593.05, # Palliative care cost
+                             "Terminal illness" = 161593.05*0.5,
                         "Post-Tx follow-up - yearly" = 349        # PSA test sampling
                         + 45                                      # PSA analysis,
                         + 474,                                    # Telefollow-up by urologist

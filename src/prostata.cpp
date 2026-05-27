@@ -895,7 +895,10 @@ void FhcrcPerson::init() {
     Z_mu0 = R::rgamma(1.0/in->parameter("mu_variance"),
 			 in->parameter("mu_variance"));
     aoc = in->rmu0_gamma.rand(R::runif(0.0,1.0), Z_mu0);
-  } else aoc = in->rmu0.rand(R::runif(0.0,1.0));
+  } else {
+    Z_mu0 = 1.0;
+    aoc = in->rmu0.rand(R::runif(0.0,1.0));
+  }
   if (!in->bparameter("revised_natural_history")){
     future_ext_grade= (future_grade==base::Gleason_le_7) ?
       (R::runif(0.0,1.0) <= in->interp_prob_grade7.approx(beta2) ? ext::Gleason_7 : ext::Gleason_le_6) :
@@ -1128,6 +1131,7 @@ void FhcrcPerson::init() {
     out->outParameters.record("psa85",psameasured(85.0));
     out->outParameters.record("rescreening_frailty",rescreening_frailty);
     out->outParameters.record("ageEntry",ageEntry);
+    out->outParameters.record("Z_mu0",Z_mu0);
   }
 
   if (in->debug) Rprint_actions();

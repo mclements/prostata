@@ -147,7 +147,8 @@ namespace fhcrc_example {
     H_local_t H_local;
     set<double,greater<double> > H_local_age_set;
 
-    Rng * rngNh, * rngOther, * rngScreen, * rngTreatment, * rngSurv, * rngBx, * rngPrelude;
+    Rng * rngNh, * rngOther, * rngScreen, * rngTreatment, * rngSurv, * rngBx, * rngPrelude,
+      * rngLE;
     Rpexp rmu0;
     Rpexp_gamma rmu0_gamma;
 
@@ -175,6 +176,7 @@ namespace fhcrc_example {
       if (rngSurv != NULL) delete rngSurv;
       if (rngBx != NULL) delete rngBx;
       if (rngPrelude != NULL) delete rngPrelude;
+      if (rngLE != NULL) delete rngLE;
     }
   };
   // SimInput in; // callFhcrc
@@ -1280,11 +1282,12 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (in->bparameter("cancel_screens"))
       RemoveKind(toScreen);
     screening_round += 1;
-    double Z_error_variance = in->parameter("Z_error_variance");
-    double Z_error = (Z_error_variance > 0.0) ?
-      R::rgamma(1.0/Z_error_variance, Z_error_variance) : 1.0;
     if (ageFirstScreen < 0.0) ageFirstScreen = now();
     if (in->bparameter("use_min_life_expectancy")) {
+      in->rngLE->set();
+      double Z_error_variance = in->parameter("Z_error_variance");
+      double Z_error = (Z_error_variance > 0.0) ?
+	R::rgamma(1.0/Z_error_variance, Z_error_variance) : 1.0;
       double le = (in->parameter("mu_variance") > 0.0) ?
 	in->rmu0_gamma.life_expectancy(now(), Z_mu0*Z_error) :
 	in->rmu0.life_expectancy(now(), Z_error);
@@ -1296,6 +1299,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       }
     }
     if (in->bparameter("use_max_n_year_risk")) {
+      in->rngLE->set();
+      double Z_error_variance = in->parameter("Z_error_variance");
+      double Z_error = (Z_error_variance > 0.0) ?
+	R::rgamma(1.0/Z_error_variance, Z_error_variance) : 1.0;
       double risk = (in->parameter("mu_variance") > 0.0) ?
 	in->rmu0_gamma.n_year_risk(now(), in->parameter("n_year"), Z_mu0*Z_error) :
 	in->rmu0.n_year_risk(now(), in->parameter("n_year"), Z_error);
@@ -1999,6 +2006,7 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   in.rngSurv = new Rng();
   in.rngBx = new Rng();
   in.rngPrelude = new Rng();
+  in.rngLE = new Rng();
   in.rngNh->set();
   Utilities utilities;
 
@@ -2195,6 +2203,7 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
     in.rngSurv->nextSubstream();
     in.rngBx->nextSubstream();
     in.rngPrelude->nextSubstream();
+    in.rngLE->nextSubstream();
     if (i % 10000 == 0) Rcpp::checkUserInterrupt(); /* be polite -- did the user hit ctrl-C? */
   }
 

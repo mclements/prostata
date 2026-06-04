@@ -57,7 +57,7 @@ namespace fhcrc_example {
                 toCM, toRP, toRT, toADT, toUtilityChange, toUtilityRemove,
                 toSTHLM3, toOpportunistic, toT3plus, toCancelScreens,
                 toYearlyActiveSurveillance, toYearlyPostTxFollowUp, toMRI, toPalliative, toTerminal, toDRE,
-                toGRS,toPosMRI,toGRSInitiatedFollowUp};
+                toGRS,toPosMRI,toGRSInitiatedFollowUp,toGPVisitOnly};
 
   enum screen_t {noScreening, randomScreen50to70, twoYearlyScreen50to70, fourYearlyScreen50to70,
 		 screen50, screen60, screen70, screenUptake, stockholm3_goteborg, stockholm3_risk_stratified,
@@ -1281,6 +1281,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   case toGRSInitiatedFollowUp:
     break;
     
+  case toGPVisitOnly:
+    break;
+    
   case toScreen:
   case toBiopsyFollowUpScreen: { // Issue: this specific event is never scheduled
     if (in->bparameter("cancel_screens"))
@@ -1298,6 +1301,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       if (le < in->parameter("min_life_expectancy")) {
 	add_costs("GP visit - no screen");
 	RemoveKind(toScreen);
+	scheduleAt(now(), toGPVisitOnly);
 	in->rngNh->set();
 	break;
       }
@@ -1313,6 +1317,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       if (risk > in->parameter("max_n_year_risk")) {
 	add_costs("GP visit - no screen");
 	RemoveKind(toScreen);
+	scheduleAt(now(), toGPVisitOnly);
 	in->rngNh->set();
 	break;
       }
@@ -1358,6 +1363,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       lost_productivity(in->panel && psa>=in->parameter("panelReflexThreshold") ? "Opportunistic panel" : "Opportunistic PSA");
       scheduleUtilityChange(now(), "Opportunistic PSA");
     }
+    // awkwardly, compliance is used for both biopsies and MRIs:(
     compliance = in->bparameter("full_biopsy_compliance") ? 1 :
       in->bparameter("use_biopsyCompliance") ? in->parameter("biopsyCompliance") :
       formal_compliance ?

@@ -1766,9 +1766,8 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   }
 
   // main loop
-  FhcrcPerson person(&in, &out, &utilities, 1, 2000, 0);
   for (int i = 0; i < n; ++i) {
-    person = FhcrcPerson(&in, &out, &utilities, i+firstId, cohort[i], indiv_reports ? i : 0);
+    FhcrcPerson person(&in, &out, &utilities, i+firstId, cohort[i], indiv_reports ? i : 0);
     Sim::create_process(&person);
     Sim::run_simulation();
     Sim::clear();

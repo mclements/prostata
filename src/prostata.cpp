@@ -1731,10 +1731,10 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   ages.push_back(1.0e+6);
 
   // setup for cap_control and cap_study
-  // if (in.screen == cap_control || in.screen == cap_study) {
-  //   DataFrame uk_screen_uptake = as<DataFrame>(otherParameters("uk_screen_uptake")); // age,H
-  //   in.H_screen_uptake = NumericInterpolate(uk_screen_uptake);
-  // }
+  if (in.screen == cap_control || in.screen == cap_study) {
+    DataFrame uk_screen_uptake = as<DataFrame>(otherParameters("uk_screen_uptake")); // age,H
+    in.H_screen_uptake = NumericInterpolate(uk_screen_uptake);
+  }
   if (in.screen == cap_study) {
     in.cap_pScreened = as<NumericVector>(otherParameters("cap_pScreened"));
   }

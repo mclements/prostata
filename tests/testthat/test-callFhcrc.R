@@ -1,3 +1,4 @@
+library(testthat)
 library(prostata)
 context("callFhcrc")
 
@@ -9,7 +10,7 @@ context("callFhcrc")
 test_returned_object_structure <- function(obj = obj) {
     test_that(paste("Check the structure of the returned fhcrc object with scenario:", try(obj$screen)), {
         expect_is(obj, "fhcrc")
-        expect_output(str(obj), "List of 17")
+        expect_output(str(obj), "List of 21")
         expect_output(str(obj), "$ n",                       fixed = TRUE)
         expect_output(str(obj), "$ screen",                  fixed = TRUE)
         expect_output(str(obj), "$ enum",                    fixed = TRUE)
@@ -27,6 +28,10 @@ test_returned_object_structure <- function(obj = obj) {
         expect_output(str(obj), "$ panel",                   fixed = TRUE)
         expect_output(str(obj), "$ call",                    fixed = TRUE)
         expect_output(str(obj), "$ natural.history.summary", fixed = TRUE)
+        expect_output(str(obj), "$ indiv_costs",             fixed = TRUE)
+        expect_output(str(obj), "$ indiv_utilities",         fixed = TRUE)
+        expect_output(str(obj), "$ mean_utilities",          fixed = TRUE)
+        expect_output(str(obj), "$ mean_costs",              fixed = TRUE)
     })
 }
 

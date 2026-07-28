@@ -8,3 +8,7 @@ prostata*.tar.gz
 src/prostata.dll
 prostata.Rproj
 prostata\.Rcheck
+
+.envrc
+.direnv/
+.vscode/

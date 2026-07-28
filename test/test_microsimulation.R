@@ -1784,10 +1784,10 @@ compare(noscreen, screen2Int)
 
 
 ##
-0.834 (4 interval)
-0.782 (4 interval + int@0.95)
-0.761 (2 interval + int)
-0.737 (0.5 interval + int)
+# 0.834 (4 interval)
+# 0.782 (4 interval + int@0.95)
+# 0.761 (2 interval + int)
+# 0.737 (0.5 interval + int)
 
 ## In summary, varying RR_T3plus between 1 and 2 leads to approximately a 2% reduction in the prostate cancer mortality rate ratio; increasing RR_T3plus to 3 led to another 1% reduction in the rate ratio.
 
@@ -2854,7 +2854,7 @@ Prop reduction in biospies:\t%5.3f\n",
                  sum(!BBPpos & PSApos),
                  sum(BBPpos | PSApos),
                  (sum(!BBPpos & PSApos) - sum(BBPpos & !PSApos))/
-                       sum(BBPpos | PSApos))))))
+                       sum(BBPpos | PSApos)))))
 
 logZ=rnorm(100000,0,0.1)
 logpsa=logZ+rnorm(100000,0,sqrt(p$tau2))

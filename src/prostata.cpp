@@ -139,7 +139,8 @@ namespace fhcrc_example {
     H_local_t H_local;
     set<double,greater<double> > H_local_age_set;
 
-    Rng * rngNh, * rngOther, * rngScreen, * rngTreatment, * rngSurv, * rngBx, * rngPrelude;
+    //TODO: Fix potential memory leak by using unique_ptr or shared_ptr for Rng objects
+    std::unique_ptr<Rng> rngNh, rngOther, rngScreen, rngTreatment, rngSurv, rngBx, rngPrelude;
     Rpexp rmu0;
 
     NumericVector parameter;
@@ -156,15 +157,15 @@ namespace fhcrc_example {
     // cumulative hazard for screening uptake (currently only cap_control and cap_study)
     NumericInterpolate H_screen_uptake;
     NumericVector cap_pScreened;
-
-    ~SimInput() {
-      if (rngNh != NULL) delete rngNh;
-      if (rngOther != NULL) delete rngOther;
-      if (rngScreen != NULL) delete rngScreen;
-      if (rngTreatment != NULL) delete rngTreatment;
-      if (rngSurv != NULL) delete rngSurv;
-      if (rngBx != NULL) delete rngBx;
-      if (rngPrelude != NULL) delete rngPrelude;
+    
+    void resetRngs() {
+        rngNh = std::make_unique<Rng>();
+        rngOther = std::make_unique<Rng>();
+        rngScreen = std::make_unique<Rng>();
+        rngTreatment = std::make_unique<Rng>();
+        rngSurv = std::make_unique<Rng>();
+        rngBx = std::make_unique<Rng>();
+        rngPrelude = std::make_unique<Rng>();
     }
   };
   // SimInput in; // callFhcrc
@@ -1580,25 +1581,11 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
 } // handleMessage()
 
+void initialize(SimInput& in, const List& parms) {
 
-RcppExport SEXP callFhcrc(SEXP parmsIn) {
-
-  // declarations
-  SimInput in;
-  SimOutput out;
-
-  in.rngNh = new Rng();
-  in.rngOther = new Rng();
-  in.rngScreen = new Rng();
-  in.rngTreatment = new Rng();
-  in.rngSurv = new Rng();
-  in.rngBx = new Rng();
-  in.rngPrelude = new Rng();
+  in.resetRngs();
   in.rngNh->set();
-  Utilities utilities;
 
-  // read in the parameters
-  List parms(parmsIn);
   in.parameter = parms("parameter");
   in.bparameter = parms("bparameter"); // scalar bools
   List otherParameters = parms("otherParameters");
@@ -1614,14 +1601,10 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   in.cost_parameters = as<NumericVector>(otherParameters("cost_parameters"));
   in.utility_estimates = as<NumericVector>(otherParameters("utility_estimates"));
   in.utility_duration = as<NumericVector>(otherParameters("utility_duration"));
-  utilities.truncate = as<bool>(in.bparameter("utility_truncate"));
-  utilities.scale = utility_scale_t(as<int>(in.parameter("utility_scale")));
 
   in.production = Table<double,double>(as<DataFrame>(otherParameters("production")), "ages", "values");
   in.lost_production_years = as<NumericVector>(otherParameters("lost_production_years"));
 
-  int n = as<int>(parms("n"));
-  int firstId = as<int>(parms("firstId"));
   DataFrame background_utilities =
     as<DataFrame>(otherParameters("background_utilities"));
   in.bg_lower = background_utilities("lower");
@@ -1719,16 +1702,11 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   in.screen = as<int>(otherParameters("screen"));
   if (in.debug) Rprintf("screen=%i\n",in.screen);
   in.panel = as<bool>(parms("panel"));
-  NumericVector cohort = as<NumericVector>(parms("cohort")); // at present, this is the only chuck-specific data
-  bool indiv_reports = as<bool>(in.bparameter("indiv_reports"));
 
   // set up the parameters
   double ages0[mu0.size()];
   std::iota(ages0, ages0+mu0.size(), 0.0);
   in.rmu0 = Rpexp(&mu0[0], ages0, mu0.size());
-  vector<double> ages(101);
-  std::iota(ages.begin(), ages.end(), 0.0);
-  ages.push_back(1.0e+6);
 
   // setup for cap_control and cap_study
   if (in.screen == cap_control || in.screen == cap_study) {
@@ -1738,6 +1716,11 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   if (in.screen == cap_study) {
     in.cap_pScreened = as<NumericVector>(otherParameters("cap_pScreened"));
   }
+
+}
+
+SimOutput callFhcrc_inner(SimInput& in, int n, int firstId, NumericVector& cohort) {
+  SimOutput out;
 
   // re-set the output objects
   out.report.clear();
@@ -1749,6 +1732,14 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   out.bxrecord.clear();
   out.falsePositives.clear();
   out.diagnoses.clear();
+
+  Utilities utilities;
+  utilities.truncate = as<bool>(in.bparameter("utility_truncate"));
+  utilities.scale = utility_scale_t(as<int>(in.parameter("utility_scale")));
+  vector<double> ages(101);
+  std::iota(ages.begin(), ages.end(), 0.0);
+  ages.push_back(1.0e+6);
+  bool indiv_reports = as<bool>(in.bparameter("indiv_reports"));
 
   out.report.discountRate = in.parameter("discountRate.effectiveness");
   out.report.setPartition(ages);
@@ -1766,8 +1757,9 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
   }
 
   // main loop
+  FhcrcPerson person(&in, &out, &utilities, 1, 2000, 0);
   for (int i = 0; i < n; ++i) {
-    FhcrcPerson person(&in, &out, &utilities, i+firstId, cohort[i], indiv_reports ? i : 0);
+    person = FhcrcPerson(&in, &out, &utilities, i+firstId, cohort[i+firstId], indiv_reports ? i : 0);
     Sim::create_process(&person);
     Sim::run_simulation();
     Sim::clear();
@@ -1780,10 +1772,86 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
     in.rngPrelude->nextSubstream();
     if (i % 10000 == 0) Rcpp::checkUserInterrupt(); /* be polite -- did the user hit ctrl-C? */
   }
+  
+  return out;
+}
 
-  // output
-  // TODO: clean up these objects in C++ (cf. R)
-  return List::create(_("costs") = out.costs.wrap(),                // CostReport
+std::array<double, 6> get_user_random_seed() {
+    auto signed_seed = [](double seed) { return (seed>static_cast<double>(1ULL<<31)) ? seed-static_cast<double>(1ULL<<32) : seed; };
+
+    std::array<double, 6> seed;
+    r_get_user_random_seed(seed.data());
+    for(size_t i=0; i<seed.size(); ++i) {
+        seed[i] = signed_seed(seed[i]);
+    }
+    return seed;
+}
+
+std::array<double, 6> advance_substream(const std::array<double, 6>& seed, int n) {
+    auto unsigned_seed = [](double seed) { return (seed < 0) ? seed + static_cast<double>(1ULL<<32) : seed; };
+
+    std::array<double, 6> useed;
+    for(size_t i=0; i<useed.size(); ++i) {
+        useed[i] = unsigned_seed(seed[i]);
+    }
+    r_rng_advance_substream(useed.data(), &n);
+    return useed;
+}
+
+void set_user_random_seed(const std::array<double, 6>& seed) {
+    auto unsigned_seed = [](double seed) { return (seed < 0) ? seed + static_cast<double>(1ULL<<32) : seed; };
+
+    std::array<double, 6> useed;
+    for(size_t i=0; i<useed.size(); ++i) {
+        useed[i] = unsigned_seed(seed[i]);
+    }
+    r_set_user_random_seed(useed.data());
+}
+
+RcppExport SEXP callFhcrc(SEXP parmsIn) {
+    List parms(parmsIn);
+    int numThreads = as<int>(parms("numThreads"));
+    int n = as<int>(parms("n"));
+    NumericVector cohort = as<NumericVector>(parms("cohort"));
+
+    std::array<double, 6> currentSeed = get_user_random_seed();
+    std::vector<int> ns;
+    for(int i=0; i<=numThreads; ++i) {
+        ns.push_back(static_cast<int>(std::floor(static_cast<double>(i)/static_cast<double>(numThreads)*n)));
+    }
+    // initialSeeds = c(list(currentSeed), lapply(ns[-c(1,numThreads+1)], function(i) advance.substream(currentSeed, i)));
+    std::vector<std::array<double, 6>> initialSeeds(numThreads);
+    initialSeeds[0] = currentSeed;
+    for(int i=1; i<numThreads; ++i) {
+        initialSeeds[i] = advance_substream(currentSeed, ns[i]);
+    }
+    
+    SimInput in;
+    std::vector<SimOutput> outputs(numThreads);
+    for(int i=0; i<numThreads; i++) {
+        set_user_random_seed(initialSeeds[i]);
+        initialize(in, parms);
+        outputs[i] = callFhcrc_inner(in, ns[i+1]-ns[i], ns[i], cohort); 
+    }
+
+    // aggregate outputs from each thread
+    SimOutput out = outputs[0];
+    for(int i=1; i<numThreads; ++i) {
+        // out.costs.append(outputs[i].costs);
+        out.report.append(outputs[i].report);
+        out.shortReport.append(outputs[i].shortReport);
+        out.lifeHistories.insert(out.lifeHistories.end(), outputs[i].lifeHistories.begin(), outputs[i].lifeHistories.end());
+        out.outParameters.append(outputs[i].outParameters);
+        out.psarecord.append(outputs[i].psarecord);
+        out.bxrecord.append(outputs[i].bxrecord);
+        out.falsePositives.append(outputs[i].falsePositives);
+        out.diagnoses.append(outputs[i].diagnoses);
+        // out.tmc_minus_t0.combine(outputs[i].tmc_minus_t0);
+        // (in.parameter("full_report") == 1.0) ? out.report.mean_utilities.combine(outputs[i].report.mean_utilities) : out.shortReport.mean_utilities.combine(outputs[i].shortReport.mean_utilities);
+        // out.costs.mean_costs.combine(outputs[i].costs.mean_costs);
+    }
+
+  return List::create(_("costs") = out.costs.wrap(),    // CostReport
 		      _("summary") = out.report.wrap(),             // EventReport
 		      _("shortSummary") = out.shortReport.wrap(),   // EventReport
 		      _("lifeHistories") = wrap(out.lifeHistories), // vector<LifeHistory::Type>
@@ -1793,10 +1861,10 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
 		      _("falsePositives")=out.falsePositives.wrap(),// SimpleReport<double>
 		      _("diagnoses")=out.diagnoses.wrap(),          // SimpleReport<double>
 		      _("tmc_minus_t0")=out.tmc_minus_t0.wrap(),    // Means
-		      _("indiv_costs")=out.costs.wrap_indiv(),      // vector<double>
+          _("indiv_costs")=out.costs.wrap_indiv(),      // vector<double>
 		      _("indiv_utilities")=out.report.wrap_indiv(), // vector<double>
-		      _("mean_utilities")=(in.parameter("full_report") == 1.0) ? out.report.wrap_means() : out.shortReport.wrap_means(),  // Rcpp::DataFrame
-		      _("mean_costs")=out.costs.wrap_means()        // Rcpp::DataFrame
+		      _("mean_utilities")=(in.parameter("full_report") == 1.0) ? out.report.wrap_means() : out.shortReport.wrap_means(),           // Rcpp::DataFrame
+		      _("mean_costs")=out.costs.wrap_means()         // Rcpp::DataFrame
 		      );
 }
 

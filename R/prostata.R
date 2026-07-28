@@ -957,9 +957,6 @@ fhcrcData$pradt <- unique(fhcrcData$pradt)
 #' @param parms List to update FhcrcParameters, Default: NULL
 #' @param mc.cores Integer with the number of cores to use for the computation,
 #'     Default: 1
-#' @param cl a cluster object, created by the \code{parallel} package or by the \code{snow}
-#'     package.  If NULL, use \code{mclapply} (i.e. does not use the registered
-#'     default cluster).
 #' @param print.timing Boolean should the required time be printed after the
 #'     simulation run, Default: TRUE
 #' @param ... TBA
@@ -980,7 +977,6 @@ fhcrcData$pradt <- unique(fhcrcData$pradt)
 callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
                       seed=12345, panel=FALSE, flatPop = FALSE, pop = pop1,
                       tables = IHE, debug=FALSE, parms = NULL, mc.cores = 1,
-                      cl = NULL,
                       print.timing = TRUE,...) {
     ## save the random number state for resetting later
     state <- RNGstate(); on.exit(state$reset())
@@ -1036,19 +1032,6 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
             cohort <- sample(pop$cohort,n,prob=pop$pop/sum(pop$pop),replace=TRUE)
     }
     cohort <- sort(cohort)
-    ## now separate the data into chunks and set the initial random numbers
-    if (!is.null(cl)) mc.cores <- length(cl) # HACK
-    currentSeed <- user.Random.seed()
-    if (mc.cores==1) {
-        chunks <- list(cohort)
-        ns <- 0
-        initialSeeds <- list(currentSeed)
-    } else {
-        ns <- floor((0:mc.cores)/mc.cores*n)
-        chunks <- lapply(1:mc.cores, function(i) cohort[(ns[i]+1):ns[i+1]])
-        initialSeeds <- c(list(currentSeed), lapply(ns[-c(1,mc.cores+1)], function(i) advance.substream(currentSeed, i)))
-        ns <- ns[-length(ns)]
-    }
     ## Minor changes to fhcrcData
     fhcrcData$biopsyOpportunisticComplianceTable <- swedenOpportunisticBiopsyCompliance
     fhcrcData$biopsyFormalComplianceTable <- swedenFormalBiopsyCompliance
@@ -1122,29 +1105,17 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
     ##     stop("Scenarios for 'panel=TRUE' and 'MRI_screen=TRUE' have not been defined")
     if (parameter$MRI_clinical && !parameter$MRI_screen)
         stop("Scenarios for 'MRI_clinical=TRUE' and 'MRI_screen=FALSE' have not been defined")
-    ## now run the chunks separately
-    step <- function(i) {
-        chunk <- chunks[[i]]
-        set.user.Random.seed(initialSeeds[[i]])
-        .Call("callFhcrc",
-              parms=list(n=as.integer(length(chunk)),
-                         firstId=ns[i],
+    ## now run the cohort
+    timingfunction(out <- .Call("callFhcrc",
+              parms=list(n=as.integer(length(cohort)),
                          panel=panel, # bool
                          debug=debug, # bool
-                         cohort=as.double(chunk),
+                         numThreads=mc.cores,
+                         cohort=as.double(cohort),
                          parameter=unlist(parameter[pind]),
                          bparameter=unlist(parameter[bInd]),
                          otherParameters=parameter[!pind & !bInd]),
-              PACKAGE="prostata")
-    }
-    if (is.null(cl)) {
-        timingfunction(out <- parallel::mclapply(1:mc.cores, step, mc.cores=mc.cores))
-    } else {
-        clusterEvalQ(cl, {library(prostata);   RNGkind("user")})
-        clusterExport(cl, c("chunks", "initialSeeds", "ns", "panel", "debug", "pind",
-                            "bInd", "parameter"), envir=environment())
-        timingfunction(out <- parallel::parLapply(cl, 1:length(cl), step))
-    }
+              PACKAGE="prostata"))
     ## Apologies: we now need to massage the chunks from C++
     ## reader <- function(obj) {
     ##   out <- cbind(data.frame(state=enum(obj$state[[1]],stateT),
@@ -1174,11 +1145,9 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
     }
     ## grab all of the pt, prev, ut, events from summary
     ## pt <- lapply(out, function(obj) obj$summary$pt)
-    if (length(out[[1]]$summary) > 0) {
-        summary <- lapply(names(out[[1]]$summary),
-                          function(name) do.call(rbind,
-                                                 lapply(out, function(obj) reader(obj$summary[[name]]))))
-        names(summary) <- names(out[[1]]$summary)
+    if (length(out$summary) > 0) {
+        summary <- lapply(names(out$summary), function(name) reader(out$summary[[name]]))
+        names(summary) <- names(out$summary)
         states <- c("state","ext_state","grade","dx","psa","cohort")
         names(summary$prev) <- c(states,"age","count")
         names(summary$pt) <- c(states,"age","pt")
@@ -1188,12 +1157,10 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
         summary <- lapply(summary,function(obj) within(obj,year <- cohort+age))
         enum(summary$events$event) <- eventT
     }
-    else if (length(out[[1]]$shortSummary) > 0) {
+    else if (length(out$shortSummary) > 0) {
         ## use shortSummary
-        summary <- lapply(names(out[[1]]$shortSummary),
-                          function(name) do.call(rbind,
-                                                 lapply(out, function(obj) obj$shortSummary[[name]])))
-        names(summary) <- names(out[[1]]$shortSummary)
+        summary <- lapply(names(out$shortSummary), function(name) out$shortSummary[[name]])
+        names(summary) <- names(out$shortSummary)
         states <- "state"
         names(summary$prev) <- c(states,"age","count")
         names(summary$pt) <- c(states,"age","pt")
@@ -1212,32 +1179,22 @@ callFhcrc <- function(n=10, screen= "noScreening", nLifeHistories=10,
     ## diagnoses <- do.call("rbind",lapply(out,function(obj) data.frame(obj$diagnoses)))
     ## falsePositives <- do.call("rbind",lapply(out,function(obj) data.frame(obj$falsePositives)))
     ## parameters <- do.call("rbind",lapply(out,function(obj) data.frame(obj$parameters)))
-    lifeHistories <- rbindExtract(out,"lifeHistories")
-    psarecord <- rbindExtract(out,"psarecord")
-    bxrecord <- rbindExtract(out,"bxrecord")
-    diagnoses <- rbindExtract(out,"diagnoses")
-    falsePositives <- rbindExtract(out,"falsePositives")
-    parameters <- rbindExtract(out,"parameters")
-    indiv_costs <- do.call(c, lapply(out, "[[", "indiv_costs"))
-    indiv_utilities <- do.call(c, lapply(out, "[[", "indiv_utilities"))
-    combine.Means <- function(df) {
-        n <- sum(df$n)
-        sum <- sum(df$sum)
-        sumsq <- sum(df$sumsq)
-        mean <- sum/n
-        var <- n/(n-1)*(sumsq/n-mean*mean)
-        sd <- sqrt(var)
-        se <- sd/sqrt(n)
-        data.frame(n,mean,var,sd,se,sum,sumsq)
-    }
-    mean_utilities <- combine.Means(df=rbindExtract(out, "mean_utilities"))
-    mean_costs <- combine.Means(df=rbindExtract(out, "mean_costs"))
+    lifeHistories <- data.frame(out$lifeHistories)
+    psarecord <- data.frame(out$psarecord)
+    bxrecord <- data.frame(out$bxrecord)
+    diagnoses <- data.frame(out$diagnoses)
+    falsePositives <- data.frame(out$falsePositives)
+    parameters <- data.frame(out$parameters)
+    indiv_costs <- out$indiv_costs
+    indiv_utilities <- out$indiv_utilities
+    mean_utilities <- data.frame(out$mean_utilities)
+    mean_costs <- data.frame(out$mean_costs)
     appendMeans <- function(x) c(x,
                                  mean.sum = x[["sum"]] / x[["n"]],
                                  mean.sumsq = x[["sumsq"]] / x[["n"]])
-    natural.history.summary <- data.frame(tmc_minus_t0 = appendMeans(sapply(rbindExtract(out,"tmc_minus_t0"), sum)))
+    natural.history.summary <- data.frame(tmc_minus_t0 = appendMeans(sapply(out$tmc_minus_t0, sum)))
     ## Identifying elements without name which also need to be rbind:ed
-    societal.costs <- do.call("rbind",lapply(out,function(obj) data.frame(obj$costs))) #split in sociatal and healthcare perspective
+    societal.costs <- data.frame(out$costs) # split in sociatal and healthcare perspective
     ## names(costs) <- c("type","item","cohort","age","costs")
     names(societal.costs) <- c("type","item","age","costs")
     societal.costs$type <- factor(ifelse(societal.costs$type,

@@ -25,7 +25,7 @@
 // (defun replace-safe-lookup (prefix) (while (re-search-forward (concat prefix "[[]\"\\([a-zA-Z_][a-zA-Z_.0-9]*\\)\"[]]") nil t) (replace-match (concat prefix "(\"" (match-string 1) "\")"))))
 // (replace-safe-lookup "parameter")
 
-#include <microsimulation.h>
+#include "microsimulation_patched.h"
 
 #include <numeric>
 

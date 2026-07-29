@@ -1846,9 +1846,9 @@ RcppExport SEXP callFhcrc(SEXP parmsIn) {
         out.bxrecord.append(outputs[i].bxrecord);
         out.falsePositives.append(outputs[i].falsePositives);
         out.diagnoses.append(outputs[i].diagnoses);
-        // out.tmc_minus_t0.combine(outputs[i].tmc_minus_t0);
-        // (in.parameter("full_report") == 1.0) ? out.report.mean_utilities.combine(outputs[i].report.mean_utilities) : out.shortReport.mean_utilities.combine(outputs[i].shortReport.mean_utilities);
-        // out.costs.mean_costs.combine(outputs[i].costs.mean_costs);
+        out.tmc_minus_t0.combine(outputs[i].tmc_minus_t0);
+        (in.parameter("full_report") == 1.0) ? out.report.mean_utilities.combine(outputs[i].report.mean_utilities) : out.shortReport.mean_utilities.combine(outputs[i].shortReport.mean_utilities);
+        out.costs.mean_costs.combine(outputs[i].costs.mean_costs);
     }
 
   return List::create(_("costs") = out.costs.wrap(),    // CostReport

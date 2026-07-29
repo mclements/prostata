@@ -27,8 +27,7 @@
 
 */
 
-#ifndef MICROSIMULATION_H
-#define MICROSIMULATION_H
+#pragma once
 
 #include <RcppCommon.h>
 #include <unordered_map>
@@ -477,6 +476,12 @@ public:
     _n++;
     _sum += (long double) value;
     _sumsq += (long double)value * (long double)value;
+    return this;
+  }
+  Means* combine(Means& other) {
+    _n += other._n;
+    _sum += other._sum;
+    _sumsq += other._sumsq;
     return this;
   }
   SEXP wrap() {
@@ -1930,5 +1935,3 @@ namespace R {
   */
   double rgompertz(double shape = 1.0, double rate = 1.0);
 }
-
-#endif

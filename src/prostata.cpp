@@ -97,6 +97,11 @@ namespace fhcrc_example {
   // typedef std::tuple<int,string,double> CostKey; // (cost_type,cost_name,cohort)
   class SimOutput {
   public:
+    void setSim(Sim* sim) {
+      report.setSim(sim);
+      shortReport.setSim(sim);
+      costs.setSim(sim);
+    }
     EventReport<FullState::Type,short,double> report;
     EventReport<int,short,double> shortReport;
     CostReport<CostKey> costs;
@@ -249,8 +254,8 @@ namespace fhcrc_example {
     int id, index;
     double cohort, rescreening_frailty, ageEntry, grs_frailty, other_frailty, ageFirstScreen;
     bool everPSA, previousNegativeBiopsy, organised, previousFollowup, MRIpos, everGRS;
-    FhcrcPerson(SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950, const int index = 0) :
-      in(in), out(out), utilities(utilities), id(id), index(index), cohort(cohort) { };
+    FhcrcPerson(Sim* sim, SimInput* in, SimOutput* out, Utilities* utilities, const int id = 0, const double cohort = 1950, const int index = 0) :
+      cProcess(sim), in(in), out(out), utilities(utilities), id(id), index(index), cohort(cohort) { };
     double utility() { return utilities->utility(); }
     double psamean(double age);
     double psameasured(double age);
@@ -296,7 +301,7 @@ namespace fhcrc_example {
       Report on costs for a given item
   */
   void FhcrcPerson::add_costs(string item, cost_t cost_type, double weight) {
-    out->costs.add(CostKey((int) cost_type,item),now(),in->cost_parameters(item) * weight,
+    out->costs.add(CostKey((int) cost_type,item),sim->clock(),in->cost_parameters(item) * weight,
 		   index);
   }
 
@@ -304,8 +309,8 @@ namespace fhcrc_example {
       Report on lost productivity
   */
   void FhcrcPerson::lost_productivity(string item, double weight) {
-    double loss = in->lost_production_years[item] * in->production(now()) * weight;
-    out->costs.add(CostKey((int) Indirect,item),now(),loss,index);
+    double loss = in->lost_production_years[item] * in->production(sim->clock()) * weight;
+    out->costs.add(CostKey((int) Indirect,item),sim->clock(),loss,index);
   }
 
   /**
@@ -366,7 +371,7 @@ namespace fhcrc_example {
       survival to observed survival from PCBase. These calibrations
       are represented by the hr_locoregional and hr_metastatic tables.
 
-      Note that we do not use now(), as the time points change
+      Note that we do not use sim->clock(), as the time points change
       depending on how we represent screening. This explains why we
       pass all of the ages as parameters.
 
@@ -388,7 +393,7 @@ namespace fhcrc_example {
     return mort_hr;
   }
 
-  double FhcrcPerson::calculate_survival(double u, double age_diag, double age_c, treatment_t tx) { // also: tc, tm, tmc, grade, now()
+  double FhcrcPerson::calculate_survival(double u, double age_diag, double age_c, treatment_t tx) { // also: tc, tm, tmc, grade, sim->clock()
     double age_d = -1.0;        // age at death (output)
     double age_m = tm + 35.0;   // age at onset of metastatic cancer
     bool localised = (age_diag < age_m);
@@ -408,7 +413,7 @@ namespace fhcrc_example {
   }
 
   double FhcrcPerson::onset() { return this->t0+35.0; }
-  bool FhcrcPerson::onset_p() { return onset() <= now(); }
+  bool FhcrcPerson::onset_p() { return onset() <= sim->clock(); }
 
   /** @brief Calculate transition times for h(t) = y(t)*gamma = exp(beta0+beta1*t+beta2*(t-t0))*gamma
       This is equivalent to solving H(t) = gamma/(beta1+beta2)*(y(t)-y(s)) = -log(U) for entry time s.
@@ -419,11 +424,11 @@ namespace fhcrc_example {
   }
 
   void FhcrcPerson::opportunistic_rescreening(double psa) {
-    double prescreened = 1.0 - in->rescreen_cure(bounds<double>(now(),30.0,90.0),psa);
-    double shape = in->rescreen_shape(bounds<double>(now(),30.0,90.0),psa);
-    double scale = in->rescreen_scale(bounds<double>(now(),30.0,90.0),psa);
+    double prescreened = 1.0 - in->rescreen_cure(bounds<double>(sim->clock(),30.0,90.0),psa);
+    double shape = in->rescreen_shape(bounds<double>(sim->clock(),30.0,90.0),psa);
+    double scale = in->rescreen_scale(bounds<double>(sim->clock(),30.0,90.0),psa);
     double u = R::runif(0.0,1.0);
-    double t = now() + R::rweibull(shape,scale);
+    double t = sim->clock() + R::rweibull(shape,scale);
     if (u<prescreened) {
       scheduleAt(t, toScreen);
     }
@@ -490,11 +495,11 @@ namespace fhcrc_example {
       case stockholm3_goteborg:
       case goteborg:
         {
-          if (organised && now() >= in->parameter("start_screening") && now() < in->parameter("stop_screening")) { // age groups
-            if (psa<1.0 && now()+4.0 <= in->parameter("stop_screening")) // re-screen late for low psa
-              scheduleAt(now() + 4.0, toScreen);
-            else if (psa>=1.0 && now()+2.0 <= in->parameter("stop_screening")) // re-screen soon for moderate psa
-              scheduleAt(now() + 2.0, toScreen);
+          if (organised && sim->clock() >= in->parameter("start_screening") && sim->clock() < in->parameter("stop_screening")) { // age groups
+            if (psa<1.0 && sim->clock()+4.0 <= in->parameter("stop_screening")) // re-screen late for low psa
+              scheduleAt(sim->clock() + 4.0, toScreen);
+            else if (psa>=1.0 && sim->clock()+2.0 <= in->parameter("stop_screening")) // re-screen soon for moderate psa
+              scheduleAt(sim->clock() + 2.0, toScreen);
             // else do nothing
           }
         }
@@ -502,61 +507,61 @@ namespace fhcrc_example {
       case introduced_screening: //rescreen
       case introduced_screening_preference:
       case introduced_screening_only:
-        if (organised && now() + in->parameter("screening_interval") <= in->parameter("stop_screening")) {// within age?
-          scheduleAt(now() + in->parameter("screening_interval"), toOrganised); //if there are planned opportunistic screens
+        if (organised && sim->clock() + in->parameter("screening_interval") <= in->parameter("stop_screening")) {// within age?
+          scheduleAt(sim->clock() + in->parameter("screening_interval"), toOrganised); //if there are planned opportunistic screens
         }
         break;
       case stockholm3_risk_stratified:
       case risk_stratified:
-        if (now() >= in->parameter("start_screening")) {
+        if (sim->clock() >= in->parameter("start_screening")) {
           if (psa < in->parameter("risk_psa_threshold") &&
-	      now()+in->parameter("risk_lower_interval") <= in->parameter("stop_screening"))
-            scheduleAt(now() + in->parameter("risk_lower_interval"), toScreen);
+	      sim->clock()+in->parameter("risk_lower_interval") <= in->parameter("stop_screening"))
+            scheduleAt(sim->clock() + in->parameter("risk_lower_interval"), toScreen);
           if (psa >= in->parameter("risk_psa_threshold") &&
-	      now()+in->parameter("risk_upper_interval") <= in->parameter("stop_screening"))
-            scheduleAt(now() + in->parameter("risk_upper_interval"), toScreen);
+	      sim->clock()+in->parameter("risk_upper_interval") <= in->parameter("stop_screening"))
+            scheduleAt(sim->clock() + in->parameter("risk_upper_interval"), toScreen);
         }
         break;
       case germany_2018:
-        if (now() >= in->parameter("start_screening")) {
+        if (sim->clock() >= in->parameter("start_screening")) {
           if (psa < in->parameter("risk_psa_threshold_lower") &&
-	      now()+in->parameter("risk_lower_interval") <= in->parameter("stop_screening"))
-            scheduleAt(now() + in->parameter("risk_lower_interval"), toDRE);
+	      sim->clock()+in->parameter("risk_lower_interval") <= in->parameter("stop_screening"))
+            scheduleAt(sim->clock() + in->parameter("risk_lower_interval"), toDRE);
           else if (psa >= in->parameter("risk_psa_threshold_lower") &&
 	      psa < in->parameter("risk_psa_threshold_moderate") &&
-	      now()+in->parameter("risk_moderate_interval") <= in->parameter("stop_screening"))
-            scheduleAt(now() + in->parameter("risk_moderate_interval"), toDRE);
+	      sim->clock()+in->parameter("risk_moderate_interval") <= in->parameter("stop_screening"))
+            scheduleAt(sim->clock() + in->parameter("risk_moderate_interval"), toDRE);
           else if (psa >= in->parameter("risk_psa_threshold_moderate") &&
-	      now()+in->parameter("risk_upper_interval") <= in->parameter("stop_screening"))
-            scheduleAt(now() + in->parameter("risk_upper_interval"), toDRE);
+	      sim->clock()+in->parameter("risk_upper_interval") <= in->parameter("stop_screening"))
+            scheduleAt(sim->clock() + in->parameter("risk_upper_interval"), toDRE);
         }
         break;
       case regular_screen:
-        if (in->parameter("start_screening") <= now() &&
-            now() + in->parameter("screening_interval") <= in->parameter("stop_screening"))
-          scheduleAt(now() + in->parameter("screening_interval"), toScreen);
+        if (in->parameter("start_screening") <= sim->clock() &&
+            sim->clock() + in->parameter("screening_interval") <= in->parameter("stop_screening"))
+          scheduleAt(sim->clock() + in->parameter("screening_interval"), toScreen);
         break;
       case grs_stratified:
-        if (now() + in->parameter("screening_interval") <= in->parameter("stop_screening"))
-          scheduleAt(now() + in->parameter("screening_interval"), toScreen);
+        if (sim->clock() + in->parameter("screening_interval") <= in->parameter("stop_screening"))
+          scheduleAt(sim->clock() + in->parameter("screening_interval"), toScreen);
         break;
       case grs_stratified_age:
 	if (ageFirstScreen < in->parameter("screening_interval_split")) {
-	  if (now() + in->parameter("screening_interval1") <= in->parameter("stop_screening"))
-	    scheduleAt(now() + in->parameter("screening_interval1"), toScreen);
+	  if (sim->clock() + in->parameter("screening_interval1") <= in->parameter("stop_screening"))
+	    scheduleAt(sim->clock() + in->parameter("screening_interval1"), toScreen);
 	} else {
-	  if (now() + in->parameter("screening_interval2") <= in->parameter("stop_screening"))
-	    scheduleAt(now() + in->parameter("screening_interval2"), toScreen);
+	  if (sim->clock() + in->parameter("screening_interval2") <= in->parameter("stop_screening"))
+	    scheduleAt(sim->clock() + in->parameter("screening_interval2"), toScreen);
 	}
         break;
       case twoYearlyScreen50to70:
-        if (50.0 <= now() && now() < 70.0)
-          scheduleAt(now() + 2.0, toScreen);
+        if (50.0 <= sim->clock() && sim->clock() < 70.0)
+          scheduleAt(sim->clock() + 2.0, toScreen);
         break;
       case sthlm3_mri_arm:
       case fourYearlyScreen50to70:
-        if (50.0 <= now() && now() < 70.0)
-          scheduleAt(now() + 4.0, toScreen);
+        if (50.0 <= sim->clock() && sim->clock() < 70.0)
+          scheduleAt(sim->clock() + 4.0, toScreen);
         break;
       case screenUptake:
       case randomScreen50to70:
@@ -923,11 +928,11 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   // declarations
   in->rngOther->set();
-  double psa = psameasured(now()); // includes measurement error
+  double psa = psameasured(sim->clock()); // includes measurement error
   in->rngNh->set();
   // double test = panel ? biomarker : psa;
-  double Z = psamean(now());
-  double age = now();
+  double Z = psamean(sim->clock());
+  double age = sim->clock();
   double year = age + cohort;
   double compliance;
   bool mixed_programs = (in->screen == mixed_screening) ||
@@ -939,7 +944,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   bool formal_compliance = in->parameter("formal_compliance")==1.0 && (!mixed_programs || organised);
   double utility = FhcrcPerson::utility();
   in->rngPrelude->set();
-  bool detectable = FhcrcPerson::detectable(now(), year);
+  bool detectable = FhcrcPerson::detectable(sim->clock(), year);
   if (in->parameter("rand_biopsy_sensitivityG6")<1.0) {
     detectable = detectable && R::runif(0.0,1.0) < in->parameter("rand_biopsy_sensitivityG6");
   }
@@ -975,7 +980,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       add_costs("Cancer death");
     }
     if (id < in->nLifeHistories) {
-      out->outParameters.record("age_d",now());
+      out->outParameters.record("age_d",sim->clock());
       out->outParameters.revise("pca_death",1.0);
     }
     out->report.individualReset();
@@ -988,7 +993,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     // add_costs("Death"); // cost for death, should this be zero???
 
     if (id < in->nLifeHistories) {
-      out->outParameters.record("age_d",now());
+      out->outParameters.record("age_d",sim->clock());
     }
     out->report.individualReset();
     out->shortReport.individualReset();
@@ -1000,9 +1005,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     state = Localised; ext_state = ext::T1_T2;
     ext_grade = future_ext_grade;
     grade = future_grade;
-    if (now()<tc+35.0-6.0/52.0)
+    if (sim->clock()<tc+35.0-6.0/52.0)
       scheduleAt(tc+35.0-6.0/52.0,toClinicalDiagnosticBiopsy);
-    if (now()<tc+35.0-3.0/52.0)
+    if (sim->clock()<tc+35.0-3.0/52.0)
       scheduleAt(tc+35.0-3.0/52.0,toClinicalDiagnosticBiopsy);
     scheduleAt(tc+35.0,toClinicalDiagnosis);
     scheduleAt(t3p+35.0,toT3plus);
@@ -1018,14 +1023,14 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     RemoveKind(toClinicalDiagnosis);
     RemoveKind(toClinicalDiagnosticBiopsy);
     if (in->bparameter("Andreas")) {
-      if (now()<tc+35.0-6.0/52.0) // should this be tmc?
+      if (sim->clock()<tc+35.0-6.0/52.0) // should this be tmc?
 	scheduleAt(tmc+35.0-6.0/52.0,toClinicalDiagnosticBiopsy);
-      if (now()<tc+35.0-3.0/52.0) // should this be tmc?
+      if (sim->clock()<tc+35.0-3.0/52.0) // should this be tmc?
 	scheduleAt(tmc+35.0-3.0/52.0,toClinicalDiagnosticBiopsy);
     } else {
-      if (now()<tmc+35.0-6.0/52.0)
+      if (sim->clock()<tmc+35.0-6.0/52.0)
 	scheduleAt(tmc+35.0-6.0/52.0,toClinicalDiagnosticBiopsy);
-      if (now()<tmc+35.0-3.0/52.0)
+      if (sim->clock()<tmc+35.0-3.0/52.0)
 	scheduleAt(tmc+35.0-3.0/52.0,toClinicalDiagnosticBiopsy);
     }
     scheduleAt(tmc+35.0,toClinicalDiagnosis);
@@ -1038,7 +1043,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   case toSTHLM3:
     organised = true;
     RemoveKind(toScreen); // remove other screens
-    scheduleAt(now(), toScreen); // now start organised screening
+    scheduleAt(sim->clock(), toScreen); // now start organised screening
     break;
 
   case toCancelScreens:
@@ -1048,7 +1053,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toScreen:
   case toBiopsyFollowUpScreen: {
-    if (ageFirstScreen < 0.0) ageFirstScreen = now();
+    if (ageFirstScreen < 0.0) ageFirstScreen = sim->clock();
     in->rngBx->set();
     this->psa_last_screen = psa;
     if (in->bparameter("includePSArecords")) {
@@ -1074,7 +1079,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     }
     if (!everPSA) {
       if (id < in->nLifeHistories) {
-	out->outParameters.revise("age_psa",now());
+	out->outParameters.revise("age_psa",sim->clock());
 	// outParameters.revise("first_psa",psa);
       }
       everPSA = true;
@@ -1083,11 +1088,11 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       add_costs("Invitation");
       lost_productivity(in->panel && psa>=in->parameter("panelReflexThreshold") ? "Formal panel" : "Formal PSA");
       add_costs(in->panel && psa>=in->parameter("panelReflexThreshold") ? "Formal panel" : "Formal PSA");
-      scheduleUtilityChange(now(), "Formal PSA");
+      scheduleUtilityChange(sim->clock(), "Formal PSA");
     } else { // opportunistic costs
       add_costs(in->panel && psa>=in->parameter("panelReflexThreshold") ? "Opportunistic panel" : "Opportunistic PSA");
       lost_productivity(in->panel && psa>=in->parameter("panelReflexThreshold") ? "Opportunistic panel" : "Opportunistic PSA");
-      scheduleUtilityChange(now(), "Opportunistic PSA");
+      scheduleUtilityChange(sim->clock(), "Opportunistic PSA");
     }
     compliance = formal_compliance ?
       in->tableFormalBiopsyCompliance(bounds<double>(psa,3.0,10.0),
@@ -1123,19 +1128,19 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (in->bparameter("includePSArecords") && !onset_p() && positive_test) {
       out->falsePositives.record("id",id);
       out->falsePositives.record("psa",psa);
-      out->falsePositives.record("age",now());
+      out->falsePositives.record("age",sim->clock());
       out->falsePositives.record("age0",t0+35.0);
       out->falsePositives.record("ext_grade",ext_grade);
     }
-    // if (panel && !positive_test && t0<now()-35.0 && ext_grade > ext::Gleason_le_6) {
+    // if (panel && !positive_test && t0<sim->clock()-35.0 && ext_grade > ext::Gleason_le_6) {
     //   if (R::runif(0.0,1.0) < 1.0-parameter("rTPF")) positive_test = true;
     // }
     in->rngBx->set();
     if (positive_test && R::runif(0.0,1.0) < compliance) {
       if (in->bparameter("MRI_screen")) {
-	scheduleAt(now()+1.0/52.0, toMRI); // MRI in one month
+	scheduleAt(sim->clock()+1.0/52.0, toMRI); // MRI in one month
       } else {
-	scheduleAt(now()+1.0/52.0, toScreenInitiatedBiopsy); // biopsy in one month
+	scheduleAt(sim->clock()+1.0/52.0, toScreenInitiatedBiopsy); // biopsy in one month
       }
     } // assumes similar biopsy compliance, reasonable? An option to different psa-thresholds would be to use different biopsyCompliance. /AK
     else {
@@ -1148,33 +1153,33 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   } break;
 
   case toClinicalDiagnosis:
-    scheduleUtilityChange(now(), "Cancer diagnosis");
+    scheduleUtilityChange(sim->clock(), "Cancer diagnosis");
     dx = ClinicalDiagnosis;
     cancel_events_after_diagnosis();
-    scheduleAt(now()+1.0/12.0, toTreatment);
+    scheduleAt(sim->clock()+1.0/12.0, toTreatment);
     if (id < in->nLifeHistories) {
-      out->outParameters.revise("age_pca",now());
+      out->outParameters.revise("age_pca",sim->clock());
     }
     break;
 
   case toScreenDiagnosis:
-    scheduleUtilityChange(now(), "Cancer diagnosis");
+    scheduleUtilityChange(sim->clock(), "Cancer diagnosis");
     // add cost for half a subsequent consultation
     add_costs("Assessment", Direct, 0.5);
     dx = ScreenDiagnosis;
     cancel_events_after_diagnosis();
-    scheduleAt(now()+1.0/12.0, toTreatment); // treatment one month after the diagnosis
+    scheduleAt(sim->clock()+1.0/12.0, toTreatment); // treatment one month after the diagnosis
     if (aoc < (35.0 + min(tc,tmc))) {
-      scheduleAt(now(), toOverDiagnosis);
+      scheduleAt(sim->clock(), toOverDiagnosis);
     }
     if (id < in->nLifeHistories) {
-      out->outParameters.revise("age_pca",now());
+      out->outParameters.revise("age_pca",sim->clock());
     }
     break;
 
   case toDRE: {
     add_costs("Opportunistic DRE");
-    scheduleUtilityChange(now(), "Opportunistic PSA"); // working assumption:)
+    scheduleUtilityChange(sim->clock(), "Opportunistic PSA"); // working assumption:)
     in->rngNh->set();
     bool dre_result;
     double u;
@@ -1183,9 +1188,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       dre_result = (u < in->dre_sensitivity(psa));
     else dre_result = u < (1.0 - in->dre_specificity(psa));
     if (dre_result && in->screen == germany_2018)
-      scheduleAt(now(), toMRI); // add PSA costs
+      scheduleAt(sim->clock(), toMRI); // add PSA costs
     if (!dre_result && in->screen == germany_2018)
-      scheduleAt(now(), toScreen); // add costs for blood draw and PSA analysis
+      scheduleAt(sim->clock(), toScreen); // add costs for blood draw and PSA analysis
   } break;
     
   case toOverDiagnosis:
@@ -1196,13 +1201,13 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     in->rngBx->set();
     add_costs("MRI"); // does this include costs for the consultation?
     lost_productivity("MRI");
-    // scheduleUtilityChange(now(), "MRI");
+    // scheduleUtilityChange(sim->clock(), "MRI");
     double pMRIpos = (this->ext_grade == ext::Healthy || !detectable) ? in->parameter("pMRIposG0") :
       (this->ext_grade == ext::Gleason_le_6) ? in->parameter("pMRIposG1") :
       in->parameter("pMRIposG2");
     this->MRIpos = (R::runif(0.0,1.0) < pMRIpos); // we need to know if they are MRI+ at toScreenInitiatedBiopsy
     if (this->MRIpos || in->bparameter("MRInegSBx")) {
-      scheduleAt(now(), toScreenInitiatedBiopsy);
+      scheduleAt(sim->clock(), toScreenInitiatedBiopsy);
     } else {
       if ((in->screen == cap_study || in->screen == sthlm3_mri_arm) && organised)
 	organised = false;
@@ -1225,7 +1230,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     // common values
     add_costs("Assessment");
     lost_productivity("Assessment");
-    scheduleUtilityChange(now(), "Biopsy");
+    scheduleUtilityChange(sim->clock(), "Biopsy");
     break;
 
   case toScreenInitiatedBiopsy: {
@@ -1260,7 +1265,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     // common values
     add_costs("Assessment");
     lost_productivity("Assessment");
-    scheduleUtilityChange(now(), "Biopsy");
+    scheduleUtilityChange(sim->clock(), "Biopsy");
 
     // output biopsy record
     if (in->bparameter("includeBxrecords")) {
@@ -1302,7 +1307,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	}
       }
       if (!Bx_missed)
-	scheduleAt(now()+3.0/52.0, toScreenDiagnosis); // diagnosis three weeks after biopsy
+	scheduleAt(sim->clock()+3.0/52.0, toScreenDiagnosis); // diagnosis three weeks after biopsy
       if (in->panel && state==Localised && ext_grade == ext::Gleason_le_6) {
 	// fixed costs etc for men who were S3M+/PE-
 	add_costs("Assessment", Direct, 766.0/722.0 - 1.0);
@@ -1327,10 +1332,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
         double timeToBiopsy = R::rlnorm(in->tableNegBiopsyToBiopsymeanlog(age),
                                         in->tableNegBiopsyToBiopsysdlog(age));
         if (timeToPSA <= timeToBiopsy) { // PSA was the first event
-          scheduleAt(now() + timeToPSA, toScreen);
+          scheduleAt(sim->clock() + timeToPSA, toScreen);
         } else { // Biopsy was the first event
 	  this->MRIpos = false; // HACK!!! This ensures that they do SBx only.
-          scheduleAt(now() + timeToBiopsy, toScreenInitiatedBiopsy);
+          scheduleAt(sim->clock() + timeToBiopsy, toScreenInitiatedBiopsy);
         }
       }
     }
@@ -1346,22 +1351,22 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       // utilities->clear(); // should this be age-specific??
     }
     else { // Loco-regional
-      if (!in->bparameter("Andreas") && now() < 65.0)
+      if (!in->bparameter("Andreas") && sim->clock() < 65.0)
 	lost_productivity("Long-term sick leave");
-      tx = calculate_treatment(u_tx,now(),year);
-      if (tx == CM) scheduleAt(now(), toCM);
-      if (tx == RP) scheduleAt(now(), toRP);
-      if (tx == RT) scheduleAt(now(), toRT);
+      tx = calculate_treatment(u_tx,sim->clock(),year);
+      if (tx == CM) scheduleAt(sim->clock(), toCM);
+      if (tx == RP) scheduleAt(sim->clock(), toRP);
+      if (tx == RT) scheduleAt(sim->clock(), toRT);
       if (in->bparameter("Andreas")) {
 	// check for ADT
 	double pADT =
 	  in->pradt(tx,
-		    bounds<double>(now(),50,79),
+		    bounds<double>(sim->clock(),50,79),
 		    bounds<double>(year,1973,2004),
 		    grade);
 	if (u_adt < pADT)  {
 	  adt = true;
-	  scheduleAt(now(), toADT);
+	  scheduleAt(sim->clock(), toADT);
 	}
 	if (in->debug) Rprintf("id=%i, adt=%d, u=%8.6f, pADT=%8.6f\n",id,adt,u_adt,pADT);
       }
@@ -1371,7 +1376,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     // check for cure
     bool cured = false;
     double age_c = (state == Localised) ? tc + 35.0 : tmc + 35.0;
-    double lead_time = age_c - now();
+    double lead_time = age_c - sim->clock();
     // calculate the age at cancer death by c_benefit_type
     double age_cancer_death=R_PosInf;
     double age_cd = R_PosInf, age_sd = R_PosInf, weight = R_PosInf;
@@ -1389,7 +1394,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       // calculate survival
       double u_surv = R::runif(0.0,1.0);
       age_cd = calculate_survival(u_surv,age_c,age_c,calculate_treatment(u_tx,age_c,year+lead_time));
-      age_sd = calculate_survival(u_surv,now(),age_c,tx);
+      age_sd = calculate_survival(u_surv,sim->clock(),age_c,tx);
       weight = exp(- in->parameter("c_benefit_value0")*lead_time);
       age_cancer_death = weight*age_cd + (1.0-weight)*age_sd;
     }
@@ -1400,49 +1405,49 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       if (in->bparameter("Andreas")) {
 	double age_palliative = age_cancer_death - in->utility_duration("Palliative therapy") - in->utility_duration("Terminal illness");
 	double age_terminal = age_cancer_death - in->utility_duration("Terminal illness");
-	if (age_palliative>now()) { // cancer death more than 36 months after diagnosis
+	if (age_palliative>sim->clock()) { // cancer death more than 36 months after diagnosis
 	  scheduleUtilityChange(age_palliative, age_terminal,
 				in->utility_estimates("Palliative therapy"));
 	  scheduleUtilityChange(age_terminal, "Terminal illness");
 	}
-	else if (age_terminal>now()) { // cancer death between 36 and 6 months of diagnosis
-	  scheduleUtilityChange(now(), age_terminal, in->utility_estimates("Palliative therapy"));
+	else if (age_terminal>sim->clock()) { // cancer death between 36 and 6 months of diagnosis
+	  scheduleUtilityChange(sim->clock(), age_terminal, in->utility_estimates("Palliative therapy"));
 	  scheduleUtilityChange(age_terminal,"Terminal illness");
 	}
 	else // cancer death within 6 months of diagnosis/treatment
-	  scheduleUtilityChange(now(), "Terminal illness");
+	  scheduleUtilityChange(sim->clock(), "Terminal illness");
       } else { // Shuang:
 	double age_adt = age_cancer_death - in->utility_duration("Palliative therapy") - in->utility_duration("Terminal illness")
 	  - in->utility_duration("ADT+chemo");
 	double age_palliative = age_cancer_death - in->utility_duration("Palliative therapy") - in->utility_duration("Terminal illness");
 	double age_terminal = age_cancer_death - in->utility_duration("Terminal illness");
 	// check age_adt (two cases)
-	if (now() <= age_adt) { 
+	if (sim->clock() <= age_adt) { 
 	  scheduleUtilityChange(age_adt, age_palliative,
 				in->utility_estimates("ADT+chemo"));
 	  scheduleAt(age_adt, toADT);
-	} else if (now() < age_palliative) {
-	  scheduleUtilityChange(now(), age_palliative,
+	} else if (sim->clock() < age_palliative) {
+	  scheduleUtilityChange(sim->clock(), age_palliative,
 				in->utility_estimates("ADT+chemo"));
-	  scheduleAt(now(), toADT);
+	  scheduleAt(sim->clock(), toADT);
 	}
 	// check age_palliative (two cases)
-	if (now() <= age_palliative) { 
+	if (sim->clock() <= age_palliative) { 
 	  scheduleUtilityChange(age_palliative, age_terminal,
 				in->utility_estimates("Palliative therapy"));
 	  scheduleAt(age_palliative, toPalliative);
-	} else if (now() < age_palliative) {
-	  scheduleUtilityChange(now(), age_palliative,
+	} else if (sim->clock() < age_palliative) {
+	  scheduleUtilityChange(sim->clock(), age_palliative,
 				in->utility_estimates("Palliative therapy"));
-	  scheduleAt(now(), toPalliative);
+	  scheduleAt(sim->clock(), toPalliative);
 	}
 	// check age_terminal (two cases)
-	if (now() <= age_terminal) { 
+	if (sim->clock() <= age_terminal) { 
 	  scheduleUtilityChange(age_terminal, "Terminal illness");
 	  scheduleAt(age_terminal, toTerminal);
-	} else if (now() < age_terminal) {
-	  scheduleUtilityChange(now(), "Terminal illness");
-	  scheduleAt(now(), toTerminal);
+	} else if (sim->clock() < age_terminal) {
+	  scheduleUtilityChange(sim->clock(), "Terminal illness");
+	  scheduleAt(sim->clock(), toTerminal);
 	}
       }
     }
@@ -1471,14 +1476,14 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   case toRP:
     add_costs("Prostatectomy");
     this->previousFollowup = false;
-    scheduleAt(now() + 1.0, toYearlyPostTxFollowUp);
+    scheduleAt(sim->clock() + 1.0, toYearlyPostTxFollowUp);
     lost_productivity("Prostatectomy");
     // Scheduling utilities for the first 2 months after procedure
-    scheduleUtilityChange(now(), "Prostatectomy part 1");
+    scheduleUtilityChange(sim->clock(), "Prostatectomy part 1");
     // Scheduling utilities for the first 3-12 months after procedure
-    scheduleUtilityChange(now() + in->utility_duration("Prostatectomy part 1"),
+    scheduleUtilityChange(sim->clock() + in->utility_duration("Prostatectomy part 1"),
 			  "Prostatectomy part 2");
-    scheduleUtilityChange(now() + in->utility_duration("Prostatectomy part 1") +
+    scheduleUtilityChange(sim->clock() + in->utility_duration("Prostatectomy part 1") +
                           in->utility_duration("Prostatectomy part 2"), "Postrecovery period");
     // Remove yearly active surveillance if the RP is the secondary Tx
     RemoveKind(toYearlyActiveSurveillance); // breaks recursive call
@@ -1488,14 +1493,14 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   case toRT:
     add_costs("Radiation therapy");
     this->previousFollowup = false;
-    scheduleAt(now() + 1.0, toYearlyPostTxFollowUp);
+    scheduleAt(sim->clock() + 1.0, toYearlyPostTxFollowUp);
     lost_productivity("Radiation therapy");
     // Scheduling utilities for the first 2 months after procedure
-    scheduleUtilityChange(now(), "Radiation therapy part 1");
+    scheduleUtilityChange(sim->clock(), "Radiation therapy part 1");
     // Scheduling utilities for the first 3-12 months after procedure
-    scheduleUtilityChange(now() + in->utility_duration("Radiation therapy part 1"),
+    scheduleUtilityChange(sim->clock() + in->utility_duration("Radiation therapy part 1"),
 			  "Radiation therapy part 2");
-    scheduleUtilityChange(now() + in->utility_duration("Radiation therapy part 1") +
+    scheduleUtilityChange(sim->clock() + in->utility_duration("Radiation therapy part 1") +
                           in->utility_duration("Radiation therapy part 2"), "Postrecovery period");
     RemoveKind(toYearlyActiveSurveillance); // breaks recursive call
     break;
@@ -1504,16 +1509,16 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     in->rngTreatment->set();
     if (in->bparameter("Andreas"))
       add_costs("Active surveillance - single MR"); // expand here
-    scheduleAt(now(), toYearlyActiveSurveillance);
-    scheduleUtilityChange(now(), "Active surveillance");
+    scheduleAt(sim->clock(), toYearlyActiveSurveillance);
+    scheduleUtilityChange(sim->clock(), "Active surveillance");
     // Modelling for possible subsequent RP and RT. P(RP|RT) ~ P(RP)
     // whereas P(RT|RP) << P(RT). As a simplification, we simulate
     // separately for RP and RT and remove an RT following an RP.
     if (R::runif(0.0,1.0) > in->tableCMtoRPpnever(age)) {// pnever -> pever
-      scheduleAt(now() + R::rlnorm(in->tableCMtoRPmeanlog(age), in->tableCMtoRPsdlog(age)), toRP);
+      scheduleAt(sim->clock() + R::rlnorm(in->tableCMtoRPmeanlog(age), in->tableCMtoRPsdlog(age)), toRP);
     }
     if (R::runif(0.0,1.0) > in->tableCMtoRTpnever(age)) {// pnever -> pever
-      scheduleAt(now() + R::rlnorm(in->tableCMtoRTmeanlog(age), in->tableCMtoRTsdlog(age)), toRT);
+      scheduleAt(sim->clock() + R::rlnorm(in->tableCMtoRTmeanlog(age), in->tableCMtoRTsdlog(age)), toRT);
     }
     in->rngNh->set();
     break;
@@ -1531,7 +1536,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	lost_productivity("Active surveillance - yearly - w/o MRI");
       }
     }
-    scheduleAt(now() + 1.0, toYearlyActiveSurveillance);
+    scheduleAt(sim->clock() + 1.0, toYearlyActiveSurveillance);
     break;
 
   case toYearlyPostTxFollowUp: // not active surveillance
@@ -1545,7 +1550,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	add_costs("Post-Tx follow-up - yearly first");
     }
     previousFollowup = true;
-    scheduleAt(now() + 1.0, toYearlyPostTxFollowUp);
+    scheduleAt(sim->clock() + 1.0, toYearlyPostTxFollowUp);
     break;
 
   case toADT:
@@ -1758,12 +1763,13 @@ SimOutput callFhcrc_inner(SimInput& in, int n, int firstId, NumericVector& cohor
   }
 
   // main loop
-  FhcrcPerson person(&in, &out, &utilities, 1, 2000, 0);
   for (int i = 0; i < n; ++i) {
-    person = FhcrcPerson(&in, &out, &utilities, i+firstId, cohort[i+firstId], indiv_reports ? i : 0);
-    Sim::create_process(&person);
-    Sim::run_simulation();
-    Sim::clear();
+    Sim sim;
+    out.setSim(&sim);
+    FhcrcPerson person(&sim, &in, &out, &utilities, i+firstId, cohort[i+firstId], indiv_reports ? i : 0);
+    sim.create_process(&person);
+    sim.run_simulation();
+    sim.clear();
     in.rngNh->nextSubstream();
     in.rngOther->nextSubstream();
     in.rngScreen->nextSubstream();

@@ -22,8 +22,7 @@
 //  You should have received a copy of the GNU General Public License
 //  along with SSim.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _ssim_h
-#define _ssim_h
+#pragma once
 
 #include <functional>
 #include <string>
@@ -76,7 +75,16 @@ typedef double		Time;
 
 /** @brief beginning of time
  **/
-const Time		INIT_TIME = 0;
+constexpr Time		INIT_TIME = 0;
+
+enum ActionType { 
+    A_Event, 
+    A_Init, 
+    A_Stop,
+    A_Ignore
+};
+
+class Sim;
 
 /** @brief basic event in the simulation.
  *
@@ -214,6 +222,7 @@ class Process {
  **/
 class ProcessWithPId : public Process {
  public:
+     ProcessWithPId(Sim* sim) throw() : process_id(NULL_PROCESSID), sim(sim) { }
     /** @brief activates this process within the simulator.
      *
      *  Creates a simulator process with this process object.  The
@@ -237,6 +246,9 @@ class ProcessWithPId : public Process {
 
     ProcessWithPId() throw();
 
+protected:
+    Sim* sim;
+  
  private:
     ProcessId process_id;
 };
@@ -340,12 +352,12 @@ public:
      *  @returns the process id of the new simulation process.
      *  @see Process::initialize()
      **/
-    static ProcessId	create_process(Process *) throw();
+    ProcessId	create_process(Process *) throw();
 
     /** @brief stops the execution of a given process */
-    static int		stop_process(ProcessId) throw();
+    int		stop_process(ProcessId) throw();
     /** @brief stops the execution of the current process */
-    static void		stop_process() throw();
+    void		stop_process() throw();
 
    /** @brief clears out internal data structures
     *
@@ -357,7 +369,7 @@ public:
     *  Notice however that it is the responsibility of the simulation
     *  programmer to delete process objects used in the simulation.
     **/
-    static void		clear() throw();
+    void		clear() throw();
 
     /** @brief signal an event to the current process immediately
      *
@@ -373,7 +385,7 @@ public:
      *  @see signal_event(ProcessId, const Event *)
      *       and Process::process_event(const Event *).
      **/
-    static void		self_signal_event(const Event * e) throw();
+    void		self_signal_event(const Event * e) throw();
 
     /** @brief signal an event to the current process at the given time 
      *
@@ -391,7 +403,7 @@ public:
      *  @see signal_event() 
      *       and Process::process_event(const Event *).
      **/
-    static void		self_signal_event(const Event * e, Time delay) throw();
+    void		self_signal_event(const Event * e, Time delay) throw();
 
     /** @brief signal an event to the given process immediately
      *
@@ -412,7 +424,7 @@ public:
      *  @see self_signal_event() 
      *       and Process::process_event(ProcessId, const Event *).
      **/
-    static void		signal_event(ProcessId p, const Event * e) throw();
+    void		signal_event(ProcessId p, const Event * e) throw();
 
     /** @brief signal an event to the given process at the given time 
      *
@@ -435,7 +447,7 @@ public:
      *  @see self_signal_event() 
      *       and Process::process_event(const Event *).
      **/
-    static void		signal_event(ProcessId p, const Event * e, Time d) throw();
+    void		signal_event(ProcessId p, const Event * e, Time d) throw();
 
     /** @brief advance the execution time of the current process.
      *
@@ -488,7 +500,7 @@ public:
      *  @see Sim::clock().
      *  @see SimErrorHandler
      **/
-    static void		advance_delay(Time) throw();
+    void		advance_delay(Time) throw();
     
     /** @brief returns the current process
      *
@@ -529,10 +541,10 @@ public:
      *  @return current virtual time for the current process.
      *  @see advance_delay(Time)
      **/
-    static Time		clock() throw();
+    Time		clock() throw();
     
     /** @brief starts execution of the simulation */
-    static void		run_simulation();
+    void		run_simulation();
     /** @brief stops execution of the simulation */
     static void		stop_simulation() throw();
 
@@ -548,7 +560,7 @@ public:
      *
      *  @see stop_simulation()
      **/
-    static void		set_stop_time(Time t = INIT_TIME) throw();
+    void		set_stop_time(Time t = INIT_TIME) throw();
 
     /** @brief  registers a handler for simulation errors.
      *
@@ -559,10 +571,14 @@ public:
      **/
     static void		set_error_handler(SimErrorHandler *) throw();
     static void ignore_event(EventPredicate pred) throw();
+
+    void schedule(Time t, ActionType i, ProcessId p, const Event * e = 0) throw(); 
+    void schedule_now(ActionType i, ProcessId p, const Event * e = 0) throw();
+
+  private:
+   Time stop_time = INIT_TIME;
+   Time current_time = INIT_TIME;
 };
   void Rprint_actions();
 
 } // end namespace ssim
-
-#endif /* _ssim_h */
-

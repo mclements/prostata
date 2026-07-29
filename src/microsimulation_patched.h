@@ -324,7 +324,7 @@ inline void CancelEvents() {
 class cProcess : public ssim::ProcessWithPId {
 public:
   Time startTime, previousEventTime;
-  cProcess(Time startTime = Time(0.0)) : startTime(startTime), previousEventTime(startTime) { }
+  cProcess(ssim::Sim* sim, Time startTime = Time(0.0)) : ssim::ProcessWithPId(sim), startTime(startTime), previousEventTime(startTime) { }
   /**
       @brief Abstract method to handle each message
    */
@@ -340,10 +340,10 @@ public:
    */
   virtual void scheduleAt(Time t, cMessage * msg, short priority=0) { // virtual or not?
     msg->timestamp = t;
-    msg->sendingTime = Sim::clock();
+    msg->sendingTime = sim->clock();
     msg->process_id = msg->sender_process_id = pid();
     msg->priority = priority;
-    Sim::self_signal_event(msg, t - Sim::clock());
+    sim->self_signal_event(msg, t - sim->clock());
   }
   /**
       @brief schedules at time t a message msg with a specific name to the current process.
@@ -361,13 +361,13 @@ public:
       @brief send to a given process at time t a message msg.
       Adds the sendingTime, process_id and sender_process_id to the message.
    */
-  virtual void send(ProcessId process_id, Time t, cMessage * msg, short priority=0) { // virtual or not?
+  void send(ProcessId process_id, Time t, cMessage * msg, short priority=0) { // virtual or not?
     msg->timestamp = t;
     msg->process_id = process_id;
     msg->sender_process_id = pid();
-    msg->sendingTime = Sim::clock();
+    msg->sendingTime = sim->clock();
     msg->priority = priority;
-    Sim::signal_event(process_id, msg, t - Sim::clock());
+    sim->signal_event(process_id, msg, t - sim->clock());
   }
   /**
       @brief sends to a given process at time t a message msg with a specific name.
@@ -437,7 +437,7 @@ public:
     const cMessage * msg;
     if ((msg = dynamic_cast<const cMessage *>(e)) != 0) {
       handleMessage(msg);
-      previousEventTime = Sim::clock();
+      previousEventTime = sim->clock();
     } else {
       // cf. cerr, specialised for R
       REprintf("cProcess is only written to receive cMessage events\n");
@@ -449,16 +449,6 @@ public:
    @brief simtime_t typedef for OMNET++ API compatibility
 */
 typedef Time simtime_t;
-
-/**
-   @brief simTime() function for OMNET++ API compatibility
-*/
-Time simTime();
-
-/**
-   @brief now() function for compatibility with C++SIM
-*/
-Time now();
 
 /**
    @brief Utility class to incrementally add values to calculate the mean,
@@ -878,6 +868,9 @@ inline double discountedInterval(double start, double end, double discountRate) 
    _vector.resize(size);
    setPartition(startReportAge);
  }
+ void setSim(Sim* sim) {
+   this->sim = sim;
+ }
  void resize(int size) {
    _vector.resize(size);
  }
@@ -908,13 +901,13 @@ inline double discountedInterval(double start, double end, double discountRate) 
    current = Utility(0);
  }
  void individualReset () {
-   if (now() >= startReportAge)
+   if (sim->clock() >= startReportAge)
      mean_utilities += double(current);
    if (indiv) {
      if (id>=int(_vector.size()))
        REprintf("Vector too small in EventReport: use resize(int) method");
      else
-       _vector[id] = (now() >= startReportAge) ? double(current) : NA_REAL;
+       _vector[id] = (sim->clock() >= startReportAge) ? double(current) : NA_REAL;
    }
    current = Utility(0);
    id++;
@@ -995,6 +988,7 @@ inline double discountedInterval(double start, double end, double discountRate) 
  SEXP wrap_means() {
    return mean_utilities.wrap();
  }
+ Sim* sim;
  Utility discountRate, current;
  bool outputUtilities;
  Partition _partition;
@@ -1025,7 +1019,7 @@ inline double discountedInterval(double start, double end, double discountRate) 
     typedef std::unordered_map<pair<State,Time>, Cost > CostMap;
     typedef std::vector<Cost> IndividualCosts;
     typedef std::vector<Utility> IndividualUtilities;
-    SummaryReport(int n = 1, bool indivp = true, Utility discountRate = 0.0) : n(n), indivp(indivp) {
+    SummaryReport(Sim* sim, int n = 1, bool indivp = true, Utility discountRate = 0.0) : sim(sim), n(n), indivp(indivp) {
       resize(indivp ? n : 1);
       setDiscountRate(discountRate);
       setUtility(1.0);
@@ -1109,7 +1103,7 @@ inline double discountedInterval(double start, double end, double discountRate) 
     // void addPointCost(const State state, const Time time, const Cost cost, const int index = 0) {
     void addPointCost(const State state, const Cost cost, int index = 0) {
       if (!indivp) index = 0;
-      Time time = ssim::now();
+      Time time = sim->clock();
       Time time_lhs = * _partition.lower_bound(time);
       Cost c = discountedCost(time,cost);
       _costs[Pair(state,time_lhs)] += c;
@@ -1181,6 +1175,7 @@ inline double discountedInterval(double start, double end, double discountRate) 
       for (it = new_map.begin(); it != new_map.end(); ++it)
 	base_map[it->first] += it->second;
     }
+    Sim* sim;
     int n;
     bool indivp;
     Partition _partition;
@@ -1210,14 +1205,17 @@ inline double discountedInterval(double start, double end, double discountRate) 
    CostReport(Cost discountRate = 0, int size = 1, Time startReportAge = Time(0), bool indiv = false) : discountRate(discountRate), startReportAge(startReportAge), id(0), indiv(indiv) {
    _vector.resize(size);
  }
+ void setSim(Sim* sim) {
+   this->sim = sim;
+ }
  void individualReset () {
-   if (now() >= startReportAge)
+   if (sim->clock() >= startReportAge)
      mean_costs += double(current);
    if (indiv) {
      if (id>=int(_vector.size()))
        REprintf("Vector too small in CostReport: use resize(int) method");
      else
-       _vector[id] = (now() >= startReportAge) ? double(current) : NA_REAL;
+       _vector[id] = (sim->clock() >= startReportAge) ? double(current) : NA_REAL;
    }
    current = Cost(0);
    id++;
@@ -1290,6 +1288,7 @@ inline double discountedInterval(double start, double end, double discountRate) 
  SEXP wrap_means() {
    return mean_costs.wrap();
  }
+ Sim* sim;
  Cost discountRate, current;
  Partition _partition;
  Table _table;

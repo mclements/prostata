@@ -178,7 +178,7 @@ namespace Rcpp {
 #include <Rdefines.h>
 #include <R_ext/Random.h>
 
-#include <siena/ssim.h>
+#include "ssim_patched.h"
 #include <RngStream.h>
 #include <rcpp_table.h>
 #include <gsm.h>

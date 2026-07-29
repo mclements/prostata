@@ -8,12 +8,30 @@
 
 PKG_VERSION=$(shell grep -i ^version ./DESCRIPTION | cut -d : -d \  -f 2)
 PKG_NAME=$(shell grep -i ^package ./DESCRIPTION | cut -d : -d \  -f 2)
+R_HOME?=$(shell R RHOME)
 
 R_FILES := $(wildcard ./R/*.R)
 SRC_FILES := $(wildcard ./src/*) $(addprefix ./src/, $(COPY_SRC))
 PKG_FILES := ./DESCRIPTION ./NAMESPACE $(R_FILES) $(SRC_FILES)
 
-.PHONY: tarball install check clean build
+CPP_TEST_DIR := ./test/cpp
+CPP_TEST_SRC := $(CPP_TEST_DIR)/callfhcrc_loop_test.cpp
+CPP_TEST_BIN := $(CPP_TEST_DIR)/callfhcrc_loop_test
+CPP_TEST_MICROSIM_INCLUDE ?= $(shell $(R_HOME)/bin/Rscript -e 'p <- system.file("include", package = "microsimulation"); if (nzchar(p)) cat(p)')
+CPP_TEST_INCLUDE := $(if $(CPP_TEST_MICROSIM_INCLUDE),-I$(CPP_TEST_MICROSIM_INCLUDE),)
+CPP_TEST_DEBUGFLAGS := -g3 -O0 -fno-omit-frame-pointer -fno-inline
+CPP_TEST_CXXFLAGS := -std=gnu++17 $(CPP_TEST_INCLUDE) \
+	$(CPP_TEST_DEBUGFLAGS) \
+	$(shell $(R_HOME)/bin/R CMD config --cppflags) \
+	$(shell $(R_HOME)/bin/Rscript -e 'Rcpp:::CxxFlags()') \
+	$(shell $(R_HOME)/bin/Rscript -e 'RcppArmadillo:::CxxFlags()')
+CPP_TEST_LDFLAGS := \
+	$(shell $(R_HOME)/bin/R CMD config --ldflags) \
+	$(shell $(R_HOME)/bin/Rscript -e 'Rcpp:::LdFlags()') \
+	$(shell $(R_HOME)/bin/Rscript -e 'cat(microsimulation:::LdFlags())') \
+	-lgtest -lgtest_main -lpthread
+
+.PHONY: tarball install check clean build cpp-test
 
 tarball: $(PKG_NAME)_$(PKG_VERSION).tar.gz
 $(PKG_NAME)_$(PKG_VERSION).tar.gz: $(PKG_FILES)
@@ -24,6 +42,12 @@ check: $(PKG_NAME)_$(PKG_VERSION).tar.gz
 
 build: $(PKG_NAME)_$(PKG_VERSION).tar.gz
 	R CMD INSTALL --build $(PKG_NAME)_$(PKG_VERSION).tar.gz
+
+cpp-test: $(CPP_TEST_BIN)
+	$(CPP_TEST_BIN)
+
+$(CPP_TEST_BIN): $(CPP_TEST_SRC) ./src/prostata.cpp
+	$(CXX) $(CPP_TEST_CXXFLAGS) -o $@ $< $(CPP_TEST_LDFLAGS)
 
 install: $(PKG_NAME)_$(PKG_VERSION).tar.gz
 	R CMD INSTALL $(PKG_NAME)_$(PKG_VERSION).tar.gz

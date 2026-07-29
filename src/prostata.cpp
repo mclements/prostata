@@ -1581,9 +1581,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
 } // handleMessage()
 
-void initialize(SimInput& in, const List& parms) {
+SimInput initialize(const List& parms) {
 
-  in.resetRngs();
+  SimInput in;
   in.rngNh->set();
 
   in.parameter = parms("parameter");
@@ -1717,6 +1717,7 @@ void initialize(SimInput& in, const List& parms) {
     in.cap_pScreened = as<NumericVector>(otherParameters("cap_pScreened"));
   }
 
+  return in;
 }
 
 SimOutput callFhcrc_inner(SimInput& in, int n, int firstId, NumericVector& cohort) {
@@ -1808,30 +1809,33 @@ void set_user_random_seed(const std::array<double, 6>& seed) {
     r_set_user_random_seed(useed.data());
 }
 
-RcppExport SEXP callFhcrc(SEXP parmsIn) {
-    List parms(parmsIn);
-    int numThreads = as<int>(parms("numThreads"));
-    int n = as<int>(parms("n"));
-    NumericVector cohort = as<NumericVector>(parms("cohort"));
-
+std::vector<std::array<double, 6>> getInitialSeeds(int numThreads, int n) {
     std::array<double, 6> currentSeed = get_user_random_seed();
-    std::vector<int> ns;
-    for(int i=0; i<=numThreads; ++i) {
-        ns.push_back(static_cast<int>(std::floor(static_cast<double>(i)/static_cast<double>(numThreads)*n)));
-    }
     // initialSeeds = c(list(currentSeed), lapply(ns[-c(1,numThreads+1)], function(i) advance.substream(currentSeed, i)));
     std::vector<std::array<double, 6>> initialSeeds(numThreads);
     initialSeeds[0] = currentSeed;
     for(int i=1; i<numThreads; ++i) {
-        initialSeeds[i] = advance_substream(currentSeed, ns[i]);
+        int firstId = static_cast<int>(std::floor(static_cast<double>(i)/static_cast<double>(numThreads)*n));
+        initialSeeds[i] = advance_substream(currentSeed, firstId);
     }
+    return initialSeeds;
+}
+
+RcppExport SEXP callFhcrc(SEXP parmsIn) {
+    List parms(parmsIn);
+    SimInput in = initialize(parms);
+    int numThreads = as<int>(parms("numThreads"));
+    int n = as<int>(parms("n"));
+    NumericVector cohort = as<NumericVector>(parms("cohort"));
+    auto initialSeeds = getInitialSeeds(numThreads, n);
     
-    SimInput in;
     std::vector<SimOutput> outputs(numThreads);
     for(int i=0; i<numThreads; i++) {
         set_user_random_seed(initialSeeds[i]);
-        initialize(in, parms);
-        outputs[i] = callFhcrc_inner(in, ns[i+1]-ns[i], ns[i], cohort); 
+        in.resetRngs();
+        int firstId = static_cast<int>(std::floor(static_cast<double>(i)/static_cast<double>(numThreads)*n));
+        int nextId = static_cast<int>(std::floor(static_cast<double>(i+1)/static_cast<double>(numThreads)*n));
+        outputs[i] = callFhcrc_inner(in, nextId - firstId, firstId, cohort);
     }
 
     // aggregate outputs from each thread

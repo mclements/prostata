@@ -914,7 +914,7 @@ void FhcrcPerson::init() {
     out->outParameters.record("ageEntry",ageEntry);
   }
 
-  if (in->debug) Rprint_actions();
+  if (in->debug) sim->Rprint_actions();
 
 }
 

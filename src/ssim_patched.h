@@ -24,6 +24,8 @@
 //
 #pragma once
 
+#include <heap.h>
+
 #include <functional>
 #include <string>
 
@@ -251,6 +253,32 @@ protected:
  private:
     ProcessId process_id;
 };
+
+struct Action {
+    Time time;
+    ActionType type;
+    ProcessId pid;
+    const Event * event;
+
+    Action(Time t, ActionType at, ProcessId p, const Event * e = 0) throw()
+	: time(t), type(at), pid(p), event(e) {};
+
+    bool operator < (const Action & a) const throw() {
+      return time < a.time || (time == a.time && event->priority < a.event->priority);
+    }
+};
+
+typedef heap<Action>	a_table_t;
+struct PDescr {
+    Process * 	process;
+    bool terminated;
+    Time available_at;
+
+    PDescr(Process * p) 
+	: process(p), terminated(false), available_at(INIT_TIME) {}
+};
+
+typedef std::vector<PDescr> PsTable;
 
 /** @brief an error handler for simulation errors.
  *
@@ -574,13 +602,17 @@ public:
     void schedule(Time t, ActionType i, ProcessId p, const Event * e = 0) throw(); 
     void schedule_now(ActionType i, ProcessId p, const Event * e = 0) throw();
 
+    void Rprint_actions();
+
+
   private:
    Time stop_time = INIT_TIME;
    Time current_time = INIT_TIME;
    ProcessId current_process = NULL_PROCESSID;
    bool running = false;
    SimErrorHandler* error_handler = 0;
-};
-  void Rprint_actions();
+   a_table_t actions;
+   PsTable processes;
 
+};
 } // end namespace ssim

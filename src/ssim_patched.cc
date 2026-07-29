@@ -25,42 +25,11 @@
 #include <vector>
 
 #include "ssim_patched.h"
-#include <heap.h>
 #include <R.h>
 
 namespace ssim {
 
-struct Action {
-    Time time;
-    ActionType type;
-    ProcessId pid;
-    const Event * event;
-
-    Action(Time t, ActionType at, ProcessId p, const Event * e = 0) throw()
-	: time(t), type(at), pid(p), event(e) {};
-
-    bool operator < (const Action & a) const throw() {
-      return time < a.time || (time == a.time && event->priority < a.event->priority);
-    }
-};
-
-typedef heap<Action>	a_table_t;
-
-static a_table_t actions;
-
-struct PDescr {
-    Process * 	process;
-    bool terminated;
-    Time available_at;
-
-    PDescr(Process * p) 
-	: process(p), terminated(false), available_at(INIT_TIME) {}
-};
-
-typedef std::vector<PDescr> PsTable;
-static PsTable processes;
-
-  void Rprint_actions() {
+  void Sim::Rprint_actions() {
     Rprintf("\n[");
     for (a_table_t::iterator it = actions.begin(); it != actions.end(); it++)
       Rprintf("(time=%f,%s), ",it->time, it->event->str().c_str());

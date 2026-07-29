@@ -435,21 +435,21 @@ namespace fhcrc_example {
   }
 
   void FhcrcPerson::cancel_events_after_diagnosis() {
-    RemoveKind(toLocalised); // ?
-    RemoveKind(toMetastatic);
-    RemoveKind(toT3plus);
-    RemoveKind(toScreen);
-    RemoveKind(toOrganised);
-    RemoveKind(toBiopsyFollowUpScreen);
-    RemoveKind(toScreenInitiatedBiopsy);
-    RemoveKind(toSTHLM3);
-    RemoveKind(toOpportunistic);
-    RemoveKind(toCancelScreens);
-    RemoveKind(toScreenDiagnosis);
-    RemoveKind(toOverDiagnosis);
-    RemoveKind(toClinicalDiagnosis);
-    RemoveKind(toClinicalDiagnosticBiopsy);
-    RemoveKind(toMRI);
+    RemoveKind(sim, toLocalised); // ?
+    RemoveKind(sim, toMetastatic);
+    RemoveKind(sim, toT3plus);
+    RemoveKind(sim, toScreen);
+    RemoveKind(sim, toOrganised);
+    RemoveKind(sim, toBiopsyFollowUpScreen);
+    RemoveKind(sim, toScreenInitiatedBiopsy);
+    RemoveKind(sim, toSTHLM3);
+    RemoveKind(sim, toOpportunistic);
+    RemoveKind(sim, toCancelScreens);
+    RemoveKind(sim, toScreenDiagnosis);
+    RemoveKind(sim, toOverDiagnosis);
+    RemoveKind(sim, toClinicalDiagnosis);
+    RemoveKind(sim, toClinicalDiagnosticBiopsy);
+    RemoveKind(sim, toMRI);
   }
 
   void FhcrcPerson::opportunistic_uptake_if_ever() {
@@ -986,7 +986,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     out->report.individualReset();
     out->shortReport.individualReset();
     out->costs.individualReset();
-    Sim::stop_simulation();
+    sim->stop_simulation();
     break;
 
   case toOtherDeath:
@@ -998,7 +998,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     out->report.individualReset();
     out->shortReport.individualReset();
     out->costs.individualReset();
-    Sim::stop_simulation();
+    sim->stop_simulation();
     break;
 
   case toLocalised:
@@ -1020,8 +1020,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toMetastatic:
     state = Metastatic; ext_state = ext::Metastatic;
-    RemoveKind(toClinicalDiagnosis);
-    RemoveKind(toClinicalDiagnosticBiopsy);
+    RemoveKind(sim, toClinicalDiagnosis);
+    RemoveKind(sim, toClinicalDiagnosticBiopsy);
     if (in->bparameter("Andreas")) {
       if (sim->clock()<tc+35.0-6.0/52.0) // should this be tmc?
 	scheduleAt(tmc+35.0-6.0/52.0,toClinicalDiagnosticBiopsy);
@@ -1035,20 +1035,20 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     }
     scheduleAt(tmc+35.0,toClinicalDiagnosis);
     // Remove possible secondary Tx
-    RemoveKind(toRP);
-    RemoveKind(toRT);
+    RemoveKind(sim, toRP);
+    RemoveKind(sim, toRT);
     break;
 
   case toOrganised:
   case toSTHLM3:
     organised = true;
-    RemoveKind(toScreen); // remove other screens
+    RemoveKind(sim, toScreen); // remove other screens
     scheduleAt(sim->clock(), toScreen); // now start organised screening
     break;
 
   case toCancelScreens:
     organised = true;
-    RemoveKind(toScreen); // remove other screens
+    RemoveKind(sim, toScreen); // remove other screens
     break;
 
   case toScreen:
@@ -1486,8 +1486,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     scheduleUtilityChange(sim->clock() + in->utility_duration("Prostatectomy part 1") +
                           in->utility_duration("Prostatectomy part 2"), "Postrecovery period");
     // Remove yearly active surveillance if the RP is the secondary Tx
-    RemoveKind(toYearlyActiveSurveillance); // breaks recursive call
-    RemoveKind(toRT);
+    RemoveKind(sim, toYearlyActiveSurveillance); // breaks recursive call
+    RemoveKind(sim, toRT);
     break;
 
   case toRT:
@@ -1502,7 +1502,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 			  "Radiation therapy part 2");
     scheduleUtilityChange(sim->clock() + in->utility_duration("Radiation therapy part 1") +
                           in->utility_duration("Radiation therapy part 2"), "Postrecovery period");
-    RemoveKind(toYearlyActiveSurveillance); // breaks recursive call
+    RemoveKind(sim, toYearlyActiveSurveillance); // breaks recursive call
     break;
 
   case toCM:

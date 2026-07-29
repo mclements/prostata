@@ -30,14 +30,6 @@
 
 namespace ssim {
 
-// these are the "private" static variables and types of the Sim class
-//
-static ProcessId		current_process = NULL_PROCESSID;
-
-static bool			running = false;
-
-static SimErrorHandler *	error_handler = 0;
-
 struct Action {
     Time time;
     ActionType type;

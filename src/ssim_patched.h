@@ -55,7 +55,7 @@ typedef int		ProcessId;
 
 /** @brief no process will be identified by NULL_PROCESSID
  **/
-const ProcessId		NULL_PROCESSID = -1;
+constexpr ProcessId		NULL_PROCESSID = -1;
 
 /** @brief virtual time type
  *
@@ -122,7 +122,6 @@ class Event {
 
  private:
     mutable unsigned refcount;
-    friend class SimImpl;	// this is an opaque implementation class
     friend class Sim;		// these need to be friends to manage refcount
 };
 
@@ -522,7 +521,7 @@ public:
      *  ssim::NULL_PROCESSID NULL_PROCESSID\endlink if called outside
      *  the simulation.
      **/
-    static ProcessId	this_process() throw();
+    ProcessId	this_process() throw();
 
     /** @brief returns the current virtual time for the current process
      *  
@@ -546,7 +545,7 @@ public:
     /** @brief starts execution of the simulation */
     void		run_simulation();
     /** @brief stops execution of the simulation */
-    static void		stop_simulation() throw();
+    void		stop_simulation() throw();
 
     /** @brief stops the execution of the simulation at the given time
      *
@@ -569,8 +568,8 @@ public:
      *
      *  @see SimErrorHandler
      **/
-    static void		set_error_handler(SimErrorHandler *) throw();
-    static void ignore_event(EventPredicate pred) throw();
+    void		set_error_handler(SimErrorHandler *) throw();
+    void ignore_event(EventPredicate pred) throw();
 
     void schedule(Time t, ActionType i, ProcessId p, const Event * e = 0) throw(); 
     void schedule_now(ActionType i, ProcessId p, const Event * e = 0) throw();
@@ -578,6 +577,9 @@ public:
   private:
    Time stop_time = INIT_TIME;
    Time current_time = INIT_TIME;
+   ProcessId current_process = NULL_PROCESSID;
+   bool running = false;
+   SimErrorHandler* error_handler = 0;
 };
   void Rprint_actions();
 

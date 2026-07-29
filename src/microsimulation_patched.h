@@ -207,12 +207,12 @@ using std::greater;
 
 /**
    @brief cMessage class for OMNET++ API compatibility.  This provides
-   a heavier message class than Sim::Event, with short 'kind' and
+   a heavier message class than sim->Event, with short 'kind' and
    std::string 'name' attributes.  The events by default are scheduled
    using cProcess::scheduleAt(), and handled using
    cProcess::handleMessage() (as per OMNET++).  NB:
    cProcess::scheduleAt() uses simulation time rather than time in
-   state (which is used by Sim::self_signal_event()).
+   state (which is used by sim->self_signal_event()).
 */
 class cMessage : public ssim::Event {
 public:
@@ -249,8 +249,8 @@ public:
    This works across all processes.
 */
   inline void
-  Cancel(std::function<bool(const cMessage * msg)> pred) {
-    return Sim::ignore_event([pred](const Event * e) {
+  Cancel(Sim* sim, std::function<bool(const cMessage * msg)> pred) {
+    return sim->ignore_event([pred](const Event * e) {
 			       const cMessage * msg = dynamic_cast<const cMessage *>(e);
 			       return (msg != 0 && pred(msg));
 			     });
@@ -261,8 +261,8 @@ public:
 
    This works across all processes.
 */
-  inline void RemoveKind(short kind) {
-    Cancel([kind](const cMessage * msg) { return msg->kind == kind; });
+  inline void RemoveKind(Sim* sim, short kind) {
+    Cancel(sim, [kind](const cMessage * msg) { return msg->kind == kind; });
   }
 
 /**
@@ -270,8 +270,8 @@ public:
 
    This works across all processes.
 */
-  inline void CancelKind(short kind) {
-    Cancel([kind](const cMessage * msg) { return msg->kind == kind; });
+  inline void CancelKind(Sim* sim, short kind) {
+    Cancel(sim, [kind](const cMessage * msg) { return msg->kind == kind; });
   }
 
  /**
@@ -279,16 +279,16 @@ public:
 
    This works across all processes.
  */
-  inline void RemoveName(string name) {
-    Cancel([name](const cMessage * msg) { return msg->name == name; });
+  inline void RemoveName(Sim* sim, string name) {
+    Cancel(sim, [name](const cMessage * msg) { return msg->name == name; });
   }
  /**
     @brief CancelName is a function to remove messages with the given name from the queue
 
    This works across all processes.
  */
-  inline void CancelName(string name) {
-    Cancel([name](const cMessage * msg) { return msg->name == name; });
+  inline void CancelName(Sim* sim, string name) {
+    Cancel(sim, [name](const cMessage * msg) { return msg->name == name; });
   }
 
   /**
@@ -296,8 +296,8 @@ public:
 
      This works across all processes.
   */
-inline void CancelEvents() {
-    Cancel([](const cMessage * msg) { return true; });
+inline void CancelEvents(Sim* sim) {
+    Cancel(sim, [](const cMessage * msg) { return true; });
   }
 
 
@@ -385,7 +385,7 @@ public:
       @brief Given a predicate, remove the messages for this process.
    */
   void cancel(std::function<bool(const cMessage * msg)> pred) {
-    Cancel([pred,this](const cMessage * msg) {
+    Cancel(sim, [pred,this](const cMessage * msg) {
 	     return pred(msg) &&
 	       msg->process_id == this->pid();
 	   });

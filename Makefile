@@ -17,7 +17,7 @@ PKG_FILES := ./DESCRIPTION ./NAMESPACE $(R_FILES) $(SRC_FILES)
 CPP_TEST_DIR := ./test/cpp
 CPP_TEST_SRC := $(CPP_TEST_DIR)/callfhcrc_loop_test.cpp
 CPP_TEST_BIN := $(CPP_TEST_DIR)/callfhcrc_loop_test
-CPP_TEST_LOCAL_SRCS := ./src/prostata.cpp ./src/ssim_patched.cc
+CPP_TEST_LOCAL_SRCS := ./src/ssim_patched.cc
 CPP_TEST_MICROSIM_INCLUDE ?= $(shell $(R_HOME)/bin/Rscript -e 'p <- system.file("include", package = "microsimulation"); if (nzchar(p)) cat(p)')
 CPP_TEST_INCLUDE := $(if $(CPP_TEST_MICROSIM_INCLUDE),-I$(CPP_TEST_MICROSIM_INCLUDE),)
 CPP_TEST_DEBUGFLAGS := -g3 -O0 -fno-omit-frame-pointer -fno-inline

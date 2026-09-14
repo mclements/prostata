@@ -749,9 +749,40 @@ class Rng : public RngStream {
   void set();
   void nextSubstream() { ResetNextSubstream(); }
   int id;
+  double rexp(double sl);
+  double rgamma(double a, double scl);
   double rlnorm(double meanlog, double sdlog);
   double rnorm(double mu, double sigma);
   double runif(double a, double b);
+  double rweibull(double sh, double sl);
+
+  /**
+     @brief rnorm function constrained to be positive. This uses
+     brute-force re-sampling rather than conditioning on the
+     distribution function.
+  */
+  double rnormPos(double mean, double sd);
+  /**
+     @brief rllogis function for a random covariate from a
+     log-logistic distribution with shape and scale.  S(t) =
+     1/(1+(t/scale)^shape).
+  */
+  double rllogis(double shape, double scale);
+  /**
+     @brief rllogis_trunc function for a random covariate from a
+     log-logistic distribution with shape and scale with minimum time
+     left.  S(t|t>x)=S(t)/S(x) where S(t)=1/(1+(t/scale)^shape).
+  */
+  double rllogis_trunc(double shape, double scale, double left);
+  /**
+     @brief Random draw from a Gompertz distribution.
+
+     Importantly, the parameterisation is as per flexsurv, where
+     hazard(t)=rate*exp(shape*t).  As a reminder, if shape<0 then
+     there is a non-zero probability of cure (that is, no event),
+     which is represented by R_PosInf.
+  */
+  double rgompertz(double shape = 1.0, double rate = 1.0);
 };
 
 
@@ -1909,13 +1940,6 @@ namespace Rcpp {
 
 namespace R {
   /**
-     @brief rnorm function constrained to be positive. This uses
-     brute-force re-sampling rather than conditioning on the
-     distribution function.
-  */
-  double rnormPos(double mean, double sd);
-
-  /**
      @brief rllogis function for a random covariate from a
      log-logistic distribution with shape and scale.  S(t) =
      1/(1+(t/scale)^shape).
@@ -1927,13 +1951,4 @@ namespace R {
      left.  S(t|t>x)=S(t)/S(x) where S(t)=1/(1+(t/scale)^shape).
   */
   double rllogis_trunc(double shape, double scale, double left);
-  /**
-     @brief Random draw from a Gompertz distribution.
-
-     Importantly, the parameterisation is as per flexsurv, where
-     hazard(t)=rate*exp(shape*t).  As a reminder, if shape<0 then
-     there is a non-zero probability of cure (that is, no event),
-     which is represented by R_PosInf.
-  */
-  double rgompertz(double shape = 1.0, double rate = 1.0);
 }

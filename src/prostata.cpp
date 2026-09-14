@@ -428,7 +428,7 @@ namespace fhcrc_example {
     double shape = in->rescreen_shape(bounds<double>(sim->clock(),30.0,90.0),psa);
     double scale = in->rescreen_scale(bounds<double>(sim->clock(),30.0,90.0),psa);
     double u = rng->runif(0.0,1.0);
-    double t = sim->clock() + R::rweibull(shape,scale);
+    double t = sim->clock() + rng->rweibull(shape,scale);
     if (u<prescreened) {
       scheduleAt(t, toScreen);
     }
@@ -459,20 +459,20 @@ namespace fhcrc_example {
     // (iii) intermediate cohorts are a weighted mixture of (i) and (ii)
     double first_screen;
     if (cohort > double(in->parameter("endUptakeMixture"))) {
-      first_screen = in->parameter("uptakeStartAge") + R::rllogis(in->parameter("shapeA"),
+      first_screen = in->parameter("uptakeStartAge") + rng->rllogis(in->parameter("shapeA"),
 				       in->parameter("scaleA")); // (i) age
     } else if (cohort < double(in->parameter("startUptakeMixture"))) {
       first_screen = (double(in->parameter("screeningIntroduced")) - cohort) +
-	R::rllogis(in->parameter("shapeT"),in->parameter("scaleT")); // (ii) period
+	rng->rllogis(in->parameter("shapeT"),in->parameter("scaleT")); // (ii) period
     } else {
       double age0 = double(in->parameter("screeningIntroduced")) - cohort;
       double u = rng->runif(0.0,1.0);
       if ((age0 - in->parameter("uptakeStartAge")) / (double(in->parameter("endUptakeMixture")) -
 			   double(in->parameter("startUptakeMixture"))) < u) // (iii) mixture
-	first_screen = age0 + R::rllogis_trunc(in->parameter("shapeA"),
+	first_screen = age0 + rng->rllogis_trunc(in->parameter("shapeA"),
 					       in->parameter("scaleA"),
 					       age0-in->parameter("uptakeStartAge"));
-      else first_screen = age0 + R::rllogis(in->parameter("shapeT"),
+      else first_screen = age0 + rng->rllogis(in->parameter("shapeT"),
 					    in->parameter("scaleT"));
     }
     scheduleAt(first_screen, toScreen);
@@ -633,8 +633,8 @@ namespace fhcrc_example {
     vector<double> v; v.push_back(x.first); v.push_back(x.second);
     return wrap(v);
   }
-  double rweibull_frailty(double shape, double scale, double frailty=1.0) {
-    return R::rweibull(shape, scale/std::pow(frailty,1.0/shape));
+  double rweibull_frailty(const std::unique_ptr<ssim::Rng>& rng, double shape, double scale, double frailty=1.0) {
+    return rng->rweibull(shape, scale/std::pow(frailty,1.0/shape));
   }
 
 
@@ -684,18 +684,19 @@ void FhcrcPerson::init() {
   }
   if (in->rngNh->runif(0.0, 1.0) <= in->parameter("susceptible")) { // portion susceptible
     if (in->bparameter("weibull_onset")) {
-      t0 = rweibull_frailty(in->parameter("weibull_onset_shape"),
+      t0 = rweibull_frailty(in->rngNh,
+			    in->parameter("weibull_onset_shape"),
 			    in->parameter("weibull_onset_scale"),
 			    grs_frailty*other_frailty);
     } else {
-      t0 = sqrt(2*R::rexp(1.0)/(in->parameter("g0")*grs_frailty*other_frailty)); // is susceptible
+      t0 = sqrt(2*in->rngNh->rexp(1.0)/(in->parameter("g0")*grs_frailty*other_frailty)); // is susceptible
     }
   }
   else
     t0 = 200.0; // not susceptible
   if (!in->bparameter("revised_natural_history")){
     future_grade = (in->rngNh->runif(0.0, 1.0)>=1+in->parameter("c_low_grade_slope")*t0) ? base::Gleason_ge_8 : base::Gleason_le_7;
-    beta2 = R::rnormPos(in->mubeta2[future_grade],in->sebeta2[future_grade]);
+    beta2 = in->rngNh->rnormPos(in->mubeta2[future_grade],in->sebeta2[future_grade]);
   }
   else {
     // multinomial logistic regression
@@ -710,10 +711,10 @@ void FhcrcPerson::init() {
     else if (u < p6+p7) future_ext_grade = ext::Gleason_7;
     else future_ext_grade = ext::Gleason_ge_8;
     future_grade = future_ext_grade == ext::Gleason_ge_8 ? base::Gleason_ge_8 : base::Gleason_le_7;
-    beta2 = R::rnormPos(in->mubeta2[future_ext_grade],in->sebeta2[future_ext_grade]);
+    beta2 = in->rngNh->rnormPos(in->mubeta2[future_ext_grade],in->sebeta2[future_ext_grade]);
   }
   beta0 = in->rngNh->rnorm(in->parameter("mubeta0"),in->parameter("sebeta0"));
-  beta1 = R::rnormPos(in->parameter("mubeta1"),in->parameter("sebeta1"));
+  beta1 = in->rngNh->rnormPos(in->parameter("mubeta1"),in->parameter("sebeta1"));
 
   y0 = psamean(t0+35); // depends on: t0, beta0, beta1, beta2
   t3p = calculate_transition_time(in->rngNh->runif(0.0,1.0), t0, in->parameter("g3p"));
@@ -747,7 +748,7 @@ void FhcrcPerson::init() {
 
   // schedule screening events that depend on screeningParticipation
   in->rngScreen->set();
-  rescreening_frailty = R::rgamma(1.25, 1.25);
+  rescreening_frailty = in->rngScreen->rgamma(1.25, 1.25);
   double u1 = in->rngScreen->runif(0.0,1.0);
   double u2 = in->rngScreen->runif(0.0,1.0);
   if (in->rngScreen->runif(0.0,1.0)<in->parameter("screeningParticipation")) {

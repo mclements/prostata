@@ -20,6 +20,16 @@ namespace ssim {
     current_stream = this;
   }
 
+  double Rng::rexp(double sl) {
+    std::lock_guard<std::mutex> lock(mtx);
+    this->set();
+    return R::rexp(sl);
+  }
+  double Rng::rgamma(double a, double scl) {
+    std::lock_guard<std::mutex> lock(mtx);
+    this->set();
+    return R::rgamma(a, scl);
+  }
   double Rng::rlnorm(double meanlog, double sdlog) {
     std::lock_guard<std::mutex> lock(mtx);
     this->set();
@@ -34,6 +44,31 @@ namespace ssim {
     std::lock_guard<std::mutex> lock(mtx);
     this->set();
     return R::runif(a, b);
+  }
+  double Rng::rweibull(double sh, double sl) {
+    std::lock_guard<std::mutex> lock(mtx);
+    this->set();
+    return R::rweibull(sh, sl);
+  }
+
+  double Rng::rnormPos(double mean, double sd) {
+    double x;
+    while ((x=this->rnorm(mean,sd))<0.0) { }
+    return x;
+  }
+  double Rng::rllogis(double shape, double scale) {
+    double u = this->runif(0.0,1.0);
+    return scale*exp(-log(1.0/u-1.0)/shape);
+  }
+  double Rng::rllogis_trunc(double shape, double scale, double left) {
+    double S0 = 1.0/(1.0+exp(log(left/scale)*shape));
+    double u = this->runif(0.0,1.0);
+    return scale*exp(log(1.0/(u*S0)-1.0)/shape);
+  }
+  double Rng::rgompertz(double shape, double rate) {
+    double u = 1.0 - this->runif(0.0, 1.0);
+    return (shape < 0.0 && u<exp(rate/shape)) ? R_PosInf :
+      log(1.0 - shape*log(u)/rate)/shape;
   }
 
   extern "C" {
@@ -109,12 +144,6 @@ namespace ssim {
 } // namespace ssim
 
 namespace R {
-  double rnormPos(double mean, double sd) {
-    double x;
-    while ((x=R::rnorm(mean,sd))<0.0) { }
-    return x;
-  }
-
   double rllogis(double shape, double scale) {
     double u = R::runif(0.0,1.0);
     return scale*exp(-log(1.0/u-1.0)/shape);
@@ -124,12 +153,6 @@ namespace R {
     double S0 = 1.0/(1.0+exp(log(left/scale)*shape));
     double u = R::runif(0.0,1.0);
     return scale*exp(log(1.0/(u*S0)-1.0)/shape);
-  }
-
-  double rgompertz(double shape, double rate) {
-    double u = 1.0 - R::runif(0.0, 1.0);
-    return (shape < 0.0 && u<exp(rate/shape)) ? R_PosInf :
-      log(1.0 - shape*log(u)/rate)/shape;
   }
 }
 

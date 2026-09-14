@@ -749,6 +749,9 @@ class Rng : public RngStream {
   void set();
   void nextSubstream() { ResetNextSubstream(); }
   int id;
+  double rlnorm(double meanlog, double sdlog);
+  double rnorm(double mu, double sigma);
+  double runif(double a, double b);
 };
 
 

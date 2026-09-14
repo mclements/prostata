@@ -18,14 +18,12 @@ CPP_TEST_DIR := ./test/cpp
 CPP_TEST_BUILD_DIR := $(CPP_TEST_DIR)/build
 CPP_TEST_SRC := $(CPP_TEST_DIR)/callfhcrc_loop_test.cpp
 CPP_TEST_BIN := $(CPP_TEST_DIR)/callfhcrc_loop_test
-CPP_TEST_LOCAL_CPP_SRCS := ./src/random_utils.cpp ./src/ssim_patched.cc
+CPP_TEST_LOCAL_CPP_SRCS := ./src/ssim_patched.cc
 CPP_TEST_LOCAL_OBJS := \
 	$(CPP_TEST_BUILD_DIR)/microsimulation_patched.o \
-	$(CPP_TEST_BUILD_DIR)/random_utils.o \
 	$(CPP_TEST_BUILD_DIR)/ssim_patched.o
 CPP_TEST_INCLUDED_SRCS := \
 	./src/prostata.cpp \
-	./src/random_utils.h \
 	./src/microsimulation_patched.h
 CPP_TEST_MICROSIM_INCLUDE ?= $(shell $(R_HOME)/bin/Rscript -e 'p <- system.file("include", package = "microsimulation"); if (nzchar(p)) cat(p)')
 CPP_TEST_INCLUDE := $(if $(CPP_TEST_MICROSIM_INCLUDE),-I$(CPP_TEST_MICROSIM_INCLUDE),)
@@ -63,9 +61,6 @@ $(CPP_TEST_BUILD_DIR):
 	mkdir -p $@
 
 $(CPP_TEST_BUILD_DIR)/microsimulation_patched.o: ./src/microsimulation_patched.cc ./src/microsimulation_patched.h | $(CPP_TEST_BUILD_DIR)
-	$(CXX) $(CPP_TEST_CXXFLAGS) -c -o $@ $<
-
-$(CPP_TEST_BUILD_DIR)/random_utils.o: ./src/random_utils.cpp ./src/random_utils.h ./src/microsimulation_patched.h | $(CPP_TEST_BUILD_DIR)
 	$(CXX) $(CPP_TEST_CXXFLAGS) -c -o $@ $<
 
 $(CPP_TEST_BUILD_DIR)/ssim_patched.o: ./src/ssim_patched.cc ./src/ssim_patched.h | $(CPP_TEST_BUILD_DIR)

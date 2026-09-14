@@ -5,4 +5,4 @@ PKG_LIBS= -L"$(PKGB_PATH)$(R_ARCH)" -lmicrosimulation
 PKG_CXXFLAGS = -I. -DBOOST_NO_AUTO_PTR
 PKG_CFLAGS = -I.
 
-OBJECTS = microsimulation_patched.o prostata-init.o prostata.o random_utils.o ssim_patched.o
+OBJECTS = microsimulation_patched.o prostata-init.o prostata.o ssim_patched.o

@@ -7,6 +7,7 @@ namespace ssim {
     return R::rweibull(shape, scale*pow(hr,1.0/shape));
   }
 
+  static std::mutex mtx;
   static Rng * default_stream = nullptr, * current_stream = nullptr;
   static double rn = 0.0;
 
@@ -17,6 +18,22 @@ namespace ssim {
 
   void Rng::set() {
     current_stream = this;
+  }
+
+  double Rng::rlnorm(double meanlog, double sdlog) {
+    std::lock_guard<std::mutex> lock(mtx);
+    this->set();
+    return R::rlnorm(meanlog, sdlog);
+  }
+  double Rng::rnorm(double mu, double sigma) {
+    std::lock_guard<std::mutex> lock(mtx);
+    this->set();
+    return R::rnorm(mu, sigma);
+  }
+  double Rng::runif(double a, double b) {
+    std::lock_guard<std::mutex> lock(mtx);
+    this->set();
+    return R::runif(a, b);
   }
 
   extern "C" {

@@ -664,7 +664,6 @@ void FhcrcPerson::init() {
   dx = NotDiagnosed;
   ageFirstScreen = -1.0;
   everPSA = previousNegativeBiopsy = organised = adt = previousFollowup = MRIpos = everGRS = false;
-  in->rngNh->set();
   // https://journals.plos.org/plosmedicine/article/file?id=10.1371/journal.pmed.1002998&type=printable
   // genetic risk score with T ~ LogNormal(mu,sigma^2) with mean(T) =1 and sigma^2=0.68
   // E(T)=exp(mu+sigma^2/2)=1 (assumed mean)
@@ -747,7 +746,6 @@ void FhcrcPerson::init() {
   scheduleAt(aoc,toOtherDeath);
 
   // schedule screening events that depend on screeningParticipation
-  in->rngScreen->set();
   rescreening_frailty = in->rngScreen->rgamma(1.25, 1.25);
   double u1 = in->rngScreen->runif(0.0,1.0);
   double u2 = in->rngScreen->runif(0.0,1.0);
@@ -885,8 +883,6 @@ void FhcrcPerson::init() {
     break;
   }
 
-  in->rngNh->set();
-
   // record some parameters using SimpleReport - too many for a tuple
   if (id < in->nLifeHistories) {
     out->outParameters.record("id",double(id));
@@ -924,13 +920,7 @@ void FhcrcPerson::init() {
  */
 void FhcrcPerson::handleMessage(const cMessage* msg) {
 
-  // by default, use the natural history RNG
-  in->rngNh->set();
-
-  // declarations
-  in->rngOther->set();
   double psa = psameasured(sim->clock(), in->rngOther); // includes measurement error
-  in->rngNh->set();
   // double test = panel ? biomarker : psa;
   double Z = psamean(sim->clock());
   double age = sim->clock();
@@ -944,12 +934,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   bool formal_costs = in->parameter("formal_costs")==1.0 && (!mixed_programs || organised);
   bool formal_compliance = in->parameter("formal_compliance")==1.0 && (!mixed_programs || organised);
   double utility = FhcrcPerson::utility();
-  in->rngPrelude->set();
   bool detectable = FhcrcPerson::detectable(sim->clock(), year);
   if (in->parameter("rand_biopsy_sensitivityG6")<1.0) {
     detectable = detectable && in->rngPrelude->runif(0.0,1.0) < in->parameter("rand_biopsy_sensitivityG6");
   }
-  in->rngNh->set();
 
   // record information
   switch(int(in->parameter("full_report"))) {
@@ -1055,7 +1043,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   case toScreen:
   case toBiopsyFollowUpScreen: {
     if (ageFirstScreen < 0.0) ageFirstScreen = sim->clock();
-    in->rngBx->set();
     this->psa_last_screen = psa;
     if (in->bparameter("includePSArecords")) {
       out->psarecord.record("id",id);
@@ -1136,7 +1123,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     // if (panel && !positive_test && t0<sim->clock()-35.0 && ext_grade > ext::Gleason_le_6) {
     //   if (R::runif(0.0,1.0) < 1.0-parameter("rTPF")) positive_test = true;
     // }
-    in->rngBx->set();
     if (positive_test && in->rngBx->runif(0.0,1.0) < compliance) {
       if (in->bparameter("MRI_screen")) {
 	scheduleAt(sim->clock()+1.0/52.0, toMRI); // MRI in one month
@@ -1145,12 +1131,10 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       }
     } // assumes similar biopsy compliance, reasonable? An option to different psa-thresholds would be to use different biopsyCompliance. /AK
     else {
-          in->rngScreen->set();
 	  if ((in->screen == cap_study || in->screen == sthlm3_mri_arm) && organised)
 	    organised = false;
 	  rescreening_schedules(psa, organised, mixed_programs, in->rngScreen);
     }
-    in->rngNh->set();
   } break;
 
   case toClinicalDiagnosis:
@@ -1181,7 +1165,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   case toDRE: {
     add_costs("Opportunistic DRE");
     scheduleUtilityChange(sim->clock(), "Opportunistic PSA"); // working assumption:)
-    in->rngNh->set();
     bool dre_result;
     double u;
     u = in->rngNh->runif(0.0,1.0);
@@ -1199,7 +1182,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     break;
 
   case toMRI: {
-    in->rngBx->set();
     add_costs("MRI"); // does this include costs for the consultation?
     lost_productivity("MRI");
     // scheduleUtilityChange(sim->clock(), "MRI");
@@ -1214,7 +1196,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	organised = false;
       rescreening_schedules(psa, organised, mixed_programs, in->rngBx);
     }
-    in->rngNh->set();
   } break;
     
   // record additional biopsies for clinical diagnoses
@@ -1235,7 +1216,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     break;
 
   case toScreenInitiatedBiopsy: {
-    in->rngBx->set();
     double u1 = in->rngBx->runif(0.0,1.0);
     double u2 = in->rngBx->runif(0.0,1.0);
     // the general case for the following block follows the same pattern as toClinicalDiagnosticBiopsy
@@ -1340,11 +1320,9 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
         }
       }
     }
-    in->rngNh->set();
   } break;
 
   case toTreatment: { // To diagnoses, treatment & survival
-    in->rngTreatment->set();
     double u_tx = in->rngTreatment->runif(0.0,1.0);
     double u_adt = in->rngTreatment->runif(0.0,1.0);
     if (state == Metastatic && in->bparameter("Andreas")) {
@@ -1372,8 +1350,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 	if (in->debug) Rprintf("id=%i, adt=%d, u=%8.6f, pADT=%8.6f\n",id,adt,u_adt,pADT);
       }
     }
-    // reset the random number stream
-    in->rngSurv->set();
     // check for cure
     bool cured = false;
     double age_c = (state == Localised) ? tc + 35.0 : tmc + 35.0;
@@ -1471,7 +1447,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       out->diagnoses.record("weight", weight);
       out->diagnoses.record("lead_time", lead_time);
     }
-    in->rngNh->set();
   } break;
 
   case toRP:
@@ -1507,7 +1482,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     break;
 
   case toCM:
-    in->rngTreatment->set();
     if (in->bparameter("Andreas"))
       add_costs("Active surveillance - single MR"); // expand here
     scheduleAt(sim->clock(), toYearlyActiveSurveillance);
@@ -1521,7 +1495,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     if (in->rngTreatment->runif(0.0,1.0) > in->tableCMtoRTpnever(age)) {// pnever -> pever
       scheduleAt(sim->clock() + in->rngTreatment->rlnorm(in->tableCMtoRTmeanlog(age), in->tableCMtoRTsdlog(age)), toRT);
     }
-    in->rngNh->set();
     break;
 
   case toYearlyActiveSurveillance:
@@ -1590,7 +1563,6 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 SimInput initialize(const List& parms) {
 
   SimInput in;
-  in.rngNh->set();
 
   in.parameter = parms("parameter");
   in.bparameter = parms("bparameter"); // scalar bools

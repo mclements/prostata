@@ -162,6 +162,35 @@ public:
 
 } // namespace
 
+TEST(RngDistribution, UniformDrawsFitEqualProbabilityBins) {
+  constexpr int sampleSize = 100000;
+  constexpr int binCount = 20;
+  constexpr double expectedPerBin = static_cast<double>(sampleSize) / binCount;
+  constexpr double chiSquared0001Limit = 43.82;
+
+  const double seed[6] = {12345, 12345, 12345, 12345, 12345, 12345};
+  ssim::Rng rng;
+  rng.seed(seed);
+
+  std::array<int, binCount> counts{};
+  for (int draw = 0; draw < sampleSize; ++draw) {
+    const double value = rng.runif(0.0, 1.0);
+    ASSERT_GT(value, 0.0);
+    ASSERT_LT(value, 1.0);
+    ++counts[static_cast<std::size_t>(value * binCount)];
+  }
+
+  double chiSquared = 0.0;
+  for (const int count : counts) {
+    const double difference = count - expectedPerBin;
+    chiSquared += difference * difference / expectedPerBin;
+  }
+
+  EXPECT_LT(chiSquared, chiSquared0001Limit)
+    << "Uniform RNG failed chi-squared goodness-of-fit test with "
+    << binCount - 1 << " degrees of freedom";
+}
+
 class CallFhcrc : public ::testing::TestWithParam<std::tuple<int, int>> {
 protected:
   void SetUp() override {

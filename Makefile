@@ -20,6 +20,7 @@ CPP_TEST_SRC := $(CPP_TEST_DIR)/callfhcrc_loop_test.cpp
 CPP_TEST_BIN := $(CPP_TEST_DIR)/callfhcrc_loop_test
 CPP_TEST_LOCAL_CPP_SRCS := ./src/random_utils.cpp ./src/ssim_patched.cc
 CPP_TEST_LOCAL_OBJS := \
+	$(CPP_TEST_BUILD_DIR)/microsimulation_patched.o \
 	$(CPP_TEST_BUILD_DIR)/random_utils.o \
 	$(CPP_TEST_BUILD_DIR)/ssim_patched.o
 CPP_TEST_INCLUDED_SRCS := \
@@ -60,6 +61,9 @@ $(CPP_TEST_BIN): $(CPP_TEST_SRC) $(CPP_TEST_INCLUDED_SRCS) $(CPP_TEST_LOCAL_OBJS
 
 $(CPP_TEST_BUILD_DIR):
 	mkdir -p $@
+
+$(CPP_TEST_BUILD_DIR)/microsimulation_patched.o: ./src/microsimulation_patched.cc ./src/microsimulation_patched.h | $(CPP_TEST_BUILD_DIR)
+	$(CXX) $(CPP_TEST_CXXFLAGS) -c -o $@ $<
 
 $(CPP_TEST_BUILD_DIR)/random_utils.o: ./src/random_utils.cpp ./src/random_utils.h ./src/microsimulation_patched.h | $(CPP_TEST_BUILD_DIR)
 	$(CXX) $(CPP_TEST_CXXFLAGS) -c -o $@ $<

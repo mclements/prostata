@@ -9,6 +9,7 @@
 PKG_VERSION=$(shell grep -i ^version ./DESCRIPTION | cut -d : -d \  -f 2)
 PKG_NAME=$(shell grep -i ^package ./DESCRIPTION | cut -d : -d \  -f 2)
 R_HOME?=$(shell R RHOME)
+NVCC?=nvcc
 
 R_FILES := $(wildcard ./R/*.R)
 SRC_FILES := $(wildcard ./src/*) $(addprefix ./src/, $(COPY_SRC))
@@ -21,6 +22,7 @@ CPP_TEST_BIN := $(CPP_TEST_DIR)/callfhcrc_loop_test
 CPP_TEST_LOCAL_CPP_SRCS := ./src/ssim_patched.cc
 CPP_TEST_LOCAL_OBJS := \
 	$(CPP_TEST_BUILD_DIR)/microsimulation_patched.o \
+	$(CPP_TEST_BUILD_DIR)/randomCUDA.o \
 	$(CPP_TEST_BUILD_DIR)/ssim_patched.o
 CPP_TEST_INCLUDED_SRCS := \
 	./src/prostata.cpp \
@@ -28,16 +30,23 @@ CPP_TEST_INCLUDED_SRCS := \
 CPP_TEST_MICROSIM_INCLUDE ?= $(shell $(R_HOME)/bin/Rscript -e 'p <- system.file("include", package = "microsimulation"); if (nzchar(p)) cat(p)')
 CPP_TEST_INCLUDE := $(if $(CPP_TEST_MICROSIM_INCLUDE),-I$(CPP_TEST_MICROSIM_INCLUDE),)
 CPP_TEST_DEBUGFLAGS := -g3 -O0 -fno-omit-frame-pointer -fno-inline
-CPP_TEST_CXXFLAGS := -std=gnu++17 $(CPP_TEST_INCLUDE) \
-	$(CPP_TEST_DEBUGFLAGS) \
+CPP_TEST_R_CPPFLAGS := \
 	$(shell $(R_HOME)/bin/R CMD config --cppflags) \
 	$(shell $(R_HOME)/bin/Rscript -e 'Rcpp:::CxxFlags()') \
 	$(shell $(R_HOME)/bin/Rscript -e 'RcppArmadillo:::CxxFlags()')
-CPP_TEST_LDFLAGS := \
+CPP_TEST_R_LDFLAGS := \
 	$(shell $(R_HOME)/bin/R CMD config --ldflags) \
 	$(shell $(R_HOME)/bin/Rscript -e 'Rcpp:::LdFlags()') \
-	$(shell $(R_HOME)/bin/Rscript -e 'cat(microsimulation:::LdFlags())') \
-	-lgtest -lgtest_main -lpthread
+	$(shell $(R_HOME)/bin/Rscript -e 'cat(microsimulation:::LdFlags())')
+CPP_TEST_CXXFLAGS := -std=gnu++17 $(CPP_TEST_INCLUDE) \
+	$(CPP_TEST_DEBUGFLAGS) $(CPP_TEST_R_CPPFLAGS)
+CPP_TEST_CUDAFLAGS := -std=c++17 $(CPP_TEST_INCLUDE) \
+	-G -Xcompiler=-fno-omit-frame-pointer,-fno-inline $(CPP_TEST_R_CPPFLAGS)
+CPP_TEST_HOST_LDFLAGS := $(CPP_TEST_R_LDFLAGS) -lgtest -lgtest_main -lpthread
+CPP_TEST_CUDA_R_LDFLAGS := $(filter-out -Wl% -fopenmp,$(CPP_TEST_R_LDFLAGS))
+CPP_TEST_CUDA_LDFLAGS := \
+	-Xlinker --export-dynamic -Xcompiler=-fopenmp \
+	$(CPP_TEST_CUDA_R_LDFLAGS) -lgtest -lgtest_main -lpthread -lcurand
 
 .PHONY: tarball install check clean build cpp-test
 
@@ -55,7 +64,7 @@ cpp-test: $(CPP_TEST_BIN)
 	$(CPP_TEST_BIN)
 
 $(CPP_TEST_BIN): $(CPP_TEST_SRC) $(CPP_TEST_INCLUDED_SRCS) $(CPP_TEST_LOCAL_OBJS)
-	$(CXX) $(CPP_TEST_CXXFLAGS) -o $@ $(CPP_TEST_SRC) $(CPP_TEST_LOCAL_OBJS) $(CPP_TEST_LDFLAGS)
+	$(NVCC) $(CPP_TEST_CUDAFLAGS) -o $@ $(CPP_TEST_SRC) $(CPP_TEST_LOCAL_OBJS) $(CPP_TEST_CUDA_LDFLAGS)
 
 $(CPP_TEST_BUILD_DIR):
 	mkdir -p $@

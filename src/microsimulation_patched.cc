@@ -3,6 +3,22 @@
 
 namespace ssim {
 
+double myRunif(double a, double b) {
+  if (!R_FINITE(a) || !R_FINITE(b) || b < a) return (0.0/0.0);
+
+  if (a == b)
+    return a;
+  else {
+    double u;
+    /* This is true of all builtin generators, but protect against
+       user-supplied ones */
+    do {
+      u = unif_rand();
+    } while (u <= 0 || u >= 1);
+    return a + (b - a) * u;
+  }
+}
+
   double rweibullHR(double shape, double scale, double hr){
     return R::rweibull(shape, scale*pow(hr,1.0/shape));
   }
@@ -43,7 +59,7 @@ namespace ssim {
   double Rng::runif(double a, double b) {
     std::lock_guard<std::mutex> lock(mtx);
     this->set();
-    return R::runif(a, b);
+    return myRunif(a, b);
   }
   double Rng::rweibull(double sh, double sl) {
     std::lock_guard<std::mutex> lock(mtx);

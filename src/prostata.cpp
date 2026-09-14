@@ -144,7 +144,6 @@ namespace fhcrc_example {
     H_local_t H_local;
     set<double,greater<double> > H_local_age_set;
 
-    //TODO: Fix potential memory leak by using unique_ptr or shared_ptr for Rng objects
     std::unique_ptr<Rng> rngNh, rngOther, rngScreen, rngTreatment, rngSurv, rngBx, rngPrelude;
     Rpexp rmu0;
 

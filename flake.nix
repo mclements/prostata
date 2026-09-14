@@ -10,7 +10,10 @@
   outputs = { nixpkgs, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs = import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+        };
 
         microsimulation = pkgs.rPackages.buildRPackage {
           name = "microsimulation";
@@ -42,6 +45,9 @@
       in {
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [ 
+            cudaPackages.cuda_nvcc
+            cudaPackages.cuda_cudart
+            cudaPackages.libcurand
             gtest
             zstd
             xz

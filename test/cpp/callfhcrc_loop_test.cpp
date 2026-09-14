@@ -13,6 +13,8 @@
 // SimInput/SimOutput and internal helpers directly.
 #include "../../src/prostata.cpp"
 
+#include "../../src/randomCUDA.h"
+
 namespace {
 
 Rcpp::List evalList(const std::string& expr) {
@@ -171,6 +173,8 @@ TEST(RngDistribution, UniformDrawsFitEqualProbabilityBins) {
   const double seed[6] = {12345, 12345, 12345, 12345, 12345, 12345};
   ssim::Rng rng;
   rng.seed(seed);
+  
+  test_mrg32k3a_random_generation();
 
   std::array<int, binCount> counts{};
   for (int draw = 0; draw < sampleSize; ++draw) {

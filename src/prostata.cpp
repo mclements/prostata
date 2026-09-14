@@ -26,6 +26,7 @@
 // (replace-safe-lookup "parameter")
 
 #include "microsimulation_patched.h"
+#include "random_utils.h"
 
 #include <numeric>
 
@@ -263,12 +264,12 @@ namespace fhcrc_example {
     double calculate_mortality_hr(double age_diag);
     double calculate_survival(double u, double age_diag, double age_c, treatment_t tx);
     double calculate_transition_time(double u, double t_enter, double gamma);
-    void opportunistic_rescreening(double psa);
+    void opportunistic_rescreening(double psa, const std::unique_ptr<ssim::Rng>& rng);
     void opportunistic_uptake_if_ever();
     bool screening_preference();
     double callenderStartAge(double frailty, double threshold=0.04);
     void cancel_events_after_diagnosis();
-    void rescreening_schedules(double psa, bool organised, bool mixed_programs);
+    void rescreening_schedules(double psa, bool organised, bool mixed_programs, const std::unique_ptr<ssim::Rng>& rng);
     bool detectable(double now, double year);
     void init();
     void add_costs(string item, cost_t cost_type = Direct, double weight=1.0);
@@ -423,11 +424,11 @@ namespace fhcrc_example {
     return (log(-log(u)*(beta1+beta2)/gamma + y_enter) - beta0 + beta2*t0) / (beta1+beta2);
   }
 
-  void FhcrcPerson::opportunistic_rescreening(double psa) {
+  void FhcrcPerson::opportunistic_rescreening(double psa, const std::unique_ptr<ssim::Rng>& rng) {
     double prescreened = 1.0 - in->rescreen_cure(bounds<double>(sim->clock(),30.0,90.0),psa);
     double shape = in->rescreen_shape(bounds<double>(sim->clock(),30.0,90.0),psa);
     double scale = in->rescreen_scale(bounds<double>(sim->clock(),30.0,90.0),psa);
-    double u = R::runif(0.0,1.0);
+    double u = runif(0.0,1.0,rng);
     double t = sim->clock() + R::rweibull(shape,scale);
     if (u<prescreened) {
       scheduleAt(t, toScreen);
@@ -487,9 +488,9 @@ namespace fhcrc_example {
     return (uscreening<pscreening);
   }
 
-  void FhcrcPerson::rescreening_schedules(double psa, bool organised, bool mixed_programs) {
+  void FhcrcPerson::rescreening_schedules(double psa, bool organised, bool mixed_programs, const std::unique_ptr<ssim::Rng>& rng) {
     // Check for organised screens - opportunistic screens are described later
-    if (R::runif(0.0,1.0) < in->parameter("rescreeningParticipation")) {
+    if (runif(0.0,1.0, rng) < in->parameter("rescreeningParticipation")) {
       switch (in->screen) {
       case mixed_screening:
       case stockholm3_goteborg:
@@ -584,7 +585,7 @@ namespace fhcrc_example {
 	in->screen == cap_study ||
 	// in->screen == sthlm3_mri_arm ||
 	(mixed_programs && !organised))
-      opportunistic_rescreening(psa); // includes rescreening participation
+      opportunistic_rescreening(psa, rng); // includes rescreening participation
   } // rescreening
 
   bool FhcrcPerson::detectable(double now, double year) {
@@ -676,8 +677,8 @@ void FhcrcPerson::init() {
     double grs_log_sd = std::sqrt(in->parameter("grs_variance"));
     double other_log_mean = -in->parameter("other_variance")/2;
     double other_log_sd = std::sqrt(in->parameter("other_variance"));
-    grs_frailty = R::rlnorm(grs_log_mean, grs_log_sd);
-    other_frailty = R::rlnorm(other_log_mean, other_log_sd);
+    grs_frailty = rlnorm(grs_log_mean, grs_log_sd, in->rngNh);
+    other_frailty = rlnorm(other_log_mean, other_log_sd, in->rngNh);
   } else {
     grs_frailty = 1.0;
     other_frailty = 1.0;
@@ -712,7 +713,7 @@ void FhcrcPerson::init() {
     future_grade = future_ext_grade == ext::Gleason_ge_8 ? base::Gleason_ge_8 : base::Gleason_le_7;
     beta2 = R::rnormPos(in->mubeta2[future_ext_grade],in->sebeta2[future_ext_grade]);
   }
-  beta0 = R::rnorm(in->parameter("mubeta0"),in->parameter("sebeta0"));
+  beta0 = rnorm(in->parameter("mubeta0"),in->parameter("sebeta0"), in->rngNh);
   beta1 = R::rnormPos(in->parameter("mubeta1"),in->parameter("sebeta1"));
 
   y0 = psamean(t0+35); // depends on: t0, beta0, beta1, beta2
@@ -946,7 +947,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
   in->rngPrelude->set();
   bool detectable = FhcrcPerson::detectable(sim->clock(), year);
   if (in->parameter("rand_biopsy_sensitivityG6")<1.0) {
-    detectable = detectable && R::runif(0.0,1.0) < in->parameter("rand_biopsy_sensitivityG6");
+    detectable = detectable && runif(0.0,1.0, in->rngPrelude) < in->parameter("rand_biopsy_sensitivityG6");
   }
   in->rngNh->set();
 
@@ -1107,7 +1108,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     // Reduce false positives wrt Gleason 7+ by 1-rFPF: which BPThreshold?
     if (in->panel && positive_test && (!in->bparameter("Andreas") || psa < 10.)) {
       if (int(in->parameter("biomarker_model"))==random_correction) { // simplistic model for the biomarker
-	if (R::runif(0.0,1.0) < 1.0 - in->parameter("rFPF"))
+	if (runif(0.0,1.0, in->rngBx) < 1.0 - in->parameter("rFPF"))
 	  positive_test = false;
       }
       else if (int(in->parameter("biomarker_model"))==psa_informed_correction) { // PSA based model for the biomarker
@@ -1136,7 +1137,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     //   if (R::runif(0.0,1.0) < 1.0-parameter("rTPF")) positive_test = true;
     // }
     in->rngBx->set();
-    if (positive_test && R::runif(0.0,1.0) < compliance) {
+    if (positive_test && runif(0.0,1.0, in->rngBx) < compliance) {
       if (in->bparameter("MRI_screen")) {
 	scheduleAt(sim->clock()+1.0/52.0, toMRI); // MRI in one month
       } else {
@@ -1147,7 +1148,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
           in->rngScreen->set();
 	  if ((in->screen == cap_study || in->screen == sthlm3_mri_arm) && organised)
 	    organised = false;
-	  rescreening_schedules(psa, organised, mixed_programs);
+	  rescreening_schedules(psa, organised, mixed_programs, in->rngScreen);
     }
     in->rngNh->set();
   } break;
@@ -1183,7 +1184,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     in->rngNh->set();
     bool dre_result;
     double u;
-    u = R::runif(0.0,1.0);
+    u = runif(0.0,1.0, in->rngNh);
     if (detectable)
       dre_result = (u < in->dre_sensitivity(psa));
     else dre_result = u < (1.0 - in->dre_specificity(psa));
@@ -1205,13 +1206,13 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     double pMRIpos = (this->ext_grade == ext::Healthy || !detectable) ? in->parameter("pMRIposG0") :
       (this->ext_grade == ext::Gleason_le_6) ? in->parameter("pMRIposG1") :
       in->parameter("pMRIposG2");
-    this->MRIpos = (R::runif(0.0,1.0) < pMRIpos); // we need to know if they are MRI+ at toScreenInitiatedBiopsy
+    this->MRIpos = (runif(0.0,1.0, in->rngBx) < pMRIpos); // we need to know if they are MRI+ at toScreenInitiatedBiopsy
     if (this->MRIpos || in->bparameter("MRInegSBx")) {
       scheduleAt(sim->clock(), toScreenInitiatedBiopsy);
     } else {
       if ((in->screen == cap_study || in->screen == sthlm3_mri_arm) && organised)
 	organised = false;
-      rescreening_schedules(psa, organised, mixed_programs);
+      rescreening_schedules(psa, organised, mixed_programs, in->rngBx);
     }
     in->rngNh->set();
   } break;
@@ -1235,8 +1236,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toScreenInitiatedBiopsy: {
     in->rngBx->set();
-    double u1 = R::runif(0.0,1.0);
-    double u2 = R::runif(0.0,1.0);
+    double u1 = runif(0.0,1.0, in->rngBx);
+    double u2 = runif(0.0,1.0, in->rngBx);
     // the general case for the following block follows the same pattern as toClinicalDiagnosticBiopsy
     if (in->bparameter("MRI_screen") && this->MRIpos) {
       // specific case: MRI+S3M+ or MRI-S3M>=25 (split by type of biopsy: combined and systematic, respectively)
@@ -1322,15 +1323,15 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       if (previousNegativeBiopsy || (in->bparameter("MRI_screen") && !this->MRIpos && in->bparameter("rescreenDoubleNeg"))) { // first negative biopsy and not MRI-
 	if ((in->screen == cap_study || in->screen == sthlm3_mri_arm) && organised)
 	  organised = false;
-        rescreening_schedules(psa_last_screen, organised, mixed_programs);
+        rescreening_schedules(psa_last_screen, organised, mixed_programs, in->rngBx);
         previousNegativeBiopsy = false; // if going to rescreening, should their previous negative Bx be forgotten? (Currently only used here)
       } else {
         previousNegativeBiopsy=true;
         // Competing risk for event following a negative biopsy
-        double timeToPSA = R::rlnorm(in->tableNegBiopsyToPSAmeanlog(age),
-                                     in->tableNegBiopsyToPSAsdlog(age));
-        double timeToBiopsy = R::rlnorm(in->tableNegBiopsyToBiopsymeanlog(age),
-                                        in->tableNegBiopsyToBiopsysdlog(age));
+        double timeToPSA = rlnorm(in->tableNegBiopsyToPSAmeanlog(age),
+                in->tableNegBiopsyToPSAsdlog(age), in->rngBx);
+        double timeToBiopsy = rlnorm(in->tableNegBiopsyToBiopsymeanlog(age),
+                   in->tableNegBiopsyToBiopsysdlog(age), in->rngBx);
         if (timeToPSA <= timeToBiopsy) { // PSA was the first event
           scheduleAt(sim->clock() + timeToPSA, toScreen);
         } else { // Biopsy was the first event
@@ -1344,8 +1345,8 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   case toTreatment: { // To diagnoses, treatment & survival
     in->rngTreatment->set();
-    double u_tx = R::runif(0.0,1.0);
-    double u_adt = R::runif(0.0,1.0);
+    double u_tx = runif(0.0,1.0, in->rngTreatment);
+    double u_adt = runif(0.0,1.0, in->rngTreatment);
     if (state == Metastatic && in->bparameter("Andreas")) {
       lost_productivity("Metastatic cancer");
       // utilities->clear(); // should this be age-specific??
@@ -1384,15 +1385,15 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
       double pcure = pow(1 - exp(-lead_time * in->parameter("c_benefit_value1")),
       			 calculate_mortality_hr(age_c));
       if (in->debug) Rprintf("hr for lead time=%f\n", calculate_mortality_hr(age_c));
-      cured = (R::runif(0.0,1.0) < pcure);
+      cured = (runif(0.0,1.0, in->rngSurv) < pcure);
       if (!cured) {
-	double u_surv = R::runif(0.0,1.0);
+	double u_surv = runif(0.0,1.0, in->rngSurv);
         age_cancer_death = calculate_survival(u_surv,age_c,age_c,calculate_treatment(u_tx,age_c,year+lead_time));
       }
     }
     else if (in->parameter("c_benefit_type")==StageShiftBased) { // [annals paper ref]
       // calculate survival
-      double u_surv = R::runif(0.0,1.0);
+      double u_surv = runif(0.0,1.0, in->rngSurv);
       age_cd = calculate_survival(u_surv,age_c,age_c,calculate_treatment(u_tx,age_c,year+lead_time));
       age_sd = calculate_survival(u_surv,sim->clock(),age_c,tx);
       weight = exp(- in->parameter("c_benefit_value0")*lead_time);
@@ -1514,11 +1515,11 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
     // Modelling for possible subsequent RP and RT. P(RP|RT) ~ P(RP)
     // whereas P(RT|RP) << P(RT). As a simplification, we simulate
     // separately for RP and RT and remove an RT following an RP.
-    if (R::runif(0.0,1.0) > in->tableCMtoRPpnever(age)) {// pnever -> pever
-      scheduleAt(sim->clock() + R::rlnorm(in->tableCMtoRPmeanlog(age), in->tableCMtoRPsdlog(age)), toRP);
+    if (runif(0.0,1.0, in->rngTreatment) > in->tableCMtoRPpnever(age)) {// pnever -> pever
+      scheduleAt(sim->clock() + rlnorm(in->tableCMtoRPmeanlog(age), in->tableCMtoRPsdlog(age), in->rngTreatment), toRP);
     }
-    if (R::runif(0.0,1.0) > in->tableCMtoRTpnever(age)) {// pnever -> pever
-      scheduleAt(sim->clock() + R::rlnorm(in->tableCMtoRTmeanlog(age), in->tableCMtoRTsdlog(age)), toRT);
+    if (runif(0.0,1.0, in->rngTreatment) > in->tableCMtoRTpnever(age)) {// pnever -> pever
+      scheduleAt(sim->clock() + rlnorm(in->tableCMtoRTmeanlog(age), in->tableCMtoRTsdlog(age), in->rngTreatment), toRT);
     }
     in->rngNh->set();
     break;

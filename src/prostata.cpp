@@ -258,14 +258,14 @@ namespace fhcrc_example {
       cProcess(sim), in(in), out(out), utilities(utilities), id(id), index(index), cohort(cohort) { };
     double utility() { return utilities->utility(); }
     double psamean(double age);
-    double psameasured(double age);
+    double psameasured(double age, const std::unique_ptr<ssim::Rng>& rng);
     treatment_t calculate_treatment(double u, double age, double year);
     double calculate_mortality_hr(double age_diag);
     double calculate_survival(double u, double age_diag, double age_c, treatment_t tx);
     double calculate_transition_time(double u, double t_enter, double gamma);
     void opportunistic_rescreening(double psa, const std::unique_ptr<ssim::Rng>& rng);
-    void opportunistic_uptake_if_ever();
-    bool screening_preference();
+    void opportunistic_uptake_if_ever(const std::unique_ptr<ssim::Rng>& rng);
+    bool screening_preference(const std::unique_ptr<ssim::Rng>& rng);
     double callenderStartAge(double frailty, double threshold=0.04);
     void cancel_events_after_diagnosis();
     void rescreening_schedules(double psa, bool organised, bool mixed_programs, const std::unique_ptr<ssim::Rng>& rng);
@@ -293,8 +293,8 @@ namespace fhcrc_example {
   /**
       Calculate the *measured* PSA value at a given age (** NB: this used to be t=age-35 **)
   */
-  double FhcrcPerson::psameasured(double age) {
-    return FhcrcPerson::psamean(age)*exp(R::rnorm(0.0, sqrt(double(in->parameter("tau2")))));
+  double FhcrcPerson::psameasured(double age, const std::unique_ptr<ssim::Rng>& rng) {
+    return FhcrcPerson::psamean(age)*exp(rng->rnorm(0.0, sqrt(double(in->parameter("tau2")))));
     }
 
   /**
@@ -452,7 +452,7 @@ namespace fhcrc_example {
     RemoveKind(sim, toMRI);
   }
 
-  void FhcrcPerson::opportunistic_uptake_if_ever() {
+  void FhcrcPerson::opportunistic_uptake_if_ever(const std::unique_ptr<ssim::Rng>& rng) {
     // Defaults values assume:
     // (i)   cohorts aged <35 in 1995 have a llogis(3.8,15) from age 35 (cohort > 1960)
     // (ii)  cohorts aged 50+ in 1995 have a llogis(2,10) distribution from 1995 (cohort < 1945)
@@ -466,7 +466,7 @@ namespace fhcrc_example {
 	R::rllogis(in->parameter("shapeT"),in->parameter("scaleT")); // (ii) period
     } else {
       double age0 = double(in->parameter("screeningIntroduced")) - cohort;
-      double u = R::runif(0.0,1.0);
+      double u = rng->runif(0.0,1.0);
       if ((age0 - in->parameter("uptakeStartAge")) / (double(in->parameter("endUptakeMixture")) -
 			   double(in->parameter("startUptakeMixture"))) < u) // (iii) mixture
 	first_screen = age0 + R::rllogis_trunc(in->parameter("shapeA"),
@@ -478,12 +478,12 @@ namespace fhcrc_example {
     scheduleAt(first_screen, toScreen);
   }
 
-  bool FhcrcPerson::screening_preference() {
+  bool FhcrcPerson::screening_preference(const std::unique_ptr<ssim::Rng>& rng) {
     double pscreening = double(cohort>=in->parameter("startFullUptake")) ?
       double(in->parameter("fullUptakePortion")) : (double(in->parameter("fullUptakePortion"))
       - (double(in->parameter("startUptakeMixture")) - cohort) * double(in->parameter("yearlyUptakeIncrease")));
     // decrease for previous year instead of increase for next year
-    double uscreening = R::runif(0.0,1.0);
+    double uscreening = rng->runif(0.0,1.0);
     return (uscreening<pscreening);
   }
 
@@ -682,7 +682,7 @@ void FhcrcPerson::init() {
     grs_frailty = 1.0;
     other_frailty = 1.0;
   }
-  if (R::runif(0.0, 1.0) <= in->parameter("susceptible")) { // portion susceptible
+  if (in->rngNh->runif(0.0, 1.0) <= in->parameter("susceptible")) { // portion susceptible
     if (in->bparameter("weibull_onset")) {
       t0 = rweibull_frailty(in->parameter("weibull_onset_shape"),
 			    in->parameter("weibull_onset_scale"),
@@ -694,12 +694,12 @@ void FhcrcPerson::init() {
   else
     t0 = 200.0; // not susceptible
   if (!in->bparameter("revised_natural_history")){
-    future_grade = (R::runif(0.0, 1.0)>=1+in->parameter("c_low_grade_slope")*t0) ? base::Gleason_ge_8 : base::Gleason_le_7;
+    future_grade = (in->rngNh->runif(0.0, 1.0)>=1+in->parameter("c_low_grade_slope")*t0) ? base::Gleason_ge_8 : base::Gleason_le_7;
     beta2 = R::rnormPos(in->mubeta2[future_grade],in->sebeta2[future_grade]);
   }
   else {
     // multinomial logistic regression
-    double u = R::runif(0.0,1.0);
+    double u = in->rngNh->runif(0.0,1.0);
     double denom = 1.0 +
       exp(in->parameter("alpha7") + in->parameter("beta7") * t0) +
       exp(in->parameter("alpha8") + in->parameter("beta8") * t0);
@@ -716,21 +716,21 @@ void FhcrcPerson::init() {
   beta1 = R::rnormPos(in->parameter("mubeta1"),in->parameter("sebeta1"));
 
   y0 = psamean(t0+35); // depends on: t0, beta0, beta1, beta2
-  t3p = calculate_transition_time(R::runif(0.0,1.0), t0, in->parameter("g3p"));
-  tm = calculate_transition_time(R::runif(0.0,1.0), t3p, in->parameter("gm"));
+  t3p = calculate_transition_time(in->rngNh->runif(0.0,1.0), t0, in->parameter("g3p"));
+  tm = calculate_transition_time(in->rngNh->runif(0.0,1.0), t3p, in->parameter("gm"));
   ym = psamean(tm+35);
   if (future_grade==base::Gleason_le_7) { // Annals
-    tc = calculate_transition_time(R::runif(0.0,1.0), t0, in->parameter("gc"));
-    tmc = calculate_transition_time(R::runif(0.0,1.0), tm, in->parameter("gc")*in->parameter("thetac"));
+    tc = calculate_transition_time(in->rngNh->runif(0.0,1.0), t0, in->parameter("gc"));
+    tmc = calculate_transition_time(in->rngNh->runif(0.0,1.0), tm, in->parameter("gc")*in->parameter("thetac"));
   } else {
-    tc = calculate_transition_time(R::runif(0.0,1.0), t0, in->parameter("gc")*in->parameter("grade.clinical.rate.high"));
-    tmc = calculate_transition_time(R::runif(0.0,1.0), tm, in->parameter("gc")*in->parameter("thetac")*in->parameter("grade.clinical.rate.high"));
+    tc = calculate_transition_time(in->rngNh->runif(0.0,1.0), t0, in->parameter("gc")*in->parameter("grade.clinical.rate.high"));
+    tmc = calculate_transition_time(in->rngNh->runif(0.0,1.0), tm, in->parameter("gc")*in->parameter("thetac")*in->parameter("grade.clinical.rate.high"));
   }
   out->tmc_minus_t0 += (tmc - t0);
-  aoc = in->rmu0.rand(R::runif(0.0,1.0));
+  aoc = in->rmu0.rand(in->rngNh->runif(0.0,1.0));
   if (!in->bparameter("revised_natural_history")){
     future_ext_grade= (future_grade==base::Gleason_le_7) ?
-      (R::runif(0.0,1.0) <= in->interp_prob_grade7.approx(beta2) ? ext::Gleason_7 : ext::Gleason_le_6) :
+      (in->rngNh->runif(0.0,1.0) <= in->interp_prob_grade7.approx(beta2) ? ext::Gleason_7 : ext::Gleason_le_6) :
       ext::Gleason_ge_8;
   }
   ageEntry = 0.0; // used by cap_control, cap_study and sthlm3_mri_arm
@@ -748,9 +748,9 @@ void FhcrcPerson::init() {
   // schedule screening events that depend on screeningParticipation
   in->rngScreen->set();
   rescreening_frailty = R::rgamma(1.25, 1.25);
-  double u1 = R::runif(0.0,1.0);
-  double u2 = R::runif(0.0,1.0);
-  if (R::runif(0.0,1.0)<in->parameter("screeningParticipation")) {
+  double u1 = in->rngScreen->runif(0.0,1.0);
+  double u2 = in->rngScreen->runif(0.0,1.0);
+  if (in->rngScreen->runif(0.0,1.0)<in->parameter("screeningParticipation")) {
     switch(in->screen) {
     case noScreening:
       break; // no screening
@@ -805,19 +805,19 @@ void FhcrcPerson::init() {
   // schedule screening events that already incorporate screening participation
   switch(in->screen) {
   case mixed_screening:
-    if (screening_preference())
-      opportunistic_uptake_if_ever();
+    if (screening_preference(in->rngScreen))
+      opportunistic_uptake_if_ever(in->rngScreen);
     scheduleAt(in->parameter("start_screening"), toOrganised);
     break;
   case stopped_screening:
-    if (screening_preference())
-      opportunistic_uptake_if_ever();
+    if (screening_preference(in->rngScreen))
+      opportunistic_uptake_if_ever(in->rngScreen);
     scheduleAt(in->parameter("introduction_year") - cohort, toCancelScreens);
     break;
   case introduced_screening: //first screen
     // One participation during opportunistic and another during the regular screening
-    if (screening_preference())
-      opportunistic_uptake_if_ever(); // 'toOrganised' will remove opportunistic screens
+    if (screening_preference(in->rngScreen))
+      opportunistic_uptake_if_ever(in->rngScreen); // 'toOrganised' will remove opportunistic screens
     if ( in->parameter("introduction_year") - cohort <= in->parameter("start_screening")) { // under screen age at 2015
       scheduleAt(in->parameter("start_screening"), toOrganised); //screen all in age interval
     } else if( in->parameter("introduction_year") - cohort >= in->parameter("start_screening") && //between screen ages
@@ -827,8 +827,8 @@ void FhcrcPerson::init() {
     break;
   case introduced_screening_preference: //first screen
     // Only those who would have had a opportunistic screen will have a regular screen
-    if (screening_preference()) {
-      opportunistic_uptake_if_ever(); // 'toOrganised' will remove opportunistic screens
+    if (screening_preference(in->rngScreen)) {
+      opportunistic_uptake_if_ever(in->rngScreen); // 'toOrganised' will remove opportunistic screens
       if ( in->parameter("introduction_year") - cohort <= in->parameter("start_screening")) { // under screen age at 2015
 	scheduleAt(in->parameter("start_screening"), toOrganised); //screen all in age interval
       } else if( in->parameter("introduction_year") - cohort >= in->parameter("start_screening") && //between screen ages
@@ -847,37 +847,37 @@ void FhcrcPerson::init() {
     break;
   case stockholm3_goteborg:
   case stockholm3_risk_stratified:
-    if (screening_preference())
-      opportunistic_uptake_if_ever();
+    if (screening_preference(in->rngScreen))
+      opportunistic_uptake_if_ever(in->rngScreen);
     if (u1 < in->parameter("studyParticipation") &&
 	(2013.0-cohort >= in->parameter("start_screening") &&
 	 2013.0-cohort < in->parameter("stop_screening")))
       scheduleAt((u2 * 2.0 + 2013.0) - cohort, toSTHLM3);
     break;
   case screenUptake:
-    if (screening_preference())
-      opportunistic_uptake_if_ever();
+    if (screening_preference(in->rngScreen))
+      opportunistic_uptake_if_ever(in->rngScreen);
     break;
   case cap_control:
   case cap_study: {
-    scheduleAt(in->H_screen_uptake.invert(-log(R::runif(0.0,1.0))), toScreen);
-    ageEntry = 2005.0 - cohort + R::runif(0.0,5.0); // 50-54, 55-59, 60-64, 65-69
+    scheduleAt(in->H_screen_uptake.invert(-log(in->rngScreen->runif(0.0,1.0))), toScreen);
+    ageEntry = 2005.0 - cohort + in->rngScreen->runif(0.0,5.0); // 50-54, 55-59, 60-64, 65-69
     if (in->screen == cap_study) {
       double pScreened = in->cap_pScreened[cohort==1955.0 ? 0 :
 					    cohort==1950.0 ? 1 :
 					    cohort==1945.0 ? 2 :
 					    3];
-      if (R::runif(0.0,1.0)<pScreened)
+      if (in->rngScreen->runif(0.0,1.0)<pScreened)
 	scheduleAt(ageEntry, toOrganised);
     } else {
       // keep the RNG in sync
-      R::runif(0.0,1.0);
+      in->rngScreen->runif(0.0,1.0);
     }
   } break;
   case sthlm3_mri_arm:
-    if (screening_preference())
-      opportunistic_uptake_if_ever();
-    ageEntry = R::runif(2019.0,2020.0) - cohort;
+    if (screening_preference(in->rngScreen))
+      opportunistic_uptake_if_ever(in->rngScreen);
+    ageEntry = in->rngScreen->runif(2019.0,2020.0) - cohort;
     scheduleAt(ageEntry, toOrganised);
     break;
   default:
@@ -906,10 +906,10 @@ void FhcrcPerson::init() {
     out->outParameters.record("age_psa",-1.0);
     out->outParameters.record("age_pca",-1.0);
     out->outParameters.record("pca_death",0.0);
-    out->outParameters.record("psa55",psameasured(55.0));
-    out->outParameters.record("psa65",psameasured(65.0));
-    out->outParameters.record("psa75",psameasured(75.0));
-    out->outParameters.record("psa85",psameasured(85.0));
+    out->outParameters.record("psa55",psameasured(55.0, in->rngNh));
+    out->outParameters.record("psa65",psameasured(65.0, in->rngNh));
+    out->outParameters.record("psa75",psameasured(75.0, in->rngNh));
+    out->outParameters.record("psa85",psameasured(85.0, in->rngNh));
     out->outParameters.record("rescreening_frailty",rescreening_frailty);
     out->outParameters.record("ageEntry",ageEntry);
   }
@@ -928,7 +928,7 @@ void FhcrcPerson::handleMessage(const cMessage* msg) {
 
   // declarations
   in->rngOther->set();
-  double psa = psameasured(sim->clock()); // includes measurement error
+  double psa = psameasured(sim->clock(), in->rngOther); // includes measurement error
   in->rngNh->set();
   // double test = panel ? biomarker : psa;
   double Z = psamean(sim->clock());

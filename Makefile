@@ -41,7 +41,7 @@ CPP_TEST_R_LDFLAGS := \
 CPP_TEST_CXXFLAGS := -std=gnu++17 $(CPP_TEST_INCLUDE) \
 	$(CPP_TEST_DEBUGFLAGS) $(CPP_TEST_R_CPPFLAGS)
 CPP_TEST_CUDAFLAGS := -std=c++17 $(CPP_TEST_INCLUDE) \
-	-G -Xcompiler=-fno-omit-frame-pointer,-fno-inline $(CPP_TEST_R_CPPFLAGS)
+	-g -G -Xcompiler=-O0,-fno-omit-frame-pointer,-fno-inline $(CPP_TEST_R_CPPFLAGS)
 CPP_TEST_HOST_LDFLAGS := $(CPP_TEST_R_LDFLAGS) -lgtest -lgtest_main -lpthread
 CPP_TEST_CUDA_R_LDFLAGS := $(filter-out -Wl% -fopenmp,$(CPP_TEST_R_LDFLAGS))
 CPP_TEST_CUDA_LDFLAGS := \

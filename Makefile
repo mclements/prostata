@@ -72,6 +72,9 @@ $(CPP_TEST_BUILD_DIR):
 $(CPP_TEST_BUILD_DIR)/microsimulation_patched.o: ./src/microsimulation_patched.cc ./src/microsimulation_patched.h | $(CPP_TEST_BUILD_DIR)
 	$(CXX) $(CPP_TEST_CXXFLAGS) -c -o $@ $<
 
+$(CPP_TEST_BUILD_DIR)/randomCUDA.o: ./src/randomCUDA.cu ./src/randomCUDA.h | $(CPP_TEST_BUILD_DIR)
+	$(NVCC) $(CPP_TEST_CUDAFLAGS) -c -o $@ $<
+
 $(CPP_TEST_BUILD_DIR)/ssim_patched.o: ./src/ssim_patched.cc ./src/ssim_patched.h | $(CPP_TEST_BUILD_DIR)
 	$(CXX) $(CPP_TEST_CXXFLAGS) -c -o $@ $<
 

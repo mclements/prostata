@@ -23,8 +23,9 @@ inline void gpuAssert(cudaError_t code, const char* file, int line) {
 
 // 1. Initialization Kernel
 // Sets up a distinct, independent stream for each thread using MRG32k3a
-__global__ void initRNG(curandStateMRG32k3a *state, unsigned long long seed) {
+__global__ void initRNG(curandStateMRG32k3a *state, unsigned long long seed, int N) {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
+    if(tid >= N) return;
     
     // Each thread gets the same seed, but a different sequence/stream number (id)
     // parameter 3 (offset) is set to 0
@@ -32,24 +33,23 @@ __global__ void initRNG(curandStateMRG32k3a *state, unsigned long long seed) {
 }
 
 // 2. Generation Kernel
-__global__ void generate_mrg_kernel(curandStateMRG32k3a *state, double *output, int values_per_thread) {
-    int id = threadIdx.x + blockIdx.x * blockDim.x;
+__global__ void generate_mrg_kernel(curandStateMRG32k3a *state, double *output, int values_per_thread, int N) {
+    int tid = threadIdx.x + blockIdx.x * blockDim.x;
+    if(tid * values_per_thread + values_per_thread - 1 >= N) return;
     
     // Cache the state in local registers for maximum performance
-    curandStateMRG32k3a localState = state[id];
-    
-    int base_index = id * values_per_thread;
+    curandStateMRG32k3a localState = state[tid];
     
     for (int i = 0; i < values_per_thread; i++) {
         // cuRAND outputs (0.0, 1.0] for double precision
         double raw_rand = curand_uniform_double(&localState);
         
         // Transform to [0.0, 1.0) to match dSFMT's close_open property
-        output[base_index + i] = 1.0 - raw_rand;
+        output[tid * values_per_thread + i] = 1.0 - raw_rand;
     }
     
     // Save the updated state back to global memory for future kernel calls
-    state[id] = localState;
+    state[tid] = localState;
 }
 
 cudaDeviceProp initDevice(int device_id) {
@@ -73,14 +73,13 @@ cudaDeviceProp initDevice(int device_id) {
     return prop;
 }
 
-void test_mrg32k3a_random_generation(int numSims, double *h_output) {
+void test_mrg32k3a_random_generation(int N, double *h_output) {
     
     cudaDeviceProp prop = initDevice(0);
 
-    int threadsPerBlock = 64;
     dim3 block, grid;
-    block.x = threadsPerBlock;
-    grid.x  = (numSims + threadsPerBlock - 1) / threadsPerBlock;
+    block.x = 64;
+    grid.x  = (N + block.x - 1) / block.x;
     
     // Aim to launch around ten or more times as many blocks as there
     // are multiprocessors on the target device.
@@ -90,27 +89,24 @@ void test_mrg32k3a_random_generation(int numSims, double *h_output) {
     while (grid.x > 2 * blocksPerSM * numSMs) {
         grid.x >>= 1;
     }
-    int valuesPerThread = (numSims + grid.x * block.x - 1) / (grid.x * block.x);
+    int totalThreads = grid.x * block.x;
+    int valuesPerThread = (N + totalThreads - 1) / totalThreads;
 
     // Allocate Device memory for cuRAND states
-    curandStateMRG32k3a *d_rngStates;
-    gpuErrchk(cudaMalloc((void**)&d_rngStates, grid.x * block.x * sizeof(curandStateMRG32k3a)));
-
-    // Allocate Device memory for output data
-    double *d_output;
-    gpuErrchk(cudaMalloc((void**)&d_output, numSims * sizeof(double)));
-
-    // 1. Initialize the MRG32k3a states on the GPU
+    curandStateMRG32k3a* d_rngStates;
+    gpuErrchk(cudaMalloc((void**)&d_rngStates, N * sizeof(curandStateMRG32k3a)));
     unsigned long long seed = 1234ULL;
-    initRNG<<<grid, block>>>(d_rngStates, seed);
+    initRNG<<<grid, block>>>(d_rngStates, seed, N);
     gpuErrchk(cudaDeviceSynchronize());
 
     // 2. Generate the [0.0, 1.0) random doubles
-    generate_mrg_kernel<<<grid, block>>>(d_rngStates, d_output, valuesPerThread);
+    double* d_output;
+    gpuErrchk(cudaMalloc((void**)&d_output, N * sizeof(double)));
+    generate_mrg_kernel<<<grid, block>>>(d_rngStates, d_output, valuesPerThread, N);
     gpuErrchk(cudaDeviceSynchronize());
 
     // Allocate Host memory to verify results
-    gpuErrchk(cudaMemcpy(h_output, d_output, numSims * sizeof(double), cudaMemcpyDeviceToHost));
+    gpuErrchk(cudaMemcpy(h_output, d_output, N * sizeof(double), cudaMemcpyDeviceToHost));
 
     cudaFree(d_rngStates);
     cudaFree(d_output);

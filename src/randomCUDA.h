@@ -1,3 +1,3 @@
 #pragma once
 
-void test_mrg32k3a_random_generation();
+void test_mrg32k3a_random_generation(int numSims, double* h_output);

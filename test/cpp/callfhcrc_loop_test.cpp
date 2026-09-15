@@ -174,13 +174,19 @@ TEST(RngDistribution, UniformDrawsFitEqualProbabilityBins) {
   ssim::Rng rng;
   rng.seed(seed);
   
-  test_mrg32k3a_random_generation();
+  std::vector<double> cuda_samples(sampleSize);
+  test_mrg32k3a_random_generation(sampleSize, cuda_samples.data());
 
   std::array<int, binCount> counts{};
+  std::array<int, binCount> counts_cuda{};
   for (int draw = 0; draw < sampleSize; ++draw) {
+    const double value_cuda = cuda_samples[draw];
     const double value = rng.runif(0.0, 1.0);
+    ASSERT_GT(value_cuda, 0.0);
+    ASSERT_LT(value_cuda, 1.0);
     ASSERT_GT(value, 0.0);
     ASSERT_LT(value, 1.0);
+    ++counts_cuda[static_cast<std::size_t>(value_cuda * binCount)];
     ++counts[static_cast<std::size_t>(value * binCount)];
   }
 
@@ -189,8 +195,16 @@ TEST(RngDistribution, UniformDrawsFitEqualProbabilityBins) {
     const double difference = count - expectedPerBin;
     chiSquared += difference * difference / expectedPerBin;
   }
+  double chiSquaredCuda = 0.0;
+  for (const int count : counts_cuda) {
+    const double difference = count - expectedPerBin;
+    chiSquaredCuda += difference * difference / expectedPerBin;
+  }
 
   EXPECT_LT(chiSquared, chiSquared0001Limit)
+    << "Uniform RNG failed chi-squared goodness-of-fit test with "
+    << binCount - 1 << " degrees of freedom";
+  EXPECT_LT(chiSquaredCuda, chiSquared0001Limit)
     << "Uniform RNG failed chi-squared goodness-of-fit test with "
     << binCount - 1 << " degrees of freedom";
 }
